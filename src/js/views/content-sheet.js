@@ -1,7 +1,9 @@
 // Editor de um conteúdo (folha). É a mesma tela para ideia, roteiro e post publicado.
 import * as data from '../data.js';
 import { h, sheet, group, cell, formGroups, toast, confirmDelete, badge } from '../ui.js';
-import { FORMATS, formatById } from '../lib/formats.js';
+import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
+import { openDesigner, missingPhotos } from './designer.js';
+import { DEAL_TYPES, stageLabel } from '../lib/deals.js';
 import { STATUSES, iso } from '../lib/insights.js';
 import { contentPrompt, parseContent } from '../lib/prompts.js';
 import { askClaude, onClaudeResult } from './claude.js';
@@ -76,9 +78,13 @@ export function openContent(c) {
     { fields: [
       { name: 'title', label: 'Título', placeholder: 'Sobre o que é?', showLabel: false, type: 'text' },
       { name: 'formatId', label: 'Formato', type: 'select', options: formatOptions, placeholder: 'Escolher…' },
+      { name: 'type', label: 'Tipo', type: 'select', options: Object.entries(TYPES).map(([value, t]) => ({ value, label: `${t.emoji} ${t.label}` })), placeholder: false },
+      { name: 'goal', label: 'Foco', type: 'select', options: Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), placeholder: 'Livre' },
       { name: 'date', label: 'Data', type: 'date' },
+      { name: 'theme', label: 'Tema', placeholder: 'Sobre o quê' },
     ] },
-  ], c);
+  ], { type: 'video', ...c });
+  const typeSel = main.el.querySelector('select[name="type"]');
 
   const hookWarn = h('ul', { class: 'warn-list' });
   const script = formGroups([
@@ -139,7 +145,7 @@ export function openContent(c) {
     const e = extra.read();
     const res = results.read();
     const { link, ...nums } = res;
-    const out = { ...m, ...s, ...e, status, platforms: [...platforms], title: m.title || 'Novo conteúdo' };
+    const out = { ...m, ...s, ...e, status, platforms: [...platforms], title: m.title || 'Novo conteúdo', touched: true };
     if (status === 'postado') {
       out.link = link;
       out.postedAt = c.postedAt || m.date || today();
@@ -148,6 +154,23 @@ export function openContent(c) {
     }
     return out;
   };
+
+  const deal = c.dealId && data.get('deals', c.dealId);
+  const designBtn = h('div');
+  const drawDesignBtn = () => {
+    const ty = typeSel.value;
+    if (ty !== 'carrossel' && ty !== 'estatico') return designBtn.replaceChildren();
+    const miss = c.id ? missingPhotos(c) : 0;
+    designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : 'Artes 1080×1350 no seu estilo iOS, prontas para salvar no Fotos.', children: [
+      h('button', { type: 'button', class: 'cell tappable tint', 'data-id': 'content-design', onclick: () => {
+        const saved = saveNow();
+        document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
+        setTimeout(() => openDesigner(saved.id), 260);
+      } }, miss ? `📷 Design: adicionar ${miss} foto(s)` : `🎨 Abrir design${c.slides?.length ? ` (${c.slides.length} tela${c.slides.length > 1 ? 's' : ''})` : ''}`),
+    ] }));
+  };
+  typeSel.addEventListener('change', drawDesignBtn);
+  drawDesignBtn();
 
   const saveNow = () => (isNew ? data.create('contents', read()) : data.update('contents', c.id, read()));
 
@@ -159,8 +182,10 @@ export function openContent(c) {
       toast('Salvo');
     },
     body: h('div', { class: 'sheet-stack' },
+      deal && group({ children: [cell({ emoji: DEAL_TYPES[deal.type]?.emoji, color: DEAL_TYPES[deal.type]?.color, title: `Campanha: ${deal.brandName}`, subtitle: `${DEAL_TYPES[deal.type]?.label} · ${stageLabel(deal)}`, chevron: true, onClick: () => import('./brands.js').then((m) => m.openDeal(deal)) })] }),
       main.el,
       stepper,
+      designBtn,
       h('button', {
         type: 'button', class: 'btn-claude', 'data-id': 'content-claude',
         onclick: () => {

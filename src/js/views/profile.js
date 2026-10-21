@@ -2,6 +2,55 @@
 import * as data from '../data.js';
 import { h, page, group, cell, sheet, formGroups, toast, actionSheet, fmtDay } from '../ui.js';
 import { tokenStatus } from '../lib/instagram.js';
+import { DEFAULT_PALETTE, drawSlide } from '../lib/render.js';
+import { toggle } from '../ui.js';
+
+const SWATCHES = [
+  ['bg', 'Fundo'], ['card', 'Cartões'], ['ink', 'Texto'], ['accent', 'Destaque 1 (manteiga)'], ['accent2', 'Destaque 2 (rosa)'], ['accent3', 'Detalhes (marrom)'],
+];
+
+function paletteGroup(p) {
+  const pal = { ...DEFAULT_PALETTE, ...(p.palette || {}) };
+  const preview = h('canvas', { class: 'palette-preview', 'aria-label': 'Prévia do estilo' });
+  const sample = { layout: 'notas', kicker: 'review honesto', title: 'Testei o protetor da minha mãe', body: 'Textura leve, não deixou branco.\nNo calor, precisei reaplicar.' };
+  const redraw = () => drawSlide(preview, sample, { palette: pal, dark: data.profile().designDark, handle: p.instagram ? `@${p.instagram.replace(/^@/, '')}` : '@voce', index: 0, total: 3 });
+  queueMicrotask(redraw);
+  const rows = SWATCHES.map(([k, label]) => {
+    const inp = h('input', { type: 'color', value: pal[k], 'aria-label': label, class: 'swatch' });
+    inp.addEventListener('input', () => { pal[k] = inp.value; redraw(); });
+    inp.addEventListener('change', () => data.saveProfile({ palette: { ...pal } }));
+    return h('label', { class: 'cell field' }, h('span', { class: 'cell-title' }, label), inp);
+  });
+  return group({
+    header: 'Estilo das artes',
+    footer: 'Base neutra e cor só nos detalhes, para não ficar colorido demais. Vale para carrosséis e estáticos.',
+    children: [
+      h('div', { class: 'cell palette-cell' }, preview),
+      ...rows,
+      cell({ title: 'Artes no tema escuro', accessory: toggle(Boolean(p.designDark), (v) => { data.saveProfile({ designDark: v }); }, 'Tema escuro') }),
+      h('button', { type: 'button', class: 'cell tappable tint', onclick: () => { data.saveProfile({ palette: {} }); toast('Paleta original restaurada'); } }, 'Restaurar paleta original'),
+    ],
+  });
+}
+
+function planGroup(p) {
+  const mix = { video: 3, carrossel: 1, estatico: 1, ...(p.mix || {}) };
+  const step = (k) => stepper(mix[k], (n) => {
+    mix[k] = n;
+    data.saveProfile({ mix: { ...mix } });
+  }, 0, 5);
+  const total = mix.video + mix.carrossel + mix.estatico;
+  return group({
+    header: 'Plano semanal (seg a sex)',
+    footer: `${total} conteúdos por semana. ${total !== 5 ? 'O plano tem 5 dias: o que passar de 5 é ignorado e o que faltar vira vídeo.' : ''} A partir de sábado, o plano da próxima semana é gerado quando você abre o app.`,
+    children: [
+      cell({ emoji: '✨', color: 'orange', title: 'Gerar sozinho aos sábados', accessory: toggle(p.autoPlan !== false, (v) => data.saveProfile({ autoPlan: v }), 'Gerar sozinho') }),
+      cell({ emoji: '🎬', color: 'red', title: 'Vídeos', accessory: step('video') }),
+      cell({ emoji: '🖼️', color: 'blue', title: 'Carrosséis', accessory: step('carrossel') }),
+      cell({ emoji: '🔲', color: 'gray', title: 'Estáticos', accessory: step('estatico') }),
+    ],
+  });
+}
 
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const when = (s) => (s ? new Date(s).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'nunca');
@@ -18,10 +67,10 @@ function editProfile() {
   sheet({ title: 'Perfil', tall: true, body: f.el, onSave: () => { data.saveProfile(f.read()); toast('Perfil salvo'); } });
 }
 
-function stepper(value, onChange) {
+function stepper(value, onChange, min = 1, max = 14) {
   const out = h('span', { class: 'step-val', 'aria-live': 'polite' }, String(value));
   const set = (v) => {
-    const n = Math.min(14, Math.max(1, v));
+    const n = Math.min(max, Math.max(min, v));
     out.textContent = String(n);
     onChange(n);
   };
@@ -138,6 +187,7 @@ export function render(root) {
 
   root.append(page({
     title: 'Perfil',
+    left: h('button', { type: 'button', class: 'nav-btn', onclick: () => (location.hash = '#/'), 'aria-label': 'Voltar para Hoje' }, '‹ Hoje'),
     children: [
       group({ children: [h('button', { type: 'button', class: 'cell tappable profile-card', 'data-id': 'edit-profile', onclick: editProfile },
         h('span', { class: 'avatar' }, initial),
@@ -146,6 +196,8 @@ export function render(root) {
       group({ header: 'Constância', footer: 'Quantos posts por semana você quer manter. A aba Hoje acompanha.', children: [
         cell({ emoji: '🎯', color: 'pink', title: 'Meta semanal', accessory: stepper(p.weeklyGoal || 4, (n) => data.saveProfile({ weeklyGoal: n })) }),
       ] }),
+      planGroup(p),
+      paletteGroup(p),
       group({ header: 'Conexões', children: [
         cell({ emoji: '📸', color: 'pink', title: 'Instagram', detail: cfg?.token ? (cfg.lastError ? 'erro' : `@${cfg.username}`) : 'Conectar', chevron: true, onClick: instagramSheet, id: 'instagram-cell' }),
         cell({ emoji: '✨', color: 'orange', title: 'Claude', detail: 'copiar e colar', chevron: true, onClick: () => sheet({ title: 'Como o Claude ajuda', body: h('div', { class: 'pad stack' },

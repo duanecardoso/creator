@@ -383,3 +383,69 @@ textarea.mono, .sheet textarea:not(.field-area textarea) { width: 100%; border: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Admin: Hoje / Semana ---------- */
+.avatar-btn { width: 36px; height: 36px; margin-left: 8px; border: 0; border-radius: 50%; color: #fff; font: 600 16px var(--font-round); background: linear-gradient(135deg, #c9a27e, #e8c5cc); }
+.plan-banner { display: flex; align-items: center; gap: 12px; width: calc(100% - 32px); margin: 0 16px 16px; padding: 14px 16px; border: 0; border-radius: 16px; background: var(--cell); text-align: left; color: var(--label); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tint) 35%, transparent); }
+.pb-emoji { font-size: 28px; }
+.late-row .cell-title { color: var(--red); }
+.week-switch { display: flex; justify-content: space-between; align-items: center; margin: -6px 8px 10px; }
+.month-label { font-weight: 600; }
+.plan-hero { margin: 0 16px 22px; padding: 20px; border-radius: 22px; background: var(--cell); display: grid; gap: 10px; }
+.plan-hero-title { font: 700 22px var(--font-display); margin: 0; }
+.plan-hero p { margin: 0; }
+.plan-summary { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 32px 14px; font-size: 13px; color: var(--label2); }
+.plan-card { display: flex; align-items: center; gap: 8px; padding-right: 12px; background: var(--cell); }
+.plan-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 13px 4px 13px 16px; border: 0; background: none; text-align: left; color: var(--label); }
+.plan-main:active { background: var(--cell-press); }
+.plan-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.plan-title { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.plan-hook { font-size: 15px; color: var(--label2); line-height: 1.3; }
+.plan-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.next-btn.ghost { background: none; color: var(--label2); font-size: 20px; padding: 2px 10px; }
+.t-green { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.t-red { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
+
+/* ---------- Designer ---------- */
+.designer { padding-top: 4px; }
+.slide-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 16px 14px; scrollbar-width: none; }
+.slide-thumb { position: relative; flex: 0 0 auto; width: min(62vw, 300px); aspect-ratio: 4 / 5; padding: 0; border: 0; border-radius: 16px; overflow: hidden; scroll-snap-align: center; background: var(--fill); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); transition: transform 0.2s, box-shadow 0.2s; }
+.slide-thumb.sel { box-shadow: 0 0 0 3px var(--tint), 0 8px 24px rgba(0, 0, 0, 0.16); }
+.slide-canvas { width: 100%; height: 100%; display: block; }
+.slide-thumb .slide-n { position: absolute; top: 8px; left: 8px; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 12px; background: rgba(0, 0, 0, 0.55); color: #fff; font: 600 13px/24px var(--font-round); }
+.need-photo { position: absolute; top: 8px; right: 8px; background: var(--orange); border-radius: 12px; padding: 2px 7px; font-size: 13px; }
+.design-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 16px 18px; }
+.mini-toggle { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--label2); }
+.btn-filled.small { width: auto; min-height: 44px; padding: 0 22px; }
+.hint-line { margin: 0 32px 10px; font-size: 14px; color: var(--orange); }
+.tool-row { gap: 6px; flex-wrap: wrap; justify-content: space-between; }
+.tool { border: 0; background: var(--fill); color: var(--tint); border-radius: 9px; padding: 7px 12px; font-size: 15px; }
+.tool:disabled { opacity: 0.35; }
+.tool.destructive { color: var(--red) !important; }
+.inline-select { border: 0; background: none; color: var(--label2); text-align: right; font-size: 17px; }
+
+/* ---------- Marcas ---------- */
+.stage-scroll { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 20px; scrollbar-width: none; }
+.stage { flex: 0 0 auto; border: 0; border-radius: 99px; padding: 8px 14px; background: var(--fill); color: var(--label); font-size: 14px; white-space: nowrap; }
+.stage.done { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.stage.on { background: var(--tint); color: #fff; font-weight: 600; }
+.deliv-row { align-items: flex-start; gap: 10px; }
+.deliv-fields { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.deliv-fields input { border: 0; background: none; padding: 0; outline: none; min-height: 24px; width: 100%; }
+.deliv-fields input[type='date'] { color: var(--label2); font-size: 15px; }
+.round-check { appearance: none; -webkit-appearance: none; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--label3); margin: 0; cursor: pointer; }
+.round-check:checked { background: var(--green); border-color: var(--green); box-shadow: inset 0 0 0 3px var(--cell); }
+.icon-x { border: 0; background: none; color: var(--label3); font-size: 22px; line-height: 1; padding: 0 4px; }
+.deal-row { align-items: flex-start; }
+.deadline { font-size: 13px; color: var(--label2); margin-top: 2px; }
+.deadline.late { color: var(--red); font-weight: 600; }
+.deadline.today { color: var(--orange); font-weight: 600; }
+.widgets.three { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
+.widget.tone-red .w-value { color: var(--red); }
+
+/* ---------- Perfil: paleta ---------- */
+.palette-cell { justify-content: center; padding: 16px; }
+.palette-preview { width: 180px; aspect-ratio: 4 / 5; border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); }
+.swatch { flex: 0 0 auto !important; width: 44px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.swatch::-webkit-color-swatch { border: 0.5px solid var(--sep); border-radius: 8px; }

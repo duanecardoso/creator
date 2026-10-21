@@ -1,7 +1,7 @@
 // Banco de dados no navegador (localStorage). Tudo fica só neste aparelho/navegador.
 // O "storage" é injetável para os testes rodarem fora do navegador.
 
-export const COLLECTIONS = ['contents', 'references', 'brands', 'formats'];
+export const COLLECTIONS = ['contents', 'references', 'brands', 'formats', 'deals', 'plans'];
 export const SCHEMA_VERSION = 3;
 const KEY = 'creator:db';
 const SNAP_KEY = 'creator:snapshot'; // cópia do dia anterior, para desfazer acidentes
@@ -23,7 +23,11 @@ export function defaultProfile() {
     name: '',
     instagram: '',
     tiktok: '',
-    weeklyGoal: 4,
+    weeklyGoal: 5,
+    autoPlan: true,
+    mix: { video: 3, carrossel: 1, estatico: 1 },
+    palette: {},
+    designDark: false,
     niches: 'Beleza e moda, Fitness e saúde, Tecnologia e apps, Rotina e lifestyle',
     about:
       'Criadora UGC (reviews e demonstrativos de produtos, mais de 50 marcas atendidas) crescendo como influenciadora: rotina, gostos, projetos e processo de criação.',

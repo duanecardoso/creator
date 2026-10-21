@@ -54,7 +54,10 @@ const saveSheet = async () => {
   await page.waitForSelector('dialog.sheet[open]', { state: 'detached' });
 };
 const tab = async (name) => {
-  await page.click(`[data-tab="${name}"]`);
+  if (name === 'perfil') {
+    await page.click('[data-tab="hoje"]');
+    await page.click('[data-id="open-profile"]');
+  } else await page.click(`[data-tab="${name}"]`);
   await page.waitForTimeout(80);
 };
 const noJunk = async (where) => {
@@ -83,12 +86,12 @@ try {
   await page.waitForSelector('h1:has-text("Hoje")');
   await page.waitForSelector('[data-id^="sugg-"]');
   if ((await page.locator('[data-id^="sugg-"]').count()) !== 3) throw new Error('Esperava 3 sugestões');
-  for (const t of ['formatos', 'planejar', 'resultados', 'perfil', 'hoje']) {
+  for (const t of ['semana', 'marcas', 'formatos', 'resultados', 'perfil', 'hoje']) {
     await tab(t);
     await page.waitForSelector('.large-title h1');
     await noJunk(`aba ${t}`);
   }
-  ok('Abre direto do arquivo; 5 abas sem erros, sem textos soltos e sem rolagem lateral; 3 sugestões no Hoje');
+  ok('Abre direto do arquivo; 5 abas + Perfil sem erros, sem textos soltos e sem rolagem lateral; 3 sugestões no Hoje');
 
   // ---- Fazer uma sugestão ----
   const firstFormat = await page.locator('[data-id^="sugg-"] .cell-title').first().innerText();
@@ -107,7 +110,7 @@ try {
   // ---- Avançar etapas até postar ----
   for (let i = 0; i < 4; i++) await page.locator('.content-row:has-text("Testei o sérum") [data-id="advance"]').click();
   await page.waitForSelector('.content-row:has-text("Testei o sérum") .done-mark');
-  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/4")');
+  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/5")');
   ok('Etapas avançam com um toque (roteiro → gravado → editado → postado) e o anel da semana atualiza');
 
   await page.reload();
@@ -125,7 +128,7 @@ try {
   await tab('resultados');
   await page.waitForSelector('.widget.stat:has-text("Posts no mês") .w-value:text("1")');
   await page.waitForSelector('.cell:has-text("Destaques"), .group-header:has-text("Destaques")');
-  await page.click('.segmented button:has-text("Formatos")');
+  await page.click('.segmented button:has-text("Por formato")');
   await page.waitForSelector('.fmt-row .tag:has-text("Poucos dados")');
   await noJunk('resultados/formatos');
   ok('Resultados registrados; resumo, destaque por contato de marca e aviso de poucos dados');
@@ -143,25 +146,18 @@ try {
   await sheet().locator('[data-id="sheet-cancel"]').click();
   ok('✨ Claude: abre com o prompt pronto (formato + tema + perfil); ao voltar, colar preenche o roteiro, o ponto fraco e o que confirmar');
 
-  await answerClaude(async () => { await tab('planejar'); await page.click('[data-id="claude-ideas"]'); },
+  await answerClaude(async () => { await tab('semana'); await page.click('[data-id="claude-ideas"]'); },
     '{"ideas":[{"title":"Rotina de domingo","formatId":"organiza-comigo","hook":"h","why":"w"},{"title":"Opinião sobre skincare caro","formatId":"opiniao-impopular","hook":"h2","why":"w2"}]}');
   await page.waitForSelector('[data-id^="idea-"]:has-text("Rotina de domingo")');
   ok('Ideias do Claude entram nas ideias guardadas');
 
-  // ---- Planejar ----
+  // ---- Agendar ideia ----
+  await tab('semana');
   await page.locator('[data-id^="idea-"]:has-text("Rotina de domingo") [data-id="schedule"]').click();
-  await page.waitForSelector('.content-row:has-text("Rotina de domingo")');
-  const days = await page.locator('.week-strip .day').count();
-  await page.locator('.week-strip .day').nth(days - 1).click();
-  const fill = page.locator('[data-id="fill-week"]');
-  if (await fill.count()) {
-    await fill.click();
-    await page.click('[data-id="confirm-fill"]');
-    await page.waitForSelector('.toast:has-text("Semana completa")');
-  }
-  await noJunk('planejar');
-  await snap('02-planejar');
-  ok('Agendar ideia no dia e "Completar a semana" com sugestões');
+  await page.locator('dialog.action-sheet .as-btn').first().click();
+  await page.waitForSelector('.plan-card:has-text("Rotina de domingo"), .toast:has-text("Agendado")');
+  await noJunk('semana');
+  ok('Ideia agendada num dia da semana');
 
   // ---- Referências ----
   await tab('formatos');
@@ -173,15 +169,53 @@ try {
   await page.waitForSelector('.cell:has-text("Review com plot twist")');
   ok('Referência salva');
 
-  // ---- Marcas ----
-  await tab('resultados');
-  await page.click('.segmented button:has-text("Marcas")');
+  // ---- Marcas: UGC atrasado ----
+  await tab('marcas');
+  await page.click('[data-id="new-deal"]');
+  await page.click('[data-id="new-ugc"]');
+  await sheet().locator('input[name="brandName"]').fill('Glow Skin');
+  await sheet().locator('[data-stage="gravacao"]').click();
+  await sheet().locator('input[data-deliv="0"]').fill('2 vídeos de 30s');
+  await sheet().locator('.deliv-row input[type="date"]').first().fill('2026-10-01');
+  await sheet().locator('input[name="value"]').fill('800');
+  await sheet().locator('input[name="paymentDue"]').fill('2026-11-10');
+  await saveSheet();
+  await page.waitForSelector('.group:has(.group-header:has-text("Atrasados")) [data-id^="deal-"]:has-text("Glow Skin")');
+  await tab('hoje');
+  await page.waitForSelector('.late-row:has-text("Glow Skin")');
+  ok('Campanha UGC com entregável atrasado aparece em Marcas e no Hoje');
+
+  // ---- Marcas: publi paga + financeiro ----
+  await tab('marcas');
+  await page.click('[data-id="new-deal"]');
+  await page.click('[data-id="new-publi"]');
+  await sheet().locator('input[name="brandName"]').fill('Fit Co');
+  await sheet().locator('input[name="value"]').fill('1500');
+  await sheet().locator('select[name="paymentStatus"]').selectOption('pago');
+  await saveSheet();
+  await page.click('.segmented button:has-text("Financeiro")');
+  await page.waitForSelector('.widget.stat:has-text("Recebido no mês") .w-value:has-text("1.500,00")');
+  await page.waitForSelector('.widget.stat:has-text("A receber") .w-value:has-text("800,00")');
+  await page.waitForSelector('.data-note:has-text("sem nota fiscal")');
+  await noJunk('financeiro');
+  await snap('05-financeiro');
+  ok('Financeiro: recebido, a receber e aviso de nota fiscal');
+
+  await page.click('.segmented button:has-text("Entregas")');
+  await page.locator('[data-id^="deal-"]:has-text("Glow Skin")').click();
+  const [ics] = await Promise.all([page.waitForEvent('download'), sheet().locator('[data-id="deal-ics"]').click()]);
+  const icsText = readFileSync(await ics.path(), 'utf8');
+  if (!icsText.includes('BEGIN:VEVENT') || !icsText.includes('Glow Skin')) throw new Error('ICS inválido');
+  await sheet().locator('[data-id="sheet-cancel"]').click();
+  ok('Prazos da campanha exportados para o Calendário (.ics)');
+
+  await page.click('.segmented button:has-text("Contatos")');
   await page.click('[data-id="new-brand"]');
   await sheet().locator('input[name="name"]').fill('Marca Teste');
   await sheet().locator('select[name="status"]').selectOption('contatei');
   await saveSheet();
   await page.waitForSelector('.group:has(.group-header:has-text("Contatei")) .cell:has-text("Marca Teste")');
-  ok('Marca acompanhada por etapa');
+  ok('Marca acompanhada nos contatos');
 
   // ---- Perfil, meta, backup ----
   await tab('perfil');
@@ -191,8 +225,8 @@ try {
   await page.click('.stepper button[aria-label="Aumentar"]');
   await tab('hoje');
   await page.waitForSelector('text=oi, Duda');
-  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/5")');
-  ok('Perfil e meta semanal (4 → 5) refletem no Hoje');
+  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/6")');
+  ok('Perfil e meta semanal (5 → 6) refletem no Hoje');
 
   // ---- Instagram ----
   await tab('perfil');
@@ -233,9 +267,106 @@ try {
   if (await page.locator('.content-row:has-text("Testei o sérum")').count()) throw new Error('Conteúdo apagado voltou');
   ok('Apagar com confirmação (folha de ações) e continua apagado após recarregar');
 
+
+  // ================= Sábado: plano automático, design e Claude =================
+  const sat = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true, locale: 'pt-BR' });
+  await sat.route('https://claude.ai/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>Claude</p>' }));
+  const sp = await sat.newPage();
+  sp.on('pageerror', (e) => errors.push(`[sábado] ${e.message}`));
+  await sp.clock.setFixedTime(new Date('2026-10-24T10:00:00'));
+  await sp.goto(base);
+  await sp.waitForSelector('.toast:has-text("Plano da próxima semana pronto")');
+  await sp.waitForSelector('[data-id="plan-banner"]');
+  await sp.click('[data-tab="semana"]');
+  await sp.waitForSelector('.plan-card');
+  const cards = await sp.locator('.plan-card').count();
+  if (cards !== 5) throw new Error(`Esperava 5 conteúdos no plano, achei ${cards}`);
+  const days = await sp.locator('.plan-card').evaluateAll((els) => els.map((e) => e.dataset.id));
+  if (days.join() !== 'plan-2026-10-26,plan-2026-10-27,plan-2026-10-28,plan-2026-10-29,plan-2026-10-30') throw new Error(`Dias errados: ${days}`);
+  const tags = await sp.locator('.plan-card .plan-tags').allInnerTexts();
+  if (!tags.some((t) => t.includes('Carrossel')) || !tags.some((t) => t.includes('Estático'))) throw new Error('Plano sem carrossel/estático');
+  ok('Sábado: plano de seg a sex gerado sozinho, com vídeo, carrossel e estático, foco e formatos variados');
+  await sp.screenshot({ path: shots ? path.join(shots, '06-semana-plano.png') : '/dev/null', fullPage: true }).catch(() => {});
+
+  // Trocar um dia
+  const before = await sp.locator('.plan-card .plan-title').nth(1).innerText();
+  await sp.locator('.plan-card').nth(1).locator('[data-id="reroll"]').click();
+  await sp.waitForFunction((b) => document.querySelectorAll('.plan-card .plan-title')[1]?.innerText !== b, before);
+  ok('↻ troca a sugestão de um dia');
+
+  // Design do estático: escrever texto e exportar
+  const estatico = sp.locator('.plan-card:has(.tag:has-text("Estático"))');
+  await estatico.locator('[data-id="open-design"]').click();
+  await sp.waitForSelector('dialog.sheet[open] .slide-canvas');
+  const body = sp.locator('dialog.sheet[open] textarea[name="slide-body"], dialog.sheet[open] textarea[name="slide-items"]').first();
+  await body.fill('Quando eu comecei, aceitei valores que não pagavam a luz.\nE você?');
+  const [dl1] = await Promise.all([sp.waitForEvent('download'), sp.click('[data-id="export-design"]')]);
+  // (Aberto como arquivo local o navegador ignora o nome; no GitHub Pages o nome .jpg é mantido.)
+  const jpg = readFileSync(await dl1.path());
+  if (jpg[0] !== 0xff || jpg[1] !== 0xd8 || jpg.length < 20000) throw new Error('Exportação não gerou uma imagem JPG');
+  await sp.locator('dialog.sheet[open] [data-id="sheet-done"]').click();
+  ok('Design do estático: texto editado e imagem 1080×1350 exportada');
+
+  // Carrossel de review: pede foto sua e recebe a foto
+  await sp.click('[data-id="new-content-week"]');
+  await sp.locator('dialog.sheet[open] input[name="title"]').fill('Minha opinião sincera sobre o protetor da minha mãe');
+  await sp.locator('dialog.sheet[open] select[name="formatId"]').selectOption('review-honesto');
+  await sp.locator('dialog.sheet[open] select[name="type"]').selectOption('carrossel');
+  await sp.locator('dialog.sheet[open] [data-id="content-design"]').click();
+  await sp.waitForSelector('dialog.sheet[open] .slide-canvas');
+  const need = await sp.locator('dialog.sheet[open] .need-photo').count();
+  if (need < 1) throw new Error('Carrossel de review deveria pedir foto');
+  await sp.locator('dialog.sheet[open] .slide-thumb:has(.need-photo)').first().click();
+  const hintText = await sp.locator('dialog.sheet[open] .group-footer:has-text("Pedido:")').innerText();
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP4z8Dwn4Hh////DAwMDAAm4gP9Vh1o8wAAAABJRU5ErkJggg==', 'base64');
+  await sp.locator('dialog.sheet[open] [data-id="photo-input"]').setInputFiles({ name: 'eu.png', mimeType: 'image/png', buffer: png });
+  await sp.waitForSelector('.toast:has-text("Foto adicionada")');
+  await sp.waitForFunction((k) => document.querySelectorAll('dialog.sheet[open] .need-photo').length === k - 1, need);
+  await sp.locator('dialog.sheet[open] [data-id="sheet-done"]').click();
+  await sp.waitForSelector('dialog.sheet[open]', { state: 'detached' });
+  await sp.reload();
+  await sp.click('[data-tab="hoje"]');
+  ok(`Carrossel pede foto sua ("${hintText.replace('Pedido: ', '')}") e guarda a foto enviada`);
+
+  // Publi com data na semana entra no plano ao refazer
+  await sp.click('[data-tab="marcas"]');
+  await sp.click('[data-id="new-deal"]');
+  await sp.click('[data-id="new-publi"]');
+  await sp.locator('dialog.sheet[open] input[name="brandName"]').fill('Marca Publi');
+  await sp.locator('dialog.sheet[open] input[name="postDate"]').fill('2026-10-29');
+  await sp.locator('dialog.sheet[open] [data-id="sheet-save"]').click();
+  await sp.waitForSelector('dialog.sheet[open]', { state: 'detached' });
+  await sp.click('[data-tab="semana"]');
+  await sp.click('[data-id="regenerate"]');
+  await sp.click('[data-id="confirm-regenerate"]');
+  await sp.waitForSelector('[data-id="plan-2026-10-29"]:has-text("Publi: Marca Publi")');
+  ok('Publi com data entra no plano da semana');
+
+  // Claude escreve a semana inteira
+  const [pop] = await Promise.all([sat.waitForEvent('page'), sp.click('[data-id="claude-week"]')]);
+  await pop.close();
+  await sp.waitForTimeout(600);
+  if (!(await sp.locator('dialog.sheet[open] h2:has-text("Resposta do Claude")').count())) await sp.click('[data-id="pending-banner"]').catch(async () => { await sp.click('[data-tab="hoje"]'); await sp.click('[data-id="pending-banner"]'); });
+  await sp.locator('dialog.sheet[open] textarea').fill('{"days":[{"n":1,"title":"Título escrito pelo Claude","hook":"Gancho do Claude","steps":["a","b"],"caption":"legenda"}]}');
+  await sp.locator('dialog.sheet[open] [data-id="use-text"]').click();
+  await sp.waitForSelector('.toast:has-text("preenchidos pelo Claude")');
+  await sp.click('[data-tab="semana"]');
+  await sp.waitForSelector('.plan-card .plan-title:has-text("Título escrito pelo Claude")');
+  ok('✨ Claude escreve a semana: resposta colada preenche os conteúdos');
+
+  // Persistência e .ics da semana
+  await sp.reload();
+  await sp.click('[data-tab="semana"]');
+  await sp.waitForSelector('.plan-card .plan-title:has-text("Título escrito pelo Claude")');
+  const [wics] = await Promise.all([sp.waitForEvent('download'), sp.click('[data-id="week-ics"]')]);
+  if (!readFileSync(await wics.path(), 'utf8').includes('VEVENT')) throw new Error('ICS da semana vazio');
+  if ((await sp.locator('.toast:has-text("Plano da próxima semana pronto")').count()) > 0) throw new Error('Gerou o plano de novo ao recarregar');
+  ok('Plano continua após recarregar, não é gerado duas vezes, e vai para o Calendário');
+  await sat.close();
+
   // ---- Modo escuro e computador ----
   await page.emulateMedia({ colorScheme: 'dark' });
-  for (const t of ['hoje', 'formatos', 'planejar', 'resultados', 'perfil']) {
+  for (const t of ['hoje', 'semana', 'marcas', 'formatos', 'resultados', 'perfil']) {
     await tab(t);
     await noJunk(`escuro ${t}`);
     await snap(`03-escuro-${t}`);

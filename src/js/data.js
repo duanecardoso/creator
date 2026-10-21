@@ -1,6 +1,8 @@
 // Dados no navegador, backup, Instagram e ponte com o Claude.
 import { Store, MemoryStorage, counts, contentsToCsv } from './lib/store.js';
 import * as ig from './lib/instagram.js';
+import { generateWeek, shouldAutoGenerate, targetWeek, weekdays } from './lib/planner.js';
+import { toIcs, dealsToCsv } from './lib/deals.js';
 
 const listeners = new Set();
 let store = null;
@@ -100,6 +102,39 @@ export function exportBackup() {
 }
 export const exportCsv = () => download(contentsToCsv(all('contents')), `conteudos-${stamp()}.csv`, 'text/csv;charset=utf-8');
 export const lastBackup = () => meta().lastBackup || null;
+export const exportDealsCsv = () => download(dealsToCsv(all('deals')), `marcas-${stamp()}.csv`, 'text/csv;charset=utf-8');
+export const downloadIcs = (items, name = 'prazos') => download(toIcs(items), `${name}-${stamp()}.ics`, 'text/calendar;charset=utf-8');
+
+// ---------- Plano semanal ----------
+export const planFor = (monday) => all('plans').find((p) => p.weekStart === monday) || null;
+
+// Gera (ou refaz) o plano de segunda a sexta. Ao refazer, mantém o que você já começou a produzir.
+export function generatePlan(monday, { seed = '', replace = false } = {}) {
+  const existing = planFor(monday);
+  const days = weekdays(monday);
+  const inWeek = all('contents').filter((c) => days.includes(c.date));
+  if (replace) {
+    for (const c of inWeek) if (c.planWeek === monday && c.status === 'roteiro' && !c.touched) store.remove('contents', c.id);
+  }
+  const keepDays = new Set(all('contents').filter((c) => days.includes(c.date) && c.planWeek === monday).map((c) => c.date));
+  const items = generateWeek({ monday, contents: all('contents'), deals: all('deals'), profile: profile(), customFormats: all('formats'), seed: seed || String(Date.now()) })
+    .filter((it) => !keepDays.has(it.date));
+  for (const it of items) store.create('contents', { ...it, planWeek: monday, source: 'plano' });
+  const rec = { weekStart: monday, generatedAt: new Date().toISOString(), count: items.length };
+  if (existing) store.update('plans', existing.id, rec);
+  else store.create('plans', rec);
+  emit('contents');
+  return items.length;
+}
+
+// Chamado ao abrir o app: a partir de sábado gera o plano da próxima semana (uma vez).
+export function autoPlan(today) {
+  if (profile().autoPlan === false) return null;
+  if (!shouldAutoGenerate(today, all('plans'))) return null;
+  const monday = targetWeek(today);
+  generatePlan(monday, { seed: monday });
+  return monday;
+}
 
 // ---------- Ponte com o Claude ----------
 // Guarda qual pedido está "em andamento" para oferecer colar a resposta quando ela voltar.

@@ -6,6 +6,10 @@ import { GOALS } from '../lib/formats.js';
 import { weekProgress, streak, suggestions, needsResults, STATUSES, statusIndex, iso, addDays } from '../lib/insights.js';
 import { openContent, newContent, today } from './content-sheet.js';
 import { pendingBanner } from './claude.js';
+import { upcoming, DEAL_TYPES } from '../lib/deals.js';
+import { targetWeek, weekdays } from '../lib/planner.js';
+import { openDesigner, missingPhotos } from './designer.js';
+import { openDeal } from './brands.js';
 import { openFormat } from './formats.js';
 
 let shuffle = 0;
@@ -53,6 +57,43 @@ export function contentRow(c, { showDate = false } = {}) {
   );
 }
 
+const DL_ICON = { entrega: '📦', roteiro: '📝', post: '📣', pagamento: '💰' };
+
+function brandGroup(t) {
+  const up = upcoming(data.all('deals'), t, 3);
+  const rows = [...up.overdue.map((x) => ({ ...x, tag: 'atrasado' })), ...up.today.map((x) => ({ ...x, tag: 'hoje' })), ...up.soon.map((x) => ({ ...x, tag: fmtDay(x.date, { weekday: 'short', day: 'numeric' }) }))];
+  if (!rows.length) return null;
+  return group({
+    header: 'Marcas',
+    children: rows.slice(0, 6).map((x) => cell({
+      emoji: DL_ICON[x.kind], color: x.tag === 'atrasado' ? 'red' : DEAL_TYPES[x.deal.type]?.color || 'gray',
+      title: `${x.name}: ${x.label}`, subtitle: `${DEAL_TYPES[x.deal.type]?.label} · ${x.tag}`, chevron: true, onClick: () => openDeal(x.deal), cls: x.tag === 'atrasado' ? 'late-row' : '',
+    })),
+  });
+}
+
+function photoGroup(t) {
+  const end = addDays(t, 7);
+  const list = data.all('contents').filter((c) => c.date >= t && c.date <= end && c.status !== 'postado' && missingPhotos(c) > 0);
+  if (!list.length) return null;
+  return group({
+    header: 'Fotos que eu preciso de você',
+    footer: 'Toque para ver o pedido de cada foto e enviar.',
+    children: list.map((c) => cell({ emoji: '📷', color: 'orange', title: c.title, subtitle: `${fmtDay(c.date, { weekday: 'short', day: 'numeric' })} · ${missingPhotos(c)} foto(s): ${(c.slides || []).find((s) => s.photo && !s.photoId)?.photoHint || ''}`, chevron: true, onClick: () => openDesigner(c.id), id: `photo-${c.id}` })),
+  });
+}
+
+function planBanner(t) {
+  const monday = targetWeek(t);
+  const plan = data.planFor(monday);
+  if (!plan || monday <= t) return null;
+  const days = weekdays(monday);
+  return h('button', { type: 'button', class: 'plan-banner', 'data-id': 'plan-banner', onclick: () => (location.hash = '#/semana') },
+    h('span', { class: 'pb-emoji' }, '🗓️'),
+    h('span', { class: 'cell-text' }, h('span', { class: 'cell-title' }, 'Plano da próxima semana pronto'), h('span', { class: 'cell-sub' }, `${fmtDay(days[0], { day: 'numeric', month: 'short' })} – ${fmtDay(days[4], { day: 'numeric', month: 'short' })} · toque para ver`)),
+    h('span', { class: 'chev-wrap' }, '›'));
+}
+
 export function render(root) {
   const p = data.profile();
   const contents = data.all('contents');
@@ -70,9 +111,11 @@ export function render(root) {
   root.append(page({
     title: 'Hoje',
     subtitle: `${fmtDay(t, { weekday: 'long', day: 'numeric', month: 'long' })}${first ? ` · oi, ${first}` : ''}`,
+    left: h('button', { type: 'button', class: 'avatar-btn', 'aria-label': 'Perfil', 'data-id': 'open-profile', onclick: () => (location.hash = '#/perfil') }, (p.name || '✦').trim().charAt(0).toUpperCase()),
     right: navButton('', () => newContent({ date: t }), { iconName: 'plus', id: 'new-content' }),
     children: [
       pendingBanner(),
+      planBanner(t),
       h('div', { class: 'widgets' },
         h('div', { class: 'widget', 'data-id': 'week-widget' },
           ring(wp.posted, wp.goal, 'pink'),
@@ -83,6 +126,8 @@ export function render(root) {
           h('div', {}, h('p', { class: 'w-label' }, 'Sequência'), h('p', { class: 'w-value' }, String(st)), h('p', { class: 'w-sub' }, st ? `${st === 1 ? 'semana' : 'semanas'} batendo a meta` : 'semanas · comece agora')),
         ),
       ),
+      brandGroup(t),
+      photoGroup(t),
       todays.length
         ? group({ header: 'Para hoje', children: todays.map((c) => contentRow(c)) })
         : group({
@@ -106,7 +151,7 @@ export function render(root) {
         children: pending.slice(0, 4).map((c) => cell({ emoji: '📊', color: 'green', title: c.title, subtitle: `Postado ${fmtDay(c.postedAt || c.date)} · toque para anotar os números`, chevron: true, onClick: () => openContent(c) })),
       }),
       group({ children: [
-        cell({ emoji: '💡', color: 'yellow', title: 'Ideias guardadas', detail: String(ideas.length), chevron: true, onClick: () => (location.hash = '#/planejar') }),
+        cell({ emoji: '💡', color: 'yellow', title: 'Ideias guardadas', detail: String(ideas.length), chevron: true, onClick: () => (location.hash = '#/semana') }),
       ] }),
       !contents.length && emptyNote('Comece por uma sugestão acima', 'Toque em "Fazer" e o conteúdo entra no seu dia com o passo a passo do formato.'),
     ],

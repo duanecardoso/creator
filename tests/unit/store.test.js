@@ -44,7 +44,7 @@ test('importar backup', () => {
 });
 
 test('perfil padrão tem meta semanal', () => {
-  assert.equal(fresh().db.profile.weeklyGoal, 4);
+  assert.equal(fresh().db.profile.weeklyGoal, 5);
 });
 
 test('CSV', () => {

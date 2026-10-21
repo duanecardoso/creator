@@ -1,20 +1,22 @@
 // Abas, navegação e inicialização.
 import * as data from './data.js';
-import { h, put, clear, icon } from './ui.js';
+import { h, put, clear, icon, toast } from './ui.js';
 import { isSyncDue } from './lib/instagram.js';
 import { watchReturn, pasteSheet } from './views/claude.js';
 import * as today from './views/today.js';
 import * as formats from './views/formats.js';
-import * as plan from './views/plan.js';
+import * as week from './views/week.js';
+import * as brands from './views/brands.js';
 import * as results from './views/results.js';
 import * as profile from './views/profile.js';
 
 const TABS = [
   { path: '', label: 'Hoje', icon: 'today', view: today },
+  { path: 'semana', label: 'Semana', icon: 'plan', view: week },
+  { path: 'marcas', label: 'Marcas', icon: 'brands', view: brands },
   { path: 'formatos', label: 'Formatos', icon: 'formats', view: formats },
-  { path: 'planejar', label: 'Planejar', icon: 'plan', view: plan },
   { path: 'resultados', label: 'Resultados', icon: 'results', view: results },
-  { path: 'perfil', label: 'Perfil', icon: 'profile', view: profile },
+  { path: 'perfil', label: 'Perfil', icon: 'profile', view: profile, hidden: true },
 ];
 
 const main = document.getElementById('main');
@@ -24,7 +26,7 @@ let current = null;
 const currentPath = () => location.hash.replace(/^#\/?/, '').split('?')[0];
 
 function drawTabs() {
-  clear(tabbar).append(...TABS.map((t) => h('a', {
+  clear(tabbar).append(...TABS.filter((t) => !t.hidden).map((t) => h('a', {
     href: `#/${t.path}`, class: `tab${t === current ? ' on' : ''}`, 'aria-current': t === current ? 'page' : null, 'data-tab': t.path || 'hoje',
   }, icon(t.icon, 'tab-ic'), h('span', {}, t.label))));
 }
@@ -65,6 +67,14 @@ async function start() {
   watchReturn();
   if (data.pendingAi()) setTimeout(() => pasteSheet(), 400);
   if (isSyncDue(data.igConfig())) data.syncInstagram().catch(() => {});
+  // A partir de sábado, gera sozinho o plano de segunda a sexta da próxima semana.
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  try {
+    if (data.autoPlan(todayIso)) toast('🗓️ Plano da próxima semana pronto');
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 start();

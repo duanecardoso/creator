@@ -230,6 +230,94 @@ export const FORMATS = [
     hooks: ['(use a estrutura da tendência com o seu tema: ___)'],
     tip: 'Confira no app se o áudio ainda está circulando. O site não sabe o que está em alta hoje.',
   },
+
+  {
+    id: 'notas-opiniao',
+    name: 'Print de Notas',
+    emoji: '🗒️',
+    color: 'yellow',
+    goals: ['comunidade', 'seguidores'],
+    platforms: ['instagram', 'tiktok'],
+    duration: 'post estático',
+    why: 'Parece um pensamento pessoal anotado no celular, não um anúncio. Gera identificação e comentários, e é rápido de produzir.',
+    structure: ['Título curto como de uma nota', '3 a 6 linhas com sua opinião ou desabafo real', 'Última linha com uma pergunta ou conclusão'],
+    hooks: ['Notas que eu escrevi depois de ___', 'Coisas que eu penso sobre ___ e não falo nos vídeos', 'Anotei isso às 2 da manhã: ___'],
+    tip: 'Escreva como você escreveria só para você. Frases curtas, sem tom de aula.',
+  },
+  {
+    id: 'conversa-imessage',
+    name: 'Conversa no iMessage',
+    emoji: '💬',
+    color: 'blue',
+    goals: ['seguidores', 'comunidade'],
+    platforms: ['instagram'],
+    duration: 'carrossel 3–6 telas',
+    why: 'Formato de conversa é lido até o fim por curiosidade, e situações reais de criadora (com marca, amiga, mãe) geram identificação e marcações.',
+    structure: ['Tela 1: a mensagem que começa a história', 'Telas do meio: a conversa se desenrolando', 'Última tela: o desfecho ou a sua reação'],
+    hooks: ['A conversa que eu tive quando ___', 'Minha mãe tentando entender ___', 'Print real (com nomes trocados): ___'],
+    tip: 'Use conversas reais ou recriadas com autorização, sem expor ninguém.',
+  },
+  {
+    id: 'favoritos-mes',
+    name: 'Favoritos do mês',
+    emoji: '🤍',
+    color: 'pink',
+    goals: ['seguidores', 'marcas'],
+    platforms: ['instagram', 'tiktok'],
+    duration: 'carrossel 5–8 fotos',
+    why: 'Lista pessoal com fotos reais, que as pessoas salvam. Mostra seu gosto e as categorias de marca com que você combina.',
+    structure: ['Capa com o mês e o tema', 'Uma foto por item, com uma frase do porquê', 'Último slide: pergunta sobre os favoritos delas'],
+    hooks: ['Meus favoritos de ___ este mês', 'O que eu mais usei em ___', 'Favoritos que eu não esperava: ___'],
+    tip: 'Foto do produto em uso, na sua mão ou no seu espaço. Foto de catálogo não gera conexão.',
+  },
+  {
+    id: 'lembretes-lista',
+    name: 'Lista de Lembretes',
+    emoji: '☑️',
+    color: 'green',
+    goals: ['comunidade', 'seguidores'],
+    platforms: ['instagram'],
+    duration: 'post estático',
+    why: 'Visual de checklist do iPhone, rápido de ler e fácil de salvar. Funciona para listas pessoais, não para aulas.',
+    structure: ['Título da lista', '4 a 7 itens curtos e específicos', 'Alguns marcados como feitos, para parecer real'],
+    hooks: ['Lembretes para mim mesma sobre ___', 'Minha lista de ___ desta semana', 'Coisas que eu riscaria da lista: ___'],
+    tip: 'Itens concretos ("trocar a lâmpada do cantinho de gravar") prendem mais que genéricos ("ser produtiva").',
+  },
+
 ];
+
+// Tipos de post possíveis, tipo de tema e modelo de título ({s} = tema) de cada formato.
+export const FORMAT_META = {
+  'testei-7-dias': { types: ['video', 'carrossel'], kind: 'produto', title: 'Testei {s} por 7 dias', hook: 'Usei {s} por 7 dias e o dia 4 mudou minha opinião' },
+  'expectativa-realidade': { types: ['video', 'carrossel'], kind: 'momento', title: 'Expectativa x realidade: {s}', hook: 'Como eu achava que seria {s} vs. como é de verdade' },
+  'review-honesto': { types: ['video', 'carrossel'], kind: 'produto', title: 'Minha opinião sincera sobre {s}', hook: 'Minha opinião sincera sobre {s} depois de usar de verdade' },
+  'grwm-conversa': { types: ['video'], kind: 'situacao', title: 'Arruma comigo: {s}', hook: 'Arruma comigo enquanto eu conto: {s}' },
+  'um-dia-comigo': { types: ['video'], kind: 'momento', title: 'Um dia comigo: {s}', hook: 'Vem comigo: {s}' },
+  'bastidores-ugc': { types: ['video', 'carrossel'], kind: 'produto', title: 'Bastidores: {s}', hook: 'Por trás da câmera: {s}' },
+  'bruto-editado': { types: ['video'], kind: 'produto', title: 'Bruto x editado: {s}', hook: 'O mesmo vídeo antes e depois da edição: {s}' },
+  'uso-todo-dia': { types: ['video', 'carrossel'], kind: 'categoria', title: 'O que eu uso todo dia: {s}', hook: 'O que eu uso de verdade: {s}' },
+  'opiniao-impopular': { types: ['video', 'estatico'], kind: 'tema', title: 'Opinião impopular sobre {s}', hook: 'Vou falar e vocês vão discordar: {s}' },
+  'a-vs-b': { types: ['video', 'carrossel'], kind: 'par', title: 'Comparei: {s}', hook: 'Testei {s} do mesmo jeito' },
+  'primeira-impressao': { types: ['video'], kind: 'produto', title: 'Primeira impressão: {s}', hook: 'Primeira vez usando {s}, sem roteiro' },
+  storytime: { types: ['video'], kind: 'situacao', title: 'Storytime: {s}', hook: '{S}. Vou contar como foi.' },
+  'pov-identificacao': { types: ['video'], kind: 'situacao', title: 'POV: {s}', hook: 'POV: {s}' },
+  'organiza-comigo': { types: ['video'], kind: 'momento', title: 'Organiza comigo: {s}', hook: 'Bora arrumar isso: {s}' },
+  'fotodump-historia': { types: ['carrossel'], kind: 'momento', title: 'Fotodump: {s}', hook: 'Fotos que eu não postei: {s}' },
+  'portfolio-pitch': { types: ['video'], kind: 'marca', title: 'Se {s} me contratasse', hook: 'Se {s} me contratasse, o anúncio seria assim' },
+  'tendencia-adaptada': { types: ['video'], kind: 'tema', title: 'Tendência do meu jeito: {s}', hook: '(use o áudio em alta com o tema: {s})' },
+  'notas-opiniao': { types: ['estatico'], kind: 'tema', title: 'O que eu penso sobre {s}', hook: 'Coisas que eu penso sobre {s} e não falo nos vídeos' },
+  'conversa-imessage': { types: ['carrossel'], kind: 'situacao', title: 'A conversa: {s}', hook: 'Print real: {s}' },
+  'favoritos-mes': { types: ['carrossel'], kind: 'categoria', title: 'Favoritos do mês: {s}', hook: 'Meus favoritos do mês: {s}' },
+  'lembretes-lista': { types: ['estatico'], kind: 'lista', title: 'Lembretes: {s}', hook: 'Lembretes para mim mesma: {s}' },
+};
+
+export const TYPES = {
+  video: { label: 'Vídeo', emoji: '🎬' },
+  carrossel: { label: 'Carrossel', emoji: '🖼️' },
+  estatico: { label: 'Estático', emoji: '🔲' },
+  stories: { label: 'Stories', emoji: '⭕️' },
+};
+
+export const metaOf = (id) => FORMAT_META[id] || { types: ['video', 'carrossel', 'estatico'], kind: 'tema', title: '{s}' };
 
 export const formatById = (id, custom = []) => FORMATS.find((f) => f.id === id) || custom.find((f) => f.id === id) || null;
