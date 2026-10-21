@@ -1,0 +1,15 @@
+{
+  "name": "estudio-conteudo",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Estúdio pessoal para planejar, criar, organizar e analisar conteúdos de Instagram e TikTok. Site estático (GitHub Pages).",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/unit/*.test.js",
+    "test:e2e": "node scripts/build.mjs && node tests/e2e.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
