@@ -3,7 +3,7 @@
 
 export const IG_HOST = 'https://graph.instagram.com';
 export const IG_DEFAULT_VERSION = 'v24.0';
-const CFG_KEY = 'estudio:instagram';
+const CFG_KEY = 'creator:instagram';
 const REFRESH_AFTER_DAYS = 7;
 const DAY = 864e5;
 
@@ -174,27 +174,27 @@ export function titleFromCaption(caption, timestamp) {
   return `Publicação de ${localDate(timestamp).split('-').reverse().join('/')}`;
 }
 
-export function toMetrics(ins, media, previous = {}) {
+export function toResults(ins, media, previous = {}) {
   const pick = (v, fallback) => (typeof v === 'number' ? v : fallback ?? null);
   return {
-    ...previous, // mantém o que é manual: cliques, mensagens, contatos comerciais, observações
-    reach: pick(ins.reach, previous.reach),
+    ...previous, // mantém o que é manual (contatos de marcas)
     views: pick(ins.views, previous.views),
+    reach: pick(ins.reach, previous.reach),
     likes: pick(ins.likes, pick(media.like_count, previous.likes)),
     comments: pick(ins.comments, pick(media.comments_count, previous.comments)),
     saves: pick(ins.saved, previous.saves),
     shares: pick(ins.shares, previous.shares),
-    profileVisits: pick(ins.profile_visits, previous.profileVisits),
     follows: pick(ins.follows, previous.follows),
-    source: 'instagram_api',
-    collectedAt: localDate(new Date().toISOString()),
+    profileVisits: pick(ins.profile_visits, previous.profileVisits),
+    source: 'instagram',
+    updatedAt: new Date().toISOString(),
   };
 }
 
 // Encontra a publicação da agenda que corresponde à mídia (pelo ID ou pelo link).
-export function findPost(posts, media) {
+export function findPost(items, media) {
   const code = shortcode(media.permalink);
-  return posts.find((p) => p.igMediaId === media.id) || (code && posts.find((p) => shortcode(p.publishedUrl) === code)) || null;
+  return items.find((p) => p.igMediaId === media.id) || (code && items.find((p) => shortcode(p.link) === code)) || null;
 }
 
 /**
@@ -227,27 +227,29 @@ export async function syncInstagram({ cfg, db, limit = 30, fetchImpl = fetch, on
     if (existing) {
       db.update(existing.id, {
         igMediaId: m.id,
-        caption: m.caption || existing.caption || '',
-        publishedUrl: existing.publishedUrl || m.permalink,
-        publishedDate: existing.publishedDate || date,
-        status: 'publicado',
-        platform: existing.platform || 'instagram',
-        metrics: toMetrics(ins, m, existing.metrics || {}),
+        caption: existing.caption || m.caption || '',
+        link: existing.link || m.permalink,
+        postedAt: existing.postedAt || date,
+        date: existing.date || date,
+        status: 'postado',
+        platforms: existing.platforms?.length ? existing.platforms : ['instagram'],
+        results: toResults(ins, m, existing.results || {}),
       });
       summary.updated++;
     } else {
       db.create({
         title: titleFromCaption(m.caption, m.timestamp),
         caption: m.caption || '',
-        platform: 'instagram',
-        format: mediaFormat(m),
-        status: 'publicado',
-        plannedDate: date,
-        publishedDate: date,
-        publishedUrl: m.permalink,
+        platforms: ['instagram'],
+        formatId: '',
+        igFormat: mediaFormat(m),
+        status: 'postado',
+        date,
+        postedAt: date,
+        link: m.permalink,
         igMediaId: m.id,
         source: 'instagram',
-        metrics: toMetrics(ins, m),
+        results: toResults(ins, m),
       });
       summary.created++;
     }

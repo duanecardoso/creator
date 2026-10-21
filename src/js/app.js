@@ -1,112 +1,70 @@
-// Inicialização, navegação e roteamento por hash (#/area?param=valor).
+// Abas, navegação e inicialização.
 import * as data from './data.js';
-import { h, clear } from './ui.js';
+import { h, put, clear, icon } from './ui.js';
 import { isSyncDue } from './lib/instagram.js';
-import * as home from './views/home.js';
-import * as ideas from './views/ideas.js';
-import * as scripts from './views/scripts.js';
-import * as planner from './views/planner.js';
-import * as references from './views/references.js';
-import * as metrics from './views/metrics.js';
-import * as brands from './views/brands.js';
-import * as settings from './views/settings.js';
+import { watchReturn, pasteSheet } from './views/claude.js';
+import * as today from './views/today.js';
+import * as formats from './views/formats.js';
+import * as plan from './views/plan.js';
+import * as results from './views/results.js';
+import * as profile from './views/profile.js';
 
-const ROUTES = [
-  { path: '', label: 'Mesa', icon: '☼', view: home },
-  { path: 'ideias', label: 'Laboratório de ideias', short: 'Ideias', icon: '✦', view: ideas },
-  { path: 'roteiros', label: 'Roteirista', short: 'Roteiros', icon: '✎', view: scripts },
-  { path: 'agenda', label: 'Planejamento', short: 'Agenda', icon: '▦', view: planner },
-  { path: 'referencias', label: 'Referências', icon: '❏', view: references },
-  { path: 'metricas', label: 'Desempenho', short: 'Métricas', icon: '↗', view: metrics },
-  { path: 'marcas', label: 'Pesquisa de marcas', short: 'Marcas', icon: '◇', view: brands },
-  { path: 'ajustes', label: 'Perfil e dados', short: 'Perfil', icon: '⚙', view: settings },
+const TABS = [
+  { path: '', label: 'Hoje', icon: 'today', view: today },
+  { path: 'formatos', label: 'Formatos', icon: 'formats', view: formats },
+  { path: 'planejar', label: 'Planejar', icon: 'plan', view: plan },
+  { path: 'resultados', label: 'Resultados', icon: 'results', view: results },
+  { path: 'perfil', label: 'Perfil', icon: 'profile', view: profile },
 ];
 
 const main = document.getElementById('main');
-const nav = document.getElementById('nav');
-
-export function parseHash() {
-  const raw = location.hash.replace(/^#\/?/, '');
-  const [path, qs] = raw.split('?');
-  return { path: path || '', params: Object.fromEntries(new URLSearchParams(qs || '')) };
-}
-
-function renderNav(active) {
-  clear(nav).append(
-    h('ul', {}, ROUTES.map((r) =>
-      h('li', {}, h('a', { href: `#/${r.path}`, class: r.path === active ? 'active' : '', 'aria-current': r.path === active ? 'page' : null },
-        h('span', { class: 'nav-icon', 'aria-hidden': 'true' }, r.icon),
-        h('span', { class: 'nav-long' }, r.label),
-        h('span', { class: 'nav-short' }, r.short || r.label),
-      )),
-    )),
-  );
-}
-
+const tabbar = document.getElementById('tabbar');
 let current = null;
-function route() {
-  const { path, params } = parseHash();
-  const r = ROUTES.find((x) => x.path === path) || ROUTES[0];
-  const changed = current !== r;
-  current = r;
-  renderNav(r.path);
-  document.title = `${r.label} · Estúdio de Conteúdo`;
-  draw(params);
-  if (changed) {
-    main.focus({ preventScroll: true });
-    window.scrollTo(0, 0);
-  }
+
+const currentPath = () => location.hash.replace(/^#\/?/, '').split('?')[0];
+
+function drawTabs() {
+  clear(tabbar).append(...TABS.map((t) => h('a', {
+    href: `#/${t.path}`, class: `tab${t === current ? ' on' : ''}`, 'aria-current': t === current ? 'page' : null, 'data-tab': t.path || 'hoje',
+  }, icon(t.icon, 'tab-ic'), h('span', {}, t.label))));
 }
 
-function draw(params = parseHash().params) {
+function draw() {
+  const y = window.scrollY;
   try {
     clear(main);
-    current.view.render(main, params);
+    current.view.render(main);
   } catch (err) {
     console.error(err);
-    clear(main).append(h('div', { class: 'error-box' }, h('h2', {}, 'Esta tela encontrou um erro'), h('p', {}, err.message)));
+    put(clear(main), h('div', { class: 'empty' }, h('p', { class: 'empty-title' }, 'Algo deu errado nesta tela'), h('p', {}, err.message)));
   }
+  window.scrollTo(0, y);
+}
+
+function route() {
+  const next = TABS.find((t) => t.path === currentPath()) || TABS[0];
+  const changed = next !== current;
+  current = next;
+  document.title = `${current.label} · Creator`;
+  drawTabs();
+  draw();
+  if (changed) window.scrollTo(0, 0);
 }
 
 async function start() {
   try {
     await data.init();
   } catch (err) {
-    clear(main).append(
-      h('div', { class: 'error-box' },
-        h('h2', {}, 'Não consegui carregar seus dados'),
-        h('p', {}, err.message),
-        h('p', {}, 'Se você tem um backup, ainda pode importá-lo em "Perfil e dados" depois de resolver o problema.'),
-      ),
-    );
+    put(clear(main), h('div', { class: 'empty' }, h('p', { class: 'empty-title' }, 'Não consegui salvar dados aqui'), h('p', {}, err.message)));
     return;
   }
-  updateBadge();
-  // Rerenderiza a tela atual quando os dados mudam (filtros ficam guardados em cada tela).
-  data.onChange(() => {
-    updateBadge();
-    draw();
-  });
+  data.onChange(draw);
+  document.addEventListener('rerender', draw);
   window.addEventListener('hashchange', route);
   route();
-  autoSync();
-}
-
-function updateBadge() {
-  const cfg = data.igConfig();
-  const el = document.getElementById('ai-badge');
-  if (!el) return;
-  if (!cfg?.token) el.textContent = 'Instagram não conectado';
-  else if (cfg.lastError) el.textContent = `@${cfg.username} · erro na última sincronização`;
-  else el.textContent = `@${cfg.username} · sincronizado ${cfg.lastSync ? new Date(cfg.lastSync).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'nunca'}`;
-}
-
-// Sincroniza sozinho ao abrir, no máximo a cada 6 horas.
-function autoSync() {
-  if (!isSyncDue(data.igConfig())) return;
-  data.syncInstagram().catch(() => {
-    /* o erro fica registrado e aparece no painel do Instagram */
-  });
+  watchReturn();
+  if (data.pendingAi()) setTimeout(() => pasteSheet(), 400);
+  if (isSyncDue(data.igConfig())) data.syncInstagram().catch(() => {});
 }
 
 start();

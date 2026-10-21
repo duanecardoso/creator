@@ -38,7 +38,7 @@ function fakeDb(posts = []) {
 }
 
 test('sincroniza: cria novas, casa pelo link e preserva dados manuais', async () => {
-  const db = fakeDb([{ id: 'x', title: 'Meu post planejado', goal: 'comunidade', publishedUrl: 'https://instagram.com/p/AAA111?igsh=abc', metrics: { commercialContacts: 2, likes: 1 } }]);
+  const db = fakeDb([{ id: 'x', title: 'Meu post planejado', formatId: 'review-honesto', link: 'https://instagram.com/p/AAA111?igsh=abc', results: { brandContacts: 2, likes: 1 } }]);
   const { fetchImpl } = fakeApi();
   const s = await syncInstagram({ cfg, db, fetchImpl });
   assert.equal(s.fetched, 2);
@@ -47,17 +47,17 @@ test('sincroniza: cria novas, casa pelo link e preserva dados manuais', async ()
   const matched = db.posts.find((p) => p.id === 'x');
   assert.equal(matched.igMediaId, 'm1');
   assert.equal(matched.title, 'Meu post planejado', 'não troca o título que ela escreveu');
-  assert.equal(matched.goal, 'comunidade');
-  assert.equal(matched.metrics.reach, 1000);
-  assert.equal(matched.metrics.saves, 30);
-  assert.equal(matched.metrics.follows, 3);
-  assert.equal(matched.metrics.commercialContacts, 2, 'manual preservado');
-  assert.equal(matched.metrics.source, 'instagram_api');
+  assert.equal(matched.formatId, 'review-honesto');
+  assert.equal(matched.results.reach, 1000);
+  assert.equal(matched.results.saves, 30);
+  assert.equal(matched.results.follows, 3);
+  assert.equal(matched.results.brandContacts, 2, 'manual preservado');
+  assert.equal(matched.results.source, 'instagram');
   const reel = db.posts.find((p) => p.igMediaId === 'm2');
-  assert.equal(reel.format, 'reels');
-  assert.equal(reel.status, 'publicado');
-  assert.equal(reel.metrics.follows, null, 'métrica recusada fica vazia, não zero');
-  assert.equal(reel.metrics.reach, 1000);
+  assert.equal(reel.igFormat, 'reels');
+  assert.equal(reel.status, 'postado');
+  assert.equal(reel.results.follows, null, 'métrica recusada fica vazia, não zero');
+  assert.equal(reel.results.reach, 1000);
 });
 
 test('segunda sincronização não duplica', async () => {

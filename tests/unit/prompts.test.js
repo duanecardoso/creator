@@ -1,48 +1,43 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ideasPrompt, scriptPrompt, brandPrompt, parseAnswer } from '../../src/js/lib/prompts.js';
+import { contentPrompt, ideasPrompt, parseContent, parseIdeas } from '../../src/js/lib/prompts.js';
+import { FORMATS } from '../../src/js/lib/formats.js';
 import { defaultProfile } from '../../src/js/lib/store.js';
 
-test('prompt de ideias leva perfil, regras, briefing e formato JSON', () => {
-  const t = ideasPrompt({ briefing: { subject: 'rotina de treino', goal: 'marcas', premise: 'vlog do treino' }, profile: defaultProfile(), existingTitles: ['Ideia velha'] });
-  assert.match(t, /rotina de treino/);
-  assert.match(t, /Atração de marcas/);
+test('prompt de conteúdo leva perfil, formato, tema e regras', () => {
+  const t = contentPrompt({ profile: defaultProfile(), format: FORMATS[0], topic: 'meu sérum' });
+  assert.match(t, /meu sérum/);
+  assert.match(t, new RegExp(FORMATS[0].name));
   assert.match(t, /Não invente/);
-  assert.match(t, /avalie com honestidade/);
-  assert.match(t, /Ideia velha/);
-  assert.match(t, /```json/);
+  assert.match(t, /"steps"/);
+  assert.ok(t.length < 6000, 'curto o bastante para abrir no Claude pela URL');
 });
 
-test('prompt de marca separa fatos de hipóteses', () => {
-  const brand = { name: 'M', insights: [{ category: 'diferencial', status: 'confirmado', text: 'Gela 24h', source: 'site' }, { category: 'dor', status: 'hipotese', text: 'Água esquenta' }] };
-  const t = brandPrompt({ brand, profile: defaultProfile() });
-  const facts = t.indexOf('FATOS CONFIRMADOS');
-  const hyp = t.indexOf('HIPÓTESES');
-  assert.ok(t.indexOf('Gela 24h') > facts && t.indexOf('Gela 24h') < hyp);
-  assert.ok(t.lastIndexOf('Água esquenta') > hyp);
-  assert.ok(scriptPrompt({ request: { type: 'carrossel' }, profile: defaultProfile() }).includes('CARROSSEL'));
+test('prompt de ideias lista os formatos', () => {
+  const t = ideasPrompt({ profile: defaultProfile() });
+  assert.match(t, /testei-7-dias/);
+  assert.ok(t.length < 6000);
 });
 
-test('lê resposta colada com texto em volta e cerca ```json', () => {
-  const answer = 'Claro! Aqui está:\n```json\n{"critique":"fraco","ideas":[{"title":"A","hook":"h","needsVerification":"um item"}]}\n```\nBoa gravação!';
-  const r = parseAnswer(answer, 'ideas');
-  assert.equal(r.critique, 'fraco');
-  assert.equal(r.ideas[0].title, 'A');
-  assert.equal(r.ideas[0].concept, '');
-  assert.deepEqual(r.ideas[0].needsVerification, ['um item']);
+test('lê JSON com texto em volta', () => {
+  const r = parseContent('Claro!\n```json\n{"title":"T","hook":"G","steps":["a","b"],"check":"x"}\n```');
+  assert.equal(r.title, 'T');
+  assert.deepEqual(r.steps, ['a', 'b']);
+  assert.deepEqual(r.check, ['x']);
+  assert.equal(r.loose, false);
 });
 
-test('roteiro e marca', () => {
-  const s = parseAnswer('{"title":"R","hook":"g","scenes":[{"speech":"oi","timing":3}],"slides":[],"screens":[]}', 'script');
-  assert.equal(s.scenes[0].speech, 'oi');
-  assert.equal(s.scenes[0].timing, '3');
-  const b = parseAnswer('{"concepts":[{"title":"C","basedOnFacts":["f"]}],"missingInfo":[]}', 'brand');
-  assert.deepEqual(b.concepts[0].basedOnFacts, ['f']);
+test('sem JSON: guarda o texto como roteiro em vez de dar erro', () => {
+  const r = parseContent('Cena 1: abro a caixa\nCena 2: testo');
+  assert.equal(r.loose, true);
+  assert.deepEqual(r.steps, ['Cena 1: abro a caixa', 'Cena 2: testo']);
+  assert.throws(() => parseContent('  '), /Nada/);
 });
 
-test('erros claros', () => {
-  assert.throws(() => parseAnswer('', 'ideas'), /Cole/);
-  assert.throws(() => parseAnswer('sem json aqui', 'ideas'), /JSON/);
-  assert.throws(() => parseAnswer('{"ideas": [ {"title": "corta', 'ideas'), /JSON/);
-  assert.throws(() => parseAnswer('{"outra":1}', 'ideas'), /ideas/);
+test('ideias: aceita só formatos conhecidos', () => {
+  const r = parseIdeas('{"ideas":[{"title":"A","formatId":"review-honesto"},{"title":"B","formatId":"inventado"},{"formatId":"x"}]}');
+  assert.equal(r.length, 2);
+  assert.equal(r[0].formatId, 'review-honesto');
+  assert.equal(r[1].formatId, '');
+  assert.throws(() => parseIdeas('nada'), /lista/);
 });

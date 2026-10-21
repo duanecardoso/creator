@@ -1,10 +1,10 @@
 // Banco de dados no navegador (localStorage). Tudo fica só neste aparelho/navegador.
 // O "storage" é injetável para os testes rodarem fora do navegador.
 
-export const COLLECTIONS = ['ideas', 'scripts', 'posts', 'references', 'brands'];
-export const SCHEMA_VERSION = 2;
-const KEY = 'estudio:db';
-const SNAP_KEY = 'estudio:snapshot'; // cópia do dia anterior, para desfazer acidentes
+export const COLLECTIONS = ['contents', 'references', 'brands', 'formats'];
+export const SCHEMA_VERSION = 3;
+const KEY = 'creator:db';
+const SNAP_KEY = 'creator:snapshot'; // cópia do dia anterior, para desfazer acidentes
 const PROTECTED = new Set(['id', 'createdAt', 'updatedAt']);
 
 export function newId() {
@@ -21,32 +21,16 @@ export function newId() {
 export function defaultProfile() {
   return {
     name: '',
-    handleInstagram: '',
-    handleTiktok: '',
-    summary:
-      'Criadora de conteúdo UGC que também quer crescer como influenciadora, construindo uma comunidade que acompanhe rotina, gostos, projetos e processo de criação.',
-    experience: 'Vídeos de review e demonstrativos de produtos. Já atendi mais de 50 marcas.',
-    goals: [
-      'Atrair marcas interessadas em contratar serviços de UGC',
-      'Atrair seguidores que se identifiquem comigo',
-      'Construir comunidade em torno da minha personalidade, interesses e rotina',
-      'Criar conteúdos com valor para marcas e para o público consumidor',
-      'Aprender com os resultados e melhorar a estratégia',
-    ].join('\n'),
-    portfolioNiches: 'Beleza e moda\nFitness e saúde\nTecnologia e aplicativos',
-    exploreNiches: 'Rotina e lifestyle\nHábitos\nGostos pessoais\nCultura pop\nOrganização\nCriação de conteúdo em geral\nUGC',
+    instagram: '',
+    tiktok: '',
+    weeklyGoal: 4,
+    niches: 'Beleza e moda, Fitness e saúde, Tecnologia e apps, Rotina e lifestyle',
+    about:
+      'Criadora UGC (reviews e demonstrativos de produtos, mais de 50 marcas atendidas) crescendo como influenciadora: rotina, gostos, projetos e processo de criação.',
     style:
-      'Natural, criativo, com personalidade, opiniões e humor quando fizer sentido. Situações com que as pessoas se identificam. Prefiro mostrar o que estou fazendo, experimentando, aprendendo e descobrindo, em vez de assumir o papel de professora. Gosto de storytelling, bastidores, opiniões, reviews, demonstrações, experiências pessoais, referências de cultura pop e tendências adaptadas à minha personalidade.',
-    avoid: [
-      'Frases motivacionais genéricas',
-      'Ganchos clichês e introduções desnecessárias',
-      'Ideias repetitivas com pequenas mudanças de tema',
-      'Linguagem artificial, técnica demais ou com cara de texto de IA',
-      'Transformar tudo em dicas para outros criadores',
-      'Priorizar visualizações sem considerar seguidores, comunidade e oportunidades comerciais',
-      'Inventar tendências, dados ou benefícios de produtos',
-    ].join('\n'),
-    pillars: 'Bastidores de UGC\nReviews e testes\nRotina e lifestyle\nOpiniões e cultura pop\nPortfólio por nicho',
+      'Natural, com personalidade, opinião e humor quando faz sentido. Mostro o que estou testando e descobrindo, não dou aula. Storytelling, bastidores, reviews, cultura pop.',
+    avoid:
+      'Frases motivacionais genéricas, ganchos clichês ("oi gente", "você sabia"), tom de professora, texto com cara de IA, inventar dados, tendências ou benefícios de produto.',
   };
 }
 
@@ -245,21 +229,18 @@ export class MemoryStorage {
   }
 }
 
-// Exportação da agenda em CSV (Excel em pt-BR usa ";").
+// Exportação dos conteúdos em CSV (Excel em pt-BR usa ";").
 const CSV_COLS = [
-  ['title', 'Título'], ['platform', 'Plataforma'], ['format', 'Formato'], ['pillar', 'Pilar'], ['goal', 'Objetivo'],
-  ['niche', 'Nicho'], ['status', 'Status'], ['plannedDate', 'Data planejada'], ['publishedDate', 'Data publicada'],
-  ['publishedUrl', 'Link'], ['hook', 'Gancho'], ['m.reach', 'Alcance'], ['m.views', 'Visualizações'], ['m.likes', 'Curtidas'],
-  ['m.comments', 'Comentários'], ['m.saves', 'Salvamentos'], ['m.shares', 'Compartilhamentos'], ['m.profileVisits', 'Visitas ao perfil'],
-  ['m.follows', 'Novos seguidores'], ['m.linkClicks', 'Cliques'], ['m.messages', 'Mensagens'], ['m.commercialContacts', 'Contatos comerciais'],
-  ['m.source', 'Origem das métricas'], ['m.collectedAt', 'Métricas coletadas em'],
+  ['title', 'Título'], ['formatId', 'Formato'], ['platforms', 'Plataformas'], ['date', 'Data'], ['status', 'Status'], ['hook', 'Gancho'],
+  ['link', 'Link'], ['r.views', 'Visualizações'], ['r.reach', 'Alcance'], ['r.likes', 'Curtidas'], ['r.comments', 'Comentários'],
+  ['r.saves', 'Salvamentos'], ['r.shares', 'Compartilhamentos'], ['r.follows', 'Novos seguidores'], ['r.brandContacts', 'Contatos de marcas'], ['r.source', 'Origem'],
 ];
-export function postsToCsv(posts) {
+export function contentsToCsv(items) {
   const cell = (v) => {
     if (v === null || v === undefined) return '';
-    const s = String(v);
+    const s = Array.isArray(v) ? v.join('+') : String(v);
     return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const rows = posts.map((p) => CSV_COLS.map(([k]) => cell(k.startsWith('m.') ? p.metrics?.[k.slice(2)] : p[k])).join(';'));
-  return '﻿' + [CSV_COLS.map(([, l]) => l).join(';'), ...rows].join('\r\n');
+  const rows = items.map((p) => CSV_COLS.map(([k]) => cell(k.startsWith('r.') ? p.results?.[k.slice(2)] : p[k])).join(';'));
+  return '\uFEFF' + [CSV_COLS.map(([, l]) => l).join(';'), ...rows].join('\r\n');
 }
