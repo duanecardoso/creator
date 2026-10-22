@@ -118,6 +118,12 @@ async function start() {
   document.addEventListener('pending-ai', () => current && drawTopbar());
   window.addEventListener('hashchange', route);
   route();
+  // As artes usam a Montserrat do portfólio: quando a fonte termina de baixar, redesenha as telas na página.
+  if (document.fonts?.load) {
+    Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 40px Montserrat`)))
+      .then(() => { if (main.querySelector('canvas')) draw(); })
+      .catch(() => {});
+  }
   watchReturn();
   if (data.pendingAi()) setTimeout(() => pasteSheet(), 400);
   if (isSyncDue(data.igConfig())) data.syncInstagram().catch(() => {});

@@ -22,7 +22,7 @@ Plataforma web para centralizar a criação de conteúdo (Instagram e TikTok) e 
 
 Endereços das páginas: `#/visao-geral`, `#/conteudo/planejamento`, `#/conteudo/lista`, `#/conteudo/estudio`, `#/conteudo/formatos`, `#/conteudo/referencias`, `#/marcas/campanhas`, `#/marcas/financeiro`, `#/marcas/contatos`, `#/analise/desempenho`, `#/configuracoes`. Endereços antigos (como `#/semana`) redirecionam sozinhos.
 
-O visual usa tema claro, com branco, amarelo-manteiga, rosa e marrom. As **artes** dos posts (carrossel e estático) continuam no estilo iOS.
+O visual segue a mesma identidade do portfólio: fonte Montserrat, fundo claro pontilhado, títulos pesados com o ponto rosa, botões em pílula e a paleta branco, manteiga (#F8E7A2), rosa (#D74F73) e marrom (#6B4537). Tema claro. As **artes** dos posts usam a mesma fonte e paleta, para manter a identidade visual igual em tudo.
 
 ## Plano automático de sábado
 
@@ -35,7 +35,7 @@ A partir de sábado, **na primeira vez que você abrir o site**, ele monta o pla
 
 ## Design de carrossel e estático
 
-Cada carrossel ou estático do plano já vem com as telas montadas (1080×1350, formato 4:5 do feed) no estilo iOS: Notas, Lembretes, iMessage, widgets, foto com legenda, capa e tela final. A base é neutra e a sua paleta aparece só nos detalhes. Ajuste as cores em Configurações → Estilo das artes, com prévia ao vivo.
+Cada carrossel ou estático do plano já vem com as telas montadas (1080×1350, formato 4:5 do feed) com a identidade do portfólio: Montserrat, fundo claro pontilhado, título com ponto rosa, rótulo com o quadradinho manteiga e detalhes de iPhone (Notas, Lembretes, iMessage, widgets, foto com legenda, capa e tela final). A cor aparece só nos detalhes. Ajuste as cores em Configurações → Estilo das artes, com prévia ao vivo.
 
 - **Quando precisa de foto sua**, o site pede (por exemplo: "📷 Você segurando o produto, luz natural, fundo neutro"). O pedido aparece na Visão geral e no Estúdio.
 - As fotos ficam guardadas só no aparelho e **não entram no backup**.
@@ -84,7 +84,7 @@ npm run test:e2e   # 26 verificações no computador, num sábado simulado e num
 
 ```
 src/index.html           estrutura: menu lateral, barra do topo, área principal
-src/css/platform.css     visual da plataforma (tema claro)
+src/css/platform.css     visual da plataforma (identidade do portfólio, tema claro)
 src/js/app.js            menu, barra do topo, rotas e início
 src/js/routes.js         lista de páginas, menu e redirecionamentos
 src/js/ui.js             componentes: cards, indicadores, tabelas, gráficos, filtros, painéis
@@ -94,7 +94,7 @@ src/js/lib/formats.js    biblioteca de formatos (+ tipos e modelos de título/ga
 src/js/lib/themes.js     banco de temas por nicho
 src/js/lib/planner.js    plano semanal automático
 src/js/lib/designs.js    telas de cada formato (carrossel/estático)
-src/js/lib/render.js     desenho das artes (canvas 1080×1350, estilo iOS)
+src/js/lib/render.js     desenho das artes (canvas 1080×1350, identidade do portfólio)
 src/js/lib/media.js      fotos guardadas no aparelho (IndexedDB)
 src/js/lib/deals.js      campanhas, prazos, financeiro, calendário (.ics)
 src/js/lib/insights.js   meta semanal, sequência, destaques, sugestões do dia

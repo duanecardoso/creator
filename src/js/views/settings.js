@@ -6,7 +6,7 @@ import { DEFAULT_PALETTE, drawSlide } from '../lib/render.js';
 import { toggle } from '../ui.js';
 
 const SWATCHES = [
-  ['bg', 'Fundo'], ['card', 'Cartões'], ['ink', 'Texto'], ['accent', 'Destaque 1 (manteiga)'], ['accent2', 'Destaque 2 (rosa)'], ['accent3', 'Detalhes (marrom)'],
+  ['bg', 'Fundo'], ['card', 'Cartões'], ['ink', 'Texto'], ['accent', 'Destaque 1 (manteiga)'], ['accent2', 'Destaque 2 (rosa)'], ['accent3', 'Detalhes (marrom)'], ['accent4', 'Ponto final (rosa)'],
 ];
 
 function paletteGroup(p) {
@@ -23,7 +23,7 @@ function paletteGroup(p) {
   });
   return group({
     header: 'Estilo das artes',
-    footer: 'Base neutra e cor só nos detalhes, para não ficar colorido demais. Vale para carrosséis e estáticos.',
+    footer: 'Mesma paleta e fonte do seu portfólio: base clara e cor só nos detalhes. Vale para carrosséis e estáticos.',
     children: [
       h('div', { class: 'cell palette-cell' }, preview),
       ...rows,
