@@ -894,6 +894,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 
 .cell.tappable.need { background: var(--butter-soft); }
 
+/* Briefings de treino */
+.brief-intro { margin: 0 0 14px; max-width: 70ch; }
+.brief-head { display: grid; gap: 6px; padding: 0 4px; }
+.brief-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.brief-title { margin: 4px 0 0; font-size: 20px; font-weight: 800; color: var(--brown); line-height: 1.2; }
+.brief-actions { flex-wrap: wrap; justify-content: flex-start; }
+@media (max-width: 640px) {
+  [data-id="brief-generator"] .filter-select { flex: 1 1 100%; width: 100%; }
+}
+
 </style>
 </head>
 <body>
@@ -1308,18 +1318,18 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     return "Publica\xE7\xE3o de ".concat(localDate(timestamp).split("-").reverse().join("/"));
   }
   function toResults(ins, media, previous = {}) {
-    const pick = (v, fallback) => typeof v === "number" ? v : fallback != null ? fallback : null;
+    const pick2 = (v, fallback) => typeof v === "number" ? v : fallback != null ? fallback : null;
     return {
       ...previous,
       // mantém o que é manual (contatos de marcas)
-      views: pick(ins.views, previous.views),
-      reach: pick(ins.reach, previous.reach),
-      likes: pick(ins.likes, pick(media.like_count, previous.likes)),
-      comments: pick(ins.comments, pick(media.comments_count, previous.comments)),
-      saves: pick(ins.saved, previous.saves),
-      shares: pick(ins.shares, previous.shares),
-      follows: pick(ins.follows, previous.follows),
-      profileVisits: pick(ins.profile_visits, previous.profileVisits),
+      views: pick2(ins.views, previous.views),
+      reach: pick2(ins.reach, previous.reach),
+      likes: pick2(ins.likes, pick2(media.like_count, previous.likes)),
+      comments: pick2(ins.comments, pick2(media.comments_count, previous.comments)),
+      saves: pick2(ins.saved, previous.saves),
+      shares: pick2(ins.shares, previous.shares),
+      follows: pick2(ins.follows, previous.follows),
+      profileVisits: pick2(ins.profile_visits, previous.profileVisits),
       source: "instagram",
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -2278,25 +2288,25 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
     const lineWeight = new Map((profile2.lines || []).map((l) => [l.name, Math.max(0, Number(l.weight) || 0)]));
     const recentTitles = new Set(contents.filter((c) => (c.date || "") >= addDays(monday, -60)).flatMap((c) => [c.theme, c.title]).filter(Boolean));
-    const dealDay = (day) => deals.some((d) => d.postDate === day && (d.type === "publi" || d.type === "tts") && d.status !== "cancelado");
+    const dealDay = (day) => deals.some((d) => d.postDate === day && ["publi", "tts", "treino"].includes(d.type) && d.status !== "cancelado");
     const picks = [];
     const takenBank = /* @__PURE__ */ new Set();
     days.forEach((day, i) => {
       if (dealDay(day)) return;
       const opts2 = bank.filter((b) => b && b.title && (b.goal || "seguidores") === focus[i] && !takenBank.has(b.id) && !recentTitles.has(b.title));
       if (!opts2.length) return;
-      const pick = weightedPick(shuffle(opts2, r), (b) => {
+      const pick2 = weightedPick(shuffle(opts2, r), (b) => {
         var _a;
         return (lineWeight.size ? (_a = lineWeight.get(b.line)) != null ? _a : 1 : 1) || 1e-4;
       }, r);
-      takenBank.add(pick.id);
-      picks[i] = pick;
+      takenBank.add(pick2.id);
+      picks[i] = pick2;
     });
-    picks.forEach((pick, i) => {
-      if (!(pick == null ? void 0 : pick.type) || types[i] === pick.type) return;
+    picks.forEach((pick2, i) => {
+      if (!(pick2 == null ? void 0 : pick2.type) || types[i] === pick2.type) return;
       const j = types.findIndex((t, k) => {
         var _a;
-        return k !== i && t === pick.type && ((_a = picks[k]) == null ? void 0 : _a.type) !== t;
+        return k !== i && t === pick2.type && ((_a = picks[k]) == null ? void 0 : _a.type) !== t;
       });
       if (j >= 0) [types[i], types[j]] = [types[j], types[i]];
     });
@@ -2310,9 +2320,26 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const usedThemes = /* @__PURE__ */ new Set();
     const items = [];
     days.forEach((day, i) => {
-      var _a, _b, _c, _d, _e, _f;
-      const deal = deals.find((d) => d.postDate === day && (d.type === "publi" || d.type === "tts") && d.status !== "cancelado");
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+      const deal = deals.find((d) => d.postDate === day && ["publi", "tts", "treino"].includes(d.type) && d.status !== "cancelado");
       if (deal) {
+        if (deal.type === "treino") {
+          items.push({
+            date: day,
+            title: "UGC de treino: ".concat(deal.product || deal.brandName || "produto"),
+            type: "video",
+            goal: "marcas",
+            formatId: "",
+            theme: deal.product || "",
+            dealId: deal.id,
+            status: "roteiro",
+            portfolio: true,
+            hook: ((_b = (_a = deal.brief) == null ? void 0 : _a.hooks) == null ? void 0 : _b[0]) || "",
+            steps: ((_d = (_c = deal.brief) == null ? void 0 : _c.script) == null ? void 0 : _d.length) ? deal.brief.script : ["Seguir o briefing de treino"],
+            platforms: ["instagram", "tiktok"]
+          });
+          return;
+        }
         items.push({
           date: day,
           title: "".concat(deal.type === "tts" ? "TikTok Shop" : "Publi", ": ").concat(deal.brandName || deal.title || "marca"),
@@ -2329,42 +2356,42 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       }
       const goal = focus[i];
       let type = types[i];
-      const pick = picks[i];
-      if (pick) {
+      const pick2 = picks[i];
+      if (pick2) {
         const fitsT = (f) => {
           var _a2;
           return f.custom ? !((_a2 = f.types) == null ? void 0 : _a2.length) || f.types.includes(type) : metaOf(f.id).types.includes(type);
         };
-        let format2 = pool.find((f) => f.id === pick.formatId && fitsT(f));
+        let format2 = pool.find((f) => f.id === pick2.formatId && fitsT(f));
         if (!format2) {
-          const neutral = (((_a = NEUTRAL[type]) == null ? void 0 : _a[goal]) || []).map((id) => pool.find((f) => f.id === id)).filter((f) => f && fitsT(f));
+          const neutral = (((_e = NEUTRAL[type]) == null ? void 0 : _e[goal]) || []).map((id) => pool.find((f) => f.id === id)).filter((f) => f && fitsT(f));
           format2 = neutral.find((f) => !usedFormats.has(f.id)) || neutral[0];
         }
         if (!format2) {
           const cands = pool.filter((f) => fitsT(f) && (f.goals || []).includes(goal) && !usedFormats.has(f.id));
           const scored2 = (cands.length ? cands : pool.filter(fitsT)).map((f) => ({ f, s: (recentFormats.has(f.id) ? -2 : 0) + (hitFormats.has(f.id) ? 1.5 : 0) + r() * 2 })).sort((a, b) => b.s - a.s);
-          format2 = (_b = scored2[0]) == null ? void 0 : _b.f;
+          format2 = (_f = scored2[0]) == null ? void 0 : _f.f;
         }
         if (format2) {
           usedFormats.add(format2.id);
-          usedThemes.add(pick.title);
-          const slides2 = type === "carrossel" || type === "estatico" ? slidesFor(format2.id, type, { title: pick.title, goal }) : [];
+          usedThemes.add(pick2.title);
+          const slides2 = type === "carrossel" || type === "estatico" ? slidesFor(format2.id, type, { title: pick2.title, goal }) : [];
           items.push({
             date: day,
-            title: pick.title,
-            theme: pick.title,
+            title: pick2.title,
+            theme: pick2.title,
             type,
             goal,
             formatId: format2.id,
-            hook: pick.hook || "",
+            hook: pick2.hook || "",
             altHooks: (format2.hooks || []).slice(),
             steps: (format2.structure || []).slice(),
             slides: slides2,
             needsPhoto: needsPhoto(slides2),
             status: "roteiro",
-            bankId: pick.id,
-            line: pick.line || "",
-            platforms: ((_c = format2.platforms) == null ? void 0 : _c.length) ? format2.platforms.slice() : ["instagram", "tiktok"]
+            bankId: pick2.id,
+            line: pick2.line || "",
+            platforms: ((_g = format2.platforms) == null ? void 0 : _g.length) ? format2.platforms.slice() : ["instagram", "tiktok"]
           });
           return;
         }
@@ -2386,7 +2413,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       let subject = "";
       for (let k = 0; k < niches.length && !subject; k++) {
         const niche = niches[(i + k) % niches.length];
-        const opts2 = shuffle(((_d = THEMES[niche]) == null ? void 0 : _d[meta2.kind]) || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
+        const opts2 = shuffle(((_h = THEMES[niche]) == null ? void 0 : _h[meta2.kind]) || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
         if (opts2.length) subject = opts2[0];
       }
       if (!subject) subject = "algo da sua rotina desta semana";
@@ -2400,13 +2427,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         type,
         goal,
         formatId: format.id,
-        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(((_e = format.hooks) == null ? void 0 : _e[0]) || "", subject),
+        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(((_i = format.hooks) == null ? void 0 : _i[0]) || "", subject),
         altHooks: (format.hooks || []).slice(),
         steps: (format.structure || []).slice(),
         slides,
         needsPhoto: needsPhoto(slides),
         status: "roteiro",
-        platforms: ((_f = format.platforms) == null ? void 0 : _f.length) ? format.platforms.slice() : ["instagram", "tiktok"]
+        platforms: ((_j = format.platforms) == null ? void 0 : _j.length) ? format.platforms.slice() : ["instagram", "tiktok"]
       });
     });
     return items;
@@ -2439,16 +2466,275 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
   });
 
+  // src/js/lib/briefs.js
+  function parseProducts(text) {
+    return String(text || "").split("\n").map((l) => l.trim()).filter(Boolean).map((l) => {
+      var _a;
+      const [brand = "", product = "", niche = ""] = l.split("|").map((x) => x.trim());
+      const n2 = (_a = NICHES.find((x) => x.id === niche.toLowerCase() || x.label.toLowerCase() === niche.toLowerCase())) == null ? void 0 : _a.id;
+      return { brand, product, niche: n2 || guessNiche("".concat(product, " ").concat(brand)), line: l };
+    }).filter((p) => p.brand || p.product);
+  }
+  function rng2(seed) {
+    let h2 = 2166136261;
+    for (const c of String(seed)) h2 = Math.imul(h2 ^ c.charCodeAt(0), 16777619);
+    return () => {
+      h2 += 1831565813;
+      let t = h2;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function nextNiche(trainings2 = []) {
+    const stats = NICHES.map((n2, i) => {
+      const mine = trainings2.filter((t) => t.niche === n2.id && t.status !== "cancelado");
+      const last = mine.map((t) => t.start || t.createdAt || "").sort().pop() || "";
+      return { id: n2.id, count: mine.length, last, i };
+    });
+    stats.sort((a, b) => a.count - b.count || a.last.localeCompare(b.last) || a.i - b.i);
+    return stats[0].id;
+  }
+  function coverage(trainings2 = []) {
+    return NICHES.map((n2) => {
+      const mine = trainings2.filter((t) => t.niche === n2.id && t.status !== "cancelado");
+      return { ...n2, total: mine.length, done: mine.filter((t) => ["postado", "portfolio", "concluido"].includes(t.status)).length, last: mine.map((t) => t.start || "").sort().pop() || "" };
+    });
+  }
+  function timeline(start2, pace = "normal") {
+    const d = (PACES[pace] || PACES.normal).days;
+    return {
+      scriptDue: addDays(start2, d[0]),
+      deliverables: [
+        { text: "Roteiro + 3 ganchos alternativos", due: addDays(start2, d[0]), done: false },
+        { text: "Grava\xE7\xE3o: v\xEDdeo + 5 fotos do produto (luz natural)", due: addDays(start2, d[1]), done: false },
+        { text: "Edi\xE7\xE3o: vers\xE3o final 9:16 e vers\xE3o sem legenda", due: addDays(start2, d[2]), done: false },
+        { text: "Postar no perfil (Instagram e TikTok)", due: addDays(start2, d[3]), done: false },
+        { text: "Subir no portf\xF3lio", due: addDays(start2, d[4]), done: false }
+      ],
+      postDate: addDays(start2, d[3])
+    };
+  }
+  function generateBrief({ niche, source = "qualquer", products: products2 = [], exclude = [], start: start2, pace = "normal", seed = "" } = {}) {
+    const r = rng2("".concat(seed, "|").concat(niche, "|").concat(source, "|").concat(exclude.join(",")));
+    const nicheId = NICHES.some((n2) => n2.id === niche) ? niche : NICHES[0].id;
+    const skip = new Set(exclude);
+    const owned = products2.filter((p) => p.niche === nicheId && !skip.has(briefKey(p)));
+    const useOwned = source === "tenho" || source === "qualquer" && owned.length && r() < 0.6;
+    let brand;
+    let product;
+    let fictional;
+    let note = "";
+    if (useOwned && owned.length) {
+      const p = pick(owned, r);
+      brand = p.brand || "Produto que voc\xEA tem";
+      product = p.product || "um produto de ".concat(nicheLabel(nicheId).toLowerCase(), " da ").concat(p.brand);
+      fictional = false;
+    } else {
+      const kinds = PRODUCTS[nicheId].filter((k) => !skip.has(briefKey({ brand: "Marca fict\xEDcia", product: k })));
+      product = pick(kinds.length ? kinds : PRODUCTS[nicheId], r);
+      brand = "Marca fict\xEDcia";
+      fictional = true;
+      if (source === "tenho") note = "Voc\xEA n\xE3o tem produtos desse nicho na sua lista, ent\xE3o veio um produto inventado.";
+    }
+    const angles = ANGLES.filter((a) => !skip.has("angulo:".concat(a.id)));
+    const angle = pick(angles.length ? angles : ANGLES, r);
+    const fill2 = (s) => s.replace(/\{p\}/g, product).replace(/\{n\}/g, nicheLabel(nicheId).toLowerCase());
+    const t = timeline(start2, pace);
+    return {
+      niche: nicheId,
+      brand,
+      product,
+      fictional,
+      note,
+      angle: angle.id,
+      angleLabel: angle.label,
+      objective: angle.objective,
+      audience: AUDIENCE[nicheId],
+      keyMessages: fictional ? ["Praticidade: cabe na rotina real.", "Como \xE9 a textura / o uso na pr\xE1tica.", "Para quem esse produto faz sentido."] : ["O que voc\xEA notou usando (textura, cheiro, conforto, praticidade).", "Em que momento da rotina ele entra.", "Para quem voc\xEA indicaria. Confira na embalagem antes de citar qualquer benef\xEDcio."],
+      dos: [...COMMON_DOS, NICHE_DOS[nicheId], ...fictional ? ["Use um produto parecido que voc\xEA tenha e esconda o r\xF3tulo, ou mostre sem marca."] : []],
+      donts: [...COMMON_DONTS, NICHE_DONTS[nicheId]],
+      format: "1 v\xEDdeo vertical 9:16 de 30 a 45 segundos, com legenda na tela.",
+      hooks: angle.hooks.map(fill2),
+      script: angle.script,
+      usage: "Seu perfil (Instagram e TikTok) e seu portf\xF3lio UGC. Conte\xFAdo autoral, sem pagamento e sem parceria.",
+      start: start2,
+      pace,
+      ...t,
+      source: "local"
+    };
+  }
+  function briefFromAi(ai, { niche, start: start2, pace = "normal" }) {
+    const base = generateBrief({ niche, start: start2, pace, seed: "ai" });
+    const list = (v, fb) => Array.isArray(v) && v.length ? v.map((x) => String(x).trim()).filter(Boolean) : fb;
+    const s = (v, fb) => typeof v === "string" && v.trim() ? v.trim() : fb;
+    return {
+      ...base,
+      brand: s(ai.brand, base.brand),
+      product: s(ai.product, base.product),
+      fictional: ai.fictional === void 0 ? base.fictional : Boolean(ai.fictional),
+      angle: "claude",
+      angleLabel: s(ai.angle, "Sugest\xE3o do Claude"),
+      objective: s(ai.objective, base.objective),
+      audience: s(ai.audience, base.audience),
+      keyMessages: list(ai.keyMessages, base.keyMessages),
+      dos: list(ai.dos, base.dos),
+      donts: [.../* @__PURE__ */ new Set([...COMMON_DONTS, ...list(ai.donts, base.donts)])],
+      format: s(ai.format, base.format),
+      hooks: list(ai.hooks, base.hooks),
+      script: list(ai.script, base.script),
+      caption: s(ai.caption, ""),
+      note: "",
+      source: "claude"
+    };
+  }
+  function briefText(b) {
+    const lines = (title, items) => (items == null ? void 0 : items.length) ? "\n".concat(title, "\n").concat(items.map((x) => "\u2022 ".concat(x)).join("\n")) : "";
+    const dates = (b.deliverables || []).map((d) => "".concat(d.due ? d.due.split("-").reverse().slice(0, 2).join("/") : "\u2014", " \xB7 ").concat(d.text));
+    return "BRIEFING DE TREINO (simulado, n\xE3o \xE9 parceria)\n".concat(b.brand).concat(b.fictional ? " (marca fict\xEDcia)" : "", " \xB7 ").concat(b.product, "\nNicho: ").concat(nicheLabel(b.niche), " \xB7 Tipo de v\xEDdeo: ").concat(b.angleLabel, "\n\nObjetivo: ").concat(b.objective, "\nP\xFAblico: ").concat(b.audience, "\nFormato: ").concat(b.format).concat(lines("Mensagens-chave", b.keyMessages)).concat(lines("Fa\xE7a", b.dos)).concat(lines("Evite", b.donts)).concat(lines("Ganchos", b.hooks)).concat(lines("Roteiro", b.script)).concat(b.caption ? "\n\nLegenda: ".concat(b.caption) : "").concat(lines("Prazos", dates), "\n\nUso: ").concat(b.usage);
+  }
+  var NICHES, nicheLabel, PRODUCTS, AUDIENCE, NICHE_DOS, NICHE_DONTS, ANGLES, PACES, TRAINING_PIPELINE, GUESS, guessNiche, briefKey, pick, COMMON_DOS, COMMON_DONTS;
+  var init_briefs = __esm({
+    "src/js/lib/briefs.js"() {
+      init_insights();
+      NICHES = [
+        { id: "haircare", label: "Haircare", area: "Beleza", emoji: "\u{1F487}\u200D\u2640\uFE0F" },
+        { id: "skincare", label: "Skincare", area: "Beleza", emoji: "\u{1F9F4}" },
+        { id: "bodycare", label: "Bodycare", area: "Beleza", emoji: "\u{1FAE7}" },
+        { id: "moda", label: "Moda e acess\xF3rios", area: "Moda", emoji: "\u{1F45C}" },
+        { id: "fitness", label: "Fitness", area: "Fitness", emoji: "\u{1F3CB}\uFE0F\u200D\u2640\uFE0F" },
+        { id: "tech", label: "Tech e apps", area: "Tech", emoji: "\u{1F4F1}" }
+      ];
+      nicheLabel = (id) => {
+        var _a;
+        return ((_a = NICHES.find((n2) => n2.id === id)) == null ? void 0 : _a.label) || "Outro";
+      };
+      PRODUCTS = {
+        haircare: ["\xF3leo finalizador para pontas", "m\xE1scara de hidrata\xE7\xE3o", "leave-in com prote\xE7\xE3o t\xE9rmica", "shampoo e condicionador", "spray texturizador", "creme de pentear"],
+        skincare: ["protetor solar com cor", "s\xE9rum facial", "hidratante facial em gel", "esfoliante facial", "\xE1gua micelar", "hidratante labial"],
+        bodycare: ["\xF3leo corporal", "desodorante", "body splash", "hidratante corporal", "esfoliante corporal", "sabonete l\xEDquido"],
+        moda: ["bolsa transversal", "bolsa de ombro", "kit de brincos e colares", "\xF3culos de sol", "rel\xF3gio", "presilhas e scrunchies"],
+        fitness: ["macaquinho fitness", "conjunto top e legging", "garrafa t\xE9rmica", "tapete de yoga", "el\xE1sticos de resist\xEAncia", "t\xEAnis de treino"],
+        tech: ["aplicativo de organiza\xE7\xE3o ou finan\xE7as", "bast\xE3o de LED", "pistola de massagem", "fone sem fio", "trip\xE9 com controle", "carregador port\xE1til"]
+      };
+      AUDIENCE = {
+        haircare: "Mulheres de 20 a 35 anos que querem um cabelo bonito sem rotina longa.",
+        skincare: "Mulheres de 20 a 35 anos come\xE7ando ou simplificando a rotina de skincare.",
+        bodycare: "Mulheres de 20 a 35 anos que gostam de autocuidado no dia a dia.",
+        moda: "Mulheres de 20 a 35 anos que querem pe\xE7as pr\xE1ticas para usar no dia a dia.",
+        fitness: "Mulheres que treinam (ou querem voltar a treinar) e querem conforto.",
+        tech: "Pessoas de 20 a 40 anos que querem praticidade na rotina."
+      };
+      NICHE_DOS = {
+        haircare: "Mostre o cabelo antes e depois de aplicar, na mesma luz.",
+        skincare: "Mostre a textura na m\xE3o e na pele, bem de perto.",
+        bodycare: "Mostre a textura e o momento de uso (p\xF3s-banho, antes de sair).",
+        moda: "Mostre a pe\xE7a no corpo e em movimento, com um look completo.",
+        fitness: "Mostre a pe\xE7a em movimento: agachamento, alongamento, caminhada.",
+        tech: "Mostre a tela ou o produto funcionando, sem cortes que escondam o uso."
+      };
+      NICHE_DONTS = {
+        haircare: "N\xE3o prometa resultado de tratamento (queda, crescimento, reconstru\xE7\xE3o).",
+        skincare: "N\xE3o prometa resultado cl\xEDnico (manchas, acne, rugas) nem fale de FPS sem conferir na embalagem.",
+        bodycare: "N\xE3o fale de dura\xE7\xE3o (48h, 72h) sem conferir na embalagem.",
+        moda: "N\xE3o esconda defeitos reais da pe\xE7a; se algo te incomodou, diga.",
+        fitness: "N\xE3o fale de emagrecimento ou resultado f\xEDsico.",
+        tech: "N\xE3o fale de especifica\xE7\xF5es (bateria, pot\xEAncia) sem conferir."
+      };
+      ANGLES = [
+        {
+          id: "unboxing",
+          label: "Unboxing e primeira impress\xE3o",
+          objective: "Gerar curiosidade e mostrar o produto chegando, com a rea\xE7\xE3o real do primeiro uso.",
+          script: ["Gancho: o produto na m\xE3o / a caixa abrindo", "O que \xE9 e para quem \xE9, em 1 frase", "Primeiro uso na c\xE2mera: textura, cheiro, encaixe", "Primeira impress\xE3o sincera (o que surpreendeu)", 'Chamada: "vou contar depois de uma semana"'],
+          hooks: ["chegou e eu j\xE1 vou abrir aqui", "primeira impress\xE3o sincera de {p}", "abrindo o {p} que todo mundo me perguntou"]
+        },
+        {
+          id: "problema",
+          label: "Problema \u2192 solu\xE7\xE3o",
+          objective: "Mostrar uma dor do dia a dia e como o produto entra na rotina para resolver.",
+          script: ["Gancho: a dor, com uma cena real", "Por que isso incomoda (situa\xE7\xE3o espec\xEDfica)", "O produto entrando na cena", "Uso na pr\xE1tica, mostrando o detalhe", "Como ficou e para quem voc\xEA indicaria"],
+          hooks: ["se voc\xEA tamb\xE9m sofre com isso, assiste at\xE9 o final", "eu tinha esse problema todo santo dia", "o que mudou minha rotina de {n}"]
+        },
+        {
+          id: "rotina",
+          label: "Rotina com o produto",
+          objective: "Mostrar o produto inserido de forma natural numa rotina real (manh\xE3, treino, p\xF3s-banho).",
+          script: ["Gancho: o come\xE7o da rotina", "2 ou 3 passos da rotina, r\xE1pidos", "O momento do produto, mais lento e de perto", "Resultado no fim da rotina", "Frase final pessoal"],
+          hooks: ["minha rotina de {n} em 30 segundos", "arruma comigo usando s\xF3 o essencial", "o passo que eu n\xE3o pulo mais"]
+        },
+        {
+          id: "depoimento",
+          label: "Depoimento (talking head)",
+          objective: "Passar confian\xE7a: voc\xEA falando para a c\xE2mera, como se contasse para uma amiga.",
+          script: ["Gancho falando direto para a c\xE2mera", "Contexto: por que voc\xEA foi atr\xE1s desse produto", "3 pontos que voc\xEA notou usando", "Um ponto de aten\xE7\xE3o (sinceridade)", "Para quem vale a pena"],
+          hooks: ["vou ser sincera sobre {p}", "tr\xEAs coisas que ningu\xE9m te conta sobre {p}", "vale a pena? minha opini\xE3o depois de usar"]
+        },
+        {
+          id: "tutorial",
+          label: "Tutorial de uso",
+          objective: "Ensinar a usar do jeito certo, com passo a passo claro.",
+          script: ["Gancho: o erro mais comum ao usar", "Passo 1 (de perto)", "Passo 2", "Passo 3 + dica sua", "Resultado final"],
+          hooks: ["voc\xEA est\xE1 usando {p} errado", "o jeito certo de usar {p}", "passo a passo que ningu\xE9m me ensinou"]
+        },
+        {
+          id: "motivos",
+          label: "3 motivos",
+          objective: "Listar motivos concretos para escolher o produto, com uma cena para cada.",
+          script: ['Gancho: "3 motivos pra\u2026"', "Motivo 1 com cena", "Motivo 2 com cena", "Motivo 3 com cena", "Fechamento com o produto em destaque"],
+          hooks: ["3 motivos pra eu n\xE3o largar {p}", "por que eu escolheria {p} de novo", "se eu tivesse que indicar um s\xF3"]
+        },
+        {
+          id: "asmr",
+          label: "Est\xE9tico / ASMR",
+          objective: "V\xEDdeo visual, com sons do produto e takes bonitos, pouca fala.",
+          script: ["Take de abertura bonito (luz natural)", "Detalhes: textura, som, embalagem", "Uso em takes curtos", "Produto no cen\xE1rio final", "Texto na tela com 1 frase"],
+          hooks: ["s\xF3 o som disso j\xE1 me acalma", "take por take do meu momento {n}", "POV: seu momento favorito do dia"]
+        }
+      ];
+      PACES = {
+        curto: { label: "Curto (4 dias)", days: [1, 2, 3, 3, 4] },
+        normal: { label: "Normal (1 semana)", days: [1, 3, 5, 6, 7] },
+        folgado: { label: "Folgado (2 semanas)", days: [2, 5, 9, 11, 13] }
+      };
+      TRAINING_PIPELINE = [
+        ["briefing", "Briefing"],
+        ["roteiro", "Roteiro"],
+        ["gravacao", "Grava\xE7\xE3o"],
+        ["edicao", "Edi\xE7\xE3o"],
+        ["postado", "Postado"],
+        ["portfolio", "No portf\xF3lio"],
+        ["concluido", "Conclu\xEDdo"]
+      ];
+      GUESS = [
+        ["haircare", /cabel|shampoo|condicion|m[aá]scara cap|leave|finaliz|capilar|creme de pentear|fios|pontas/i],
+        ["skincare", /facial|rosto|s[eé]rum|protetor|fps|micelar|labial|skin|olheira|t[oô]nico/i],
+        ["bodycare", /corpo|corporal|desodorante|body|sabonete|banho|perfume|col[oô]nia/i],
+        ["moda", /bolsa|brinco|colar|[oó]culos|rel[oó]gio|acess[oó]rio|roupa|vestido|cal[cç]a|sapato|t[eê]nis casual/i],
+        ["fitness", /fitness|treino|legging|top |macaqu|academia|yoga|garrafa|whey|creatina/i],
+        ["tech", /app|aplicativo|led|fone|carregador|celular|trip[eé]|massagem|gadget|tech/i]
+      ];
+      guessNiche = (text) => {
+        var _a;
+        return ((_a = GUESS.find(([, re]) => re.test(text || ""))) == null ? void 0 : _a[0]) || "";
+      };
+      briefKey = (b) => "".concat((b.brand || "").toLowerCase(), "|").concat((b.product || "").toLowerCase());
+      pick = (list, r) => list[Math.floor(r() * list.length)];
+      COMMON_DOS = ["Luz natural e fundo limpo.", "Primeiros 3 segundos com o produto ou a dor aparecendo.", "Fale s\xF3 do que voc\xEA sentiu usando de verdade."];
+      COMMON_DONTS = ["N\xE3o use #publi nem marque a marca como parceira: \xE9 um conte\xFAdo autoral de treino.", "N\xE3o invente resultado, n\xFAmero ou benef\xEDcio."];
+    }
+  });
+
   // src/js/lib/deals.js
   function deadlines(deals) {
     const out = [];
     for (const d of deals) {
       if (d.status === "cancelado") continue;
-      const name = d.brandName || d.title || "Marca";
+      const name = "".concat(isTraining(d) ? "Treino \xB7 " : "").concat(d.brandName || d.title || "Marca");
       if (!isDone(d)) {
         for (const it of d.deliverables || []) if (it.due && !it.done) out.push({ date: it.due, kind: "entrega", label: it.text || "Entreg\xE1vel", deal: d, name });
         if (d.scriptDue && stageIndex(d) <= (PIPELINES[d.type] || []).findIndex(([k]) => k === "roteiro")) out.push({ date: d.scriptDue, kind: "roteiro", label: "Enviar roteiro", deal: d, name });
-        if (d.postDate && !["publicado", "vendendo", "relatorio", "concluido"].includes(d.status)) out.push({ date: d.postDate, kind: "post", label: "Publicar", deal: d, name });
+        if (d.postDate && !["publicado", "vendendo", "relatorio", "concluido", "postado", "portfolio"].includes(d.status)) out.push({ date: d.postDate, kind: "post", label: "Publicar", deal: d, name });
       }
       if (d.paymentDue && d.paymentStatus !== "pago" && d.paymentStatus !== "permuta" && num(d.value) > 0) out.push({ date: d.paymentDue, kind: "pagamento", label: "Receber R$ ".concat(fmtMoney(num(d.value))), deal: d, name });
     }
@@ -2468,7 +2754,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const active = deals.filter((d) => d.status !== "cancelado");
     const paid = active.filter((d) => d.paymentStatus === "pago");
     const open2 = active.filter((d) => num(d.value) > 0 && !["pago", "permuta"].includes(d.paymentStatus || "pendente"));
-    const byType = Object.fromEntries(Object.keys(DEAL_TYPES).map((t) => [t, paid.filter((d) => d.type === t && inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0)]));
+    const byType = Object.fromEntries(Object.keys(REAL_TYPES).map((t) => [t, paid.filter((d) => d.type === t && inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0)]));
     const tts = active.filter((d) => d.type === "tts");
     return {
       receivedMonth: paid.filter((d) => inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0),
@@ -2523,15 +2809,20 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return cell2(k === "type" ? (_a = DEAL_TYPES[d.type]) == null ? void 0 : _a.label : d[k]);
     }).join(";"))].join("\r\n");
   }
-  var DEAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, num, nextDeadline, fmtMoney;
+  var DEAL_TYPES, REAL_TYPES, isTraining, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, num, nextDeadline, fmtMoney;
   var init_deals = __esm({
     "src/js/lib/deals.js"() {
       init_insights();
+      init_briefs();
       DEAL_TYPES = {
         ugc: { label: "UGC", emoji: "\u{1F3A5}", color: "indigo" },
         publi: { label: "Publi", emoji: "\u{1F4E3}", color: "pink" },
-        tts: { label: "TikTok Shop", emoji: "\u{1F6D2}", color: "dark" }
+        tts: { label: "TikTok Shop", emoji: "\u{1F6D2}", color: "dark" },
+        // Briefing de treino: não é campanha de verdade, fica na aba própria e fora do financeiro.
+        treino: { label: "Treino", emoji: "\u{1F3AF}", color: "orange", hidden: true }
       };
+      REAL_TYPES = Object.fromEntries(Object.entries(DEAL_TYPES).filter(([, t]) => !t.hidden));
+      isTraining = (d) => (d == null ? void 0 : d.type) === "treino";
       PIPELINES = {
         ugc: [
           ["proposta", "Proposta"],
@@ -2563,7 +2854,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           ["publicado", "Publicado"],
           ["vendendo", "Vendendo"],
           ["concluido", "Conclu\xEDdo"]
-        ]
+        ],
+        treino: TRAINING_PIPELINE
       };
       PAYMENT = { pendente: "A receber", faturado: "Faturado", pago: "Pago", permuta: "Permuta" };
       stageLabel = (deal) => {
@@ -2657,7 +2949,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       for (const c of inWeek) if (c.planWeek === monday && c.status === "roteiro" && !c.touched) store.remove("contents", c.id);
     }
     const keepDays = new Set(all("contents").filter((c) => days.includes(c.date) && c.planWeek === monday).map((c) => c.date));
-    const items = generateWeek({ monday, contents: all("contents"), deals: all("deals"), profile: profile(), customFormats: all("formats"), bank: all("bank"), seed: seed || String(Date.now()) }).filter((it) => !keepDays.has(it.date));
+    const items = generateWeek({ monday, contents: all("contents"), deals: all("deals"), profile: profile(), customFormats: all("formats"), bank: all("bank"), seed: seed || String(Date.now()) }).filter((it) => !keepDays.has(it.date)).filter((it) => !it.dealId || !all("contents").some((c) => c.dealId === it.dealId));
     for (const it of items) store.create("contents", { ...it, planWeek: monday, source: "plano" });
     const rec = { weekStart: monday, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), count: items.length };
     if (existing) store.update("plans", existing.id, rec);
@@ -3303,7 +3595,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function palette(p = {}) {
     return { ...DEFAULT_PALETTE, ...p };
   }
-  function rng2(seed) {
+  function rng3(seed) {
     let h2 = 2166136261;
     for (const ch of String(seed)) h2 = Math.imul(h2 ^ ch.charCodeAt(0), 16777619);
     return () => {
@@ -3439,7 +3731,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     g.addColorStop(1, bg.stops[2]);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
-    const r = rng2("bg:".concat(seed));
+    const r = rng3("bg:".concat(seed));
     for (let i = 0; i < 4; i++) {
       const x = r() * W;
       const y = r() * H;
@@ -3456,7 +3748,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
   }
   function tornEdge(ctx, seed) {
-    const r = rng2("torn:".concat(seed));
+    const r = rng3("torn:".concat(seed));
     const pts = [];
     for (let y = -10; y <= H + 10; y += 22) pts.push([34 + r() * 26, y]);
     ctx.save();
@@ -3724,7 +4016,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     ctx.fill();
     noShadow(ctx);
     ctx.clip();
-    const rnd = rng2("gold:".concat(seed));
+    const rnd = rng3("gold:".concat(seed));
     for (let i = 0; i < 260; i++) {
       ctx.fillStyle = rnd() > 0.5 ? "rgba(255,255,255,.75)" : "rgba(150,105,40,.35)";
       ctx.fillRect((rnd() - 0.5) * 2 * r, (rnd() - 0.5) * 2 * r, 3, 3);
@@ -4023,7 +4315,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function decorate(ctx, kind, spots, seed, images = []) {
     if (kind === "nenhum" || !(spots == null ? void 0 : spots.length)) return;
-    const r = rng2("decor:".concat(seed));
+    const r = rng3("decor:".concat(seed));
     if (kind === "dourada") {
       const [a, b] = spots;
       goldStar(ctx, a[0], a[1], 110, 0.25, seed);
@@ -4756,6 +5048,32 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       loose: false
     };
   }
+  function briefingPrompt({ profile: profile2, niche, nicheName, source = "qualquer", products: products2 = [], brands = [], exclude = [], pace }) {
+    const mine = products2.filter((p) => p.niche === niche).map((p) => [p.brand, p.product].filter(Boolean).join(" \u2013 "));
+    const src = source === "tenho" ? "Use UM produto desta lista (s\xE3o produtos que eu tenho em casa): ".concat(mine.join("; ") || "(lista vazia: invente um produto e diga que \xE9 fict\xEDcio)", ".") : source === "inventado" ? "Invente um produto e uma marca fict\xEDcia (deixe claro que \xE9 fict\xEDcia; n\xE3o use nome de marca que existe)." : "Pode usar um produto que eu tenho (".concat(mine.join("; ") || "nenhum nesse nicho", ") ou inventar um produto de marca fict\xEDcia.");
+    return "Sou criadora UGC brasileira e quero treinar como se fosse um job de marca, para manter meu perfil ativo e meu portf\xF3lio atualizado.\nSobre mim: ".concat(profile2.about || "\u2014", "\nNichos: ").concat(profile2.niches || "\u2014", "\nMeu jeito: ").concat(profile2.style || "\u2014", "\nEvitar: ").concat(profile2.avoid || "\u2014", "\n").concat(brands.length ? "Marcas com que j\xE1 trabalhei (para refer\xEAncia de n\xEDvel de briefing): ".concat(brands.slice(0, 20).join(", "), ".\n") : "", "\nCrie um briefing de UGC completo, como uma marca mandaria, para o nicho: ").concat(nicheName, ".\n").concat(src, "\n").concat(exclude.length ? "N\xE3o repita estes (j\xE1 recusei): ".concat(exclude.join("; "), ".\n") : "", "Prazo do job: ").concat(pace, '. As datas eu calculo; n\xE3o coloque datas.\n\nRegras: portugu\xEAs do Brasil. \xC9 um conte\xFAdo de treino, n\xE3o \xE9 publi: nada de #publi nem marcar a marca. N\xE3o invente benef\xEDcio, n\xFAmero ou resultado de produto real; para produto real, as mensagens-chave s\xE3o sobre o que eu posso observar usando, e diga para conferir na embalagem. Ganchos curtos e naturais, do meu jeito.\n\nResponda SOMENTE com este JSON:\n{"brand": "marca", "product": "produto", "fictional": true, "angle": "tipo de v\xEDdeo (ex.: unboxing, problema-solu\xE7\xE3o, rotina, depoimento, tutorial)", "objective": "objetivo do v\xEDdeo em 1 frase", "audience": "p\xFAblico", "keyMessages": ["3 mensagens-chave"], "dos": ["o que fazer"], "donts": ["o que evitar"], "format": "dura\xE7\xE3o e formato", "hooks": ["3 ganchos"], "script": ["cena 1 com a fala", "cena 2", "..."], "caption": "legenda curta"}');
+  }
+  function parseBrief(text) {
+    const raw = String(text || "").trim();
+    if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
+    const d = extractJson(raw);
+    if (!d || typeof d !== "object") throw new Error("N\xE3o encontrei o briefing na resposta. Copie a resposta inteira do Claude.");
+    return {
+      brand: str(d.brand),
+      product: str(d.product),
+      fictional: d.fictional === void 0 ? void 0 : d.fictional === true || d.fictional === "true",
+      angle: str(d.angle),
+      objective: str(d.objective),
+      audience: str(d.audience),
+      keyMessages: arr(d.keyMessages),
+      dos: arr(d.dos),
+      donts: arr(d.donts),
+      format: str(d.format),
+      hooks: arr(d.hooks).slice(0, 5),
+      script: arr(d.script),
+      caption: str(d.caption)
+    };
+  }
   var formatBlock, str, arr, SLIDE_HINT, FUNNEL_LABEL, TYPE_LABEL, REVIEW_AREAS, pct;
   var init_prompts = __esm({
     "src/js/lib/prompts.js"() {
@@ -4810,6 +5128,370 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
   });
 
+  // src/js/views/training.js
+  function generate({ another: another2 = false } = {}) {
+    if (!another2) state.exclude = [];
+    const niche = another2 && state.draft ? state.draft.niche : state.niche || nextNiche(trainings());
+    state.draft = generateBrief({ niche, source: state.source, products: products(), exclude: state.exclude, start: today(), pace: state.pace, seed: "".concat(Date.now()) });
+    rerender();
+  }
+  function another() {
+    if (state.draft) state.exclude.push(briefKey(state.draft), "angulo:".concat(state.draft.angle));
+    generate({ another: true });
+  }
+  function dontHave() {
+    const b = state.draft;
+    const lines = String(profile().myProducts || "").split("\n");
+    const keep = lines.filter((l) => {
+      const p = parseProducts(l)[0];
+      return !p || briefKey(p) !== briefKey(b);
+    });
+    saveProfile({ myProducts: keep.join("\n") });
+    toast("".concat(b.product, " saiu da sua lista"));
+    another();
+  }
+  function askBrief() {
+    const niche = state.niche || nextNiche(trainings());
+    askClaude({
+      kind: "briefing",
+      context: { niche, pace: state.pace },
+      prompt: briefingPrompt({
+        profile: profile(),
+        niche,
+        nicheName: nicheLabel(niche),
+        source: state.source,
+        products: products(),
+        brands: workedBrands(),
+        exclude: state.draft ? ["".concat(state.draft.brand, " \u2013 ").concat(state.draft.product)] : [],
+        pace: PACES[state.pace].label
+      })
+    });
+  }
+  function accept() {
+    const b = state.draft;
+    const d = create("deals", {
+      type: "treino",
+      status: "briefing",
+      brandName: b.brand,
+      title: "".concat(nicheLabel(b.niche), " \xB7 ").concat(b.angleLabel),
+      product: b.product,
+      niche: b.niche,
+      start: b.start,
+      scriptDue: b.scriptDue,
+      postDate: b.postDate,
+      deliverables: b.deliverables,
+      brief: b,
+      value: 0
+    });
+    state.draft = null;
+    state.exclude = [];
+    toast("Briefing aceito. Os prazos j\xE1 est\xE3o na Vis\xE3o geral e no Planejamento.");
+    setTimeout(() => openBrief(d), 200);
+  }
+  function briefBody(b) {
+    const list = (header, items, id) => (items == null ? void 0 : items.length) > 0 && group({ header, children: items.map((x) => h("div", { class: "cell prose", "data-brief": id }, x)) });
+    return [
+      h(
+        "div",
+        { class: "brief-head" },
+        h(
+          "div",
+          { class: "brief-tags" },
+          tag(nicheLabel(b.niche), "t-butter"),
+          b.fictional ? tag("Produto inventado", "t-pink") : tag("Produto que voc\xEA tem", "ok"),
+          tag("Treino \xB7 n\xE3o \xE9 publi", "t-brown")
+        ),
+        h("h3", { class: "brief-title", "data-id": "brief-product" }, "".concat(b.brand, " \xB7 ").concat(b.product)),
+        h("p", { class: "muted small" }, "".concat(b.angleLabel).concat(b.source === "claude" ? " \xB7 sugest\xE3o do Claude" : "")),
+        b.note && h("p", { class: "muted small" }, b.note)
+      ),
+      group({ header: "O job", children: [
+        cell({ title: "Objetivo", subtitle: b.objective }),
+        cell({ title: "P\xFAblico", subtitle: b.audience }),
+        cell({ title: "Formato", subtitle: b.format }),
+        cell({ title: "Uso", subtitle: b.usage })
+      ] }),
+      list("Mensagens-chave", b.keyMessages, "msg"),
+      list("Fa\xE7a", b.dos, "do"),
+      list("Evite", b.donts, "dont"),
+      list("Ganchos", b.hooks, "hook"),
+      group({ header: "Roteiro", children: (b.script || []).map((s, i) => cell({ iconEl: h("span", { class: "step-n" }, String(i + 1)), title: s })) }),
+      b.caption && group({ header: "Legenda", children: [h("div", { class: "cell prose" }, b.caption)] })
+    ];
+  }
+  function draftCard() {
+    const b = state.draft;
+    if (!b) return null;
+    return card({
+      title: "Seu briefing",
+      subtitle: "Se n\xE3o tiver o produto ou n\xE3o der para gravar, pe\xE7a outra sugest\xE3o.",
+      id: "brief-draft",
+      cls: "brief",
+      children: h(
+        "div",
+        { class: "sheet-stack" },
+        ...briefBody(b),
+        group({ header: "Prazos", children: b.deliverables.map((x) => cell({ title: x.text, detail: short(x.due) })) }),
+        h(
+          "div",
+          { class: "page-actions brief-actions" },
+          btn("Aceitar e come\xE7ar", accept, { kind: "primary", id: "brief-accept" }),
+          btn("Outra sugest\xE3o", another, { id: "brief-another", iconName: "refresh" }),
+          !b.fictional && btn("N\xE3o tenho mais esse", dontHave, { id: "brief-dont-have" }),
+          btn("Copiar", async () => toast(await copyText(briefText(b)) ? "Briefing copiado" : "N\xE3o consegui copiar"), { kind: "ghost", id: "brief-copy" }),
+          btn("Descartar", () => {
+            state.draft = null;
+            rerender();
+          }, { kind: "ghost" })
+        )
+      )
+    });
+  }
+  function openBrief(d) {
+    const b = d.brief || {};
+    let status = d.status || "briefing";
+    const deliverables = (d.deliverables || []).map((x) => ({ ...x }));
+    const stageBox = h("div", { class: "stage-scroll", role: "radiogroup", "aria-label": "Etapa" });
+    const drawStages = () => stageBox.replaceChildren(...PIPELINES.treino.map(([k, label], i) => h("button", {
+      type: "button",
+      role: "radio",
+      "aria-checked": String(k === status),
+      "data-stage": k,
+      class: "stage".concat(k === status ? " on" : "").concat(i < PIPELINES.treino.findIndex(([x]) => x === status) ? " done" : ""),
+      onclick: () => {
+        status = k;
+        drawStages();
+      }
+    }, label)));
+    drawStages();
+    const delivs = group({ header: "Entregas e prazos", footer: "Aparecem na Vis\xE3o geral e no Planejamento, como um job de verdade.", children: deliverables.map((it) => {
+      const cb = h("input", { type: "checkbox", class: "round-check", checked: Boolean(it.done), "aria-label": "Feito" });
+      cb.addEventListener("change", () => {
+        it.done = cb.checked;
+        it.doneAt = cb.checked ? today() : null;
+      });
+      const due = h("input", { type: "date", value: it.due || "", "aria-label": "Prazo" });
+      due.addEventListener("change", () => it.due = due.value);
+      return h("div", { class: "cell deliv-row" }, cb, h("div", { class: "deliv-fields" }, h("span", {}, it.text), due));
+    }) });
+    const save = () => {
+      const post = deliverables.find((x) => /postar/i.test(x.text));
+      const script = deliverables.find((x) => /roteiro/i.test(x.text));
+      update("deals", d.id, { status, deliverables, postDate: (post == null ? void 0 : post.due) || d.postDate, scriptDue: (script == null ? void 0 : script.due) || d.scriptDue });
+    };
+    let close;
+    close = sheet({
+      title: "Treino \xB7 ".concat(d.product || d.brandName),
+      tall: true,
+      onSave: () => {
+        save();
+        toast("Salvo");
+      },
+      body: h(
+        "div",
+        { class: "sheet-stack" },
+        h("p", { class: "group-header pad-x" }, "Etapa"),
+        stageBox,
+        delivs,
+        ...briefBody(b),
+        group({ children: [
+          h("button", { type: "button", class: "cell tappable tint", "data-id": "brief-agenda", onclick: () => {
+            var _a;
+            save();
+            const exists = all("contents").find((c2) => c2.dealId === d.id);
+            close();
+            if (exists) return setTimeout(() => openContent(exists), 260);
+            const c = create("contents", {
+              title: "UGC de treino: ".concat(d.product || d.brandName),
+              date: d.postDate || today(),
+              type: "video",
+              goal: "marcas",
+              dealId: d.id,
+              status: "roteiro",
+              theme: d.product || "",
+              hook: ((_a = b.hooks) == null ? void 0 : _a[0]) || "",
+              steps: b.script || [],
+              caption: b.caption || "",
+              portfolio: true,
+              platforms: ["instagram", "tiktok"]
+            });
+            setTimeout(() => openContent(c), 260);
+          } }, "\u{1F5D3}\uFE0F Abrir o conte\xFAdo na agenda"),
+          h("button", { type: "button", class: "cell tappable tint", onclick: async () => toast(await copyText(briefText({ ...b, deliverables })) ? "Briefing copiado" : "N\xE3o consegui copiar") }, "\u{1F4CB} Copiar briefing"),
+          h("button", { type: "button", class: "cell tappable destructive", "data-id": "brief-delete", onclick: async () => {
+            if (await confirmDelete("este briefing de treino")) {
+              remove("deals", d.id);
+              close();
+            }
+          } }, "Apagar briefing")
+        ] })
+      )
+    });
+  }
+  function coverageCard() {
+    const cov = coverage(trainings());
+    const next = nextNiche(trainings());
+    return card({
+      title: "Nichos do portf\xF3lio",
+      subtitle: "O gerador come\xE7a pelo nicho com menos treino",
+      flush: true,
+      id: "brief-coverage",
+      children: group({ children: cov.map((n2) => cell({
+        emoji: n2.emoji,
+        color: n2.id === next ? "orange" : "gray",
+        title: n2.label,
+        subtitle: n2.total ? "".concat(n2.total, " briefing(s) \xB7 ").concat(n2.done, " postado(s)").concat(n2.last ? " \xB7 \xFAltimo ".concat(short(n2.last)) : "") : "Nenhum treino ainda",
+        chevron: true,
+        onClick: () => {
+          state.niche = n2.id;
+          generate();
+        }
+      })) })
+    });
+  }
+  function editProducts() {
+    const ta = h("textarea", { rows: 12, class: "input", name: "my-products", "aria-label": "Produtos que voc\xEA tem", placeholder: "Dove | \xF3leo s\xE9rum corporal | bodycare\nElseve | \xF3leo extraordin\xE1rio | haircare\nBolsa preta transversal" }, profile().myProducts || "");
+    sheet({
+      title: "Produtos que voc\xEA tem",
+      body: h(
+        "div",
+        { class: "sheet-stack" },
+        h("p", { class: "muted small" }, 'Um por linha: marca | produto | nicho. O nicho \xE9 opcional (haircare, skincare, bodycare, moda, fitness, tech). Os briefings com "produto que eu tenho" saem s\xF3 desta lista.'),
+        ta
+      ),
+      onSave: () => {
+        saveProfile({ myProducts: ta.value.trim() });
+        toast("Lista salva");
+      }
+    });
+  }
+  function productsCard() {
+    const list = products();
+    const noNiche = list.filter((p) => !p.niche).length;
+    return card({
+      title: "Produtos que voc\xEA tem (".concat(list.length, ")"),
+      subtitle: "Para briefings que d\xE1 para gravar hoje",
+      flush: true,
+      id: "brief-products",
+      actions: btn("Editar", editProducts, { small: true, id: "brief-products-edit" }),
+      children: list.length ? group({ children: [
+        ...NICHES.map((n2) => ({ n: n2, items: list.filter((p) => p.niche === n2.id) })).filter((x) => x.items.length).map(({ n: n2, items }) => cell({ emoji: n2.emoji, color: "gray", title: n2.label, subtitle: items.map((p) => [p.brand, p.product].filter(Boolean).join(" ")).join(" \xB7 ") })),
+        noNiche > 0 && cell({ emoji: "\u2754", color: "gray", title: "Sem nicho", subtitle: "".concat(noNiche, " produto(s): coloque | nicho no fim da linha") })
+      ] }) : emptyNote("Lista vazia", "Anote os produtos que voc\xEA tem em casa. Sem lista, os briefings usam produtos inventados.")
+    });
+  }
+  function trainingsTable(list, td) {
+    return table({
+      caption: "Briefings de treino",
+      rows: list,
+      rowId: (d) => "brief-".concat(d.id),
+      rowCls: (d) => {
+        var _a;
+        return (((_a = nextDeadline(d)) == null ? void 0 : _a.date) || "9") < td && !isDone(d) ? "is-late" : "";
+      },
+      onRowClick: (d) => openBrief(d),
+      empty: "Nenhum briefing aceito ainda.",
+      columns: [
+        { label: "Produto", main: true, render: (d) => {
+          var _a;
+          return h("div", {}, h("div", { class: "td-title" }, d.product || d.brandName), h("div", { class: "td-sub" }, "".concat(d.brandName, " \xB7 ").concat(((_a = d.brief) == null ? void 0 : _a.angleLabel) || "")));
+        } },
+        { label: "Nicho", render: (d) => tag(nicheLabel(d.niche), "t-butter") },
+        { label: "Etapa", render: (d) => isDone(d) ? tag("Conclu\xEDdo", "ok") : h("span", {}, stageLabel(d)) },
+        { label: "Pr\xF3ximo prazo", render: (d) => {
+          const nd = nextDeadline(d);
+          if (!nd) return h("span", { class: "subtle" }, "\u2014");
+          return h("span", { class: "deadline".concat(nd.date < td ? " late" : nd.date === td ? " today" : "") }, "".concat(nd.date < td ? "Atrasado \xB7 " : nd.date === td ? "Hoje \xB7 " : "").concat(nd.label, " \xB7 ").concat(short(nd.date)));
+        } },
+        { label: "Entregas", render: (d) => {
+          const items = d.deliverables || [];
+          const done = items.filter((x) => x.done).length;
+          return h("span", { class: "bar-cell" }, h("span", { class: "meter mini" }, h("span", { style: { width: "".concat(items.length ? Math.round(done / items.length * 100) : 0, "%") } })), h("span", { class: "num small" }, "".concat(done, "/").concat(items.length)));
+        } }
+      ]
+    });
+  }
+  function trainingTab() {
+    const td = today();
+    const list = trainings().filter((d) => d.status !== "cancelado").sort((a, b) => {
+      var _a, _b;
+      return isDone(a) - isDone(b) || (((_a = nextDeadline(a)) == null ? void 0 : _a.date) || "9").localeCompare(((_b = nextDeadline(b)) == null ? void 0 : _b.date) || "9");
+    });
+    const auto = nextNiche(trainings());
+    return [
+      h("p", { class: "muted small brief-intro" }, "Jobs de UGC simulados, com briefing e prazo de verdade, para manter o perfil ativo e o portf\xF3lio atualizado quando n\xE3o tem marca. S\xE3o treino: n\xE3o entram no financeiro e n\xE3o s\xE3o publi."),
+      h(
+        "div",
+        { class: "grid cols-main align-start" },
+        h(
+          "div",
+          { class: "stack" },
+          card({
+            title: "Novo briefing",
+            subtitle: "Escolha o nicho (ou deixe no autom\xE1tico) e gere",
+            id: "brief-generator",
+            children: h(
+              "div",
+              { class: "stack" },
+              h(
+                "div",
+                { class: "filters" },
+                filterSelect("Nicho: autom\xE1tico (".concat(nicheLabel(auto), ")"), NICHES.map((n2) => ({ value: n2.id, label: "".concat(n2.emoji, " ").concat(n2.label) })), state.niche, (v) => {
+                  state.niche = v;
+                  rerender();
+                }),
+                h("select", { class: "filter-select", "aria-label": "Produto", "data-id": "brief-source", onchange: (e) => {
+                  state.source = e.target.value;
+                } }, SOURCES.map((o) => h("option", { value: o.value, selected: o.value === state.source }, o.label))),
+                h("select", { class: "filter-select", "aria-label": "Prazo", "data-id": "brief-pace", onchange: (e) => {
+                  state.pace = e.target.value;
+                } }, Object.entries(PACES).map(([value, p]) => h("option", { value, selected: value === state.pace }, p.label)))
+              ),
+              h(
+                "div",
+                { class: "page-actions" },
+                btn("Gerar briefing", () => generate(), { kind: "primary", id: "brief-generate" }),
+                btn("\u2728 Pedir ao Claude", askBrief, { id: "brief-claude" })
+              )
+            )
+          }),
+          draftCard(),
+          card({ title: "Seus treinos", flush: true, children: trainingsTable(list, td) })
+        ),
+        h("div", { class: "stack" }, coverageCard(), productsCard())
+      )
+    ];
+  }
+  var state, rerender, trainings, products, workedBrands, short, SOURCES;
+  var init_training = __esm({
+    "src/js/views/training.js"() {
+      init_data();
+      init_ui();
+      init_briefs();
+      init_deals();
+      init_prompts();
+      init_claude();
+      init_content_sheet();
+      state = { niche: "", source: "qualquer", pace: "normal", draft: null, exclude: [] };
+      rerender = () => document.dispatchEvent(new Event("rerender"));
+      trainings = () => all("deals").filter((d) => d.type === "treino");
+      products = () => parseProducts(profile().myProducts || "");
+      workedBrands = () => [.../* @__PURE__ */ new Set([
+        ...all("deals").filter((d) => d.type !== "treino" && d.brandName).map((d) => d.brandName),
+        ...all("brands").filter((b) => b.status === "fechado").map((b) => b.name)
+      ])];
+      short = (d) => fmtDay(d, { day: "numeric", month: "short" });
+      SOURCES = [{ value: "qualquer", label: "Qualquer produto" }, { value: "tenho", label: "S\xF3 produtos que eu tenho" }, { value: "inventado", label: "Produto inventado" }];
+      onClaudeResult("briefing", (text, ctx) => {
+        const ai = parseBrief(text);
+        state.draft = briefFromAi(ai, { niche: ctx.niche || nextNiche(trainings()), start: today(), pace: ctx.pace || "normal" });
+        go("marcas/campanhas", { aba: "treino" });
+        rerender();
+        toast("Briefing do Claude pronto. Confira e aceite.");
+      });
+    }
+  });
+
   // src/js/views/brands.js
   var brands_exports = {};
   __export(brands_exports, {
@@ -4826,6 +5508,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     openDeal({ type, status: PIPELINES[type][0][0], paymentStatus: "pendente", deliverables: type === "tts" ? [{ text: "V\xEDdeo com link do produto", due: "", done: false }] : [{ text: "", due: "", done: false }] });
   }
   function openDeal(d) {
+    if (d.type === "treino") return openBrief(d);
     const isNew = !d.id;
     let type = d.type || "ugc";
     let status = d.status || PIPELINES[type][0][0];
@@ -4834,7 +5517,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const stageBox = h("div", { class: "stage-scroll", role: "radiogroup", "aria-label": "Etapa" });
     const delivBox = h("div");
     const conditional = h("div");
-    const drawType = () => typeSeg.replaceChildren(segmentedRaw(Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), type, (v) => {
+    const drawType = () => typeSeg.replaceChildren(segmentedRaw(Object.entries(REAL_TYPES).map(([value, t]) => ({ value, label: t.label })), type, (v) => {
       type = v;
       if (!PIPELINES[type].some(([k]) => k === status)) status = PIPELINES[type][0][0];
       drawType();
@@ -4998,7 +5681,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     return segmented(options, value, onChange2, "Tipo");
   }
   async function chooseNewDeal() {
-    const t = await actionSheet({ title: "Nova campanha", message: "Qual tipo?", actions: Object.entries(DEAL_TYPES).map(([value, t2]) => ({ label: "".concat(t2.emoji, " ").concat(t2.label), value, id: "new-".concat(value) })) });
+    const t = await actionSheet({ title: "Nova campanha", message: "Qual tipo?", actions: Object.entries(REAL_TYPES).map(([value, t2]) => ({ label: "".concat(t2.emoji, " ").concat(t2.label), value, id: "new-".concat(value) })) });
     if (t) newDeal(t);
   }
   function campaignsTable(list, td) {
@@ -5038,15 +5721,29 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  function renderCampaigns(root) {
+  function renderCampaigns(root, params = {}) {
+    if (params.aba === "treino" || params.aba === "campanhas") state2.area = params.aba;
     const td = today();
-    const all2 = all("deals");
+    const areaTabs = tabs([{ value: "campanhas", label: "Campanhas" }, { value: "treino", label: "Briefings de treino" }], state2.area, (v) => {
+      state2.area = v;
+      go("marcas/campanhas", { aba: v });
+    }, "\xC1rea");
+    if (state2.area === "treino") {
+      root.append(page({
+        kicker: "Marcas",
+        title: "Campanhas",
+        subtitle: "Briefings de treino: um job de UGC simulado, com prazo, para quando n\xE3o tem marca.",
+        children: [areaTabs, ...trainingTab()]
+      }));
+      return;
+    }
+    const all2 = all("deals").filter((d) => d.type !== "treino");
     const open2 = all2.filter((d) => !isDone(d));
     const up = upcoming(open2, td, 7);
     const lateIds = new Set(up.overdue.map((x) => x.deal.id));
     const soonIds = new Set([...up.today, ...up.soon].map((x) => x.deal.id));
     const fin = finance(all2, td.slice(0, 7), td);
-    const list = all2.filter((d) => !state.type || d.type === state.type).filter((d) => state.show === "abertas" ? !isDone(d) : state.show === "concluidas" ? isDone(d) : true).filter((d) => !state.stage || d.status === state.stage).filter((d) => !state.q || norm([d.brandName, d.title, d.product, d.notes].join(" ")).includes(norm(state.q))).sort((a, b) => {
+    const list = all2.filter((d) => !state2.type || d.type === state2.type).filter((d) => state2.show === "abertas" ? !isDone(d) : state2.show === "concluidas" ? isDone(d) : true).filter((d) => !state2.stage || d.status === state2.stage).filter((d) => !state2.q || norm([d.brandName, d.title, d.product, d.notes].join(" ")).includes(norm(state2.q))).sort((a, b) => {
       var _a, _b;
       return isDone(a) - isDone(b) || (((_a = nextDeadline(a)) == null ? void 0 : _a.date) || "9").localeCompare(((_b = nextDeadline(b)) == null ? void 0 : _b.date) || "9");
     });
@@ -5063,35 +5760,36 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         btn("Nova campanha", chooseNewDeal, { kind: "primary", iconName: "plus", id: "new-deal" })
       ],
       children: [
+        areaTabs,
         h(
           "div",
           { class: "grid cols-4 kpis" },
           kpi({ label: "Atrasados", value: String(lateIds.size), tone: lateIds.size ? "danger" : "", hint: "campanhas com prazo vencido" }),
           kpi({ label: "Pr\xF3ximos 7 dias", value: String([...soonIds].filter((id) => !lateIds.has(id)).length), hint: "campanhas com prazo chegando" }),
-          kpi({ label: "Em andamento", value: String(open2.length), hint: Object.entries(DEAL_TYPES).map(([k, t]) => "".concat(open2.filter((d) => d.type === k).length, " ").concat(t.label)).join(" \xB7 ") }),
+          kpi({ label: "Em andamento", value: String(open2.length), hint: Object.entries(REAL_TYPES).map(([k, t]) => "".concat(open2.filter((d) => d.type === k).length, " ").concat(t.label)).join(" \xB7 ") }),
           kpi({ label: "A receber", value: money(fin.toReceive), tone: fin.overdue ? "danger" : "", hint: fin.overdue ? "".concat(money(fin.overdue), " atrasado") : "nada atrasado" })
         ),
         h(
           "div",
           { class: "section" },
-          tabs([{ value: "abertas", label: "Em aberto" }, { value: "concluidas", label: "Conclu\xEDdas" }, { value: "todas", label: "Todas" }], state.show, (v) => {
-            state.show = v;
-            rerender();
+          tabs([{ value: "abertas", label: "Em aberto" }, { value: "concluidas", label: "Conclu\xEDdas" }, { value: "todas", label: "Todas" }], state2.show, (v) => {
+            state2.show = v;
+            rerender2();
           }, "Mostrar"),
           h(
             "div",
             { class: "filters" },
-            searchBox(state.q, (v) => {
-              state.q = v;
-              rerender();
+            searchBox(state2.q, (v) => {
+              state2.q = v;
+              rerender2();
             }, "Buscar marca ou campanha"),
-            filterSelect("Tipo", Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state.type, (v) => {
-              state.type = v;
-              rerender();
+            filterSelect("Tipo", Object.entries(REAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state2.type, (v) => {
+              state2.type = v;
+              rerender2();
             }),
-            filterSelect("Etapa", stageOptions(), state.stage, (v) => {
-              state.stage = v;
-              rerender();
+            filterSelect("Etapa", stageOptions(), state2.stage, (v) => {
+              state2.stage = v;
+              rerender2();
             })
           ),
           !all2.length ? emptyNote("Nenhuma campanha ainda", "Registre um UGC, uma publi ou um produto do TikTok Shop para acompanhar prazos e pagamentos.", btn("Nova campanha", chooseNewDeal, { kind: "primary" })) : card({ flush: true, children: campaignsTable(list, td) })
@@ -5101,19 +5799,19 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function renderFinance(root) {
     const td = today();
-    state.month || (state.month = td.slice(0, 7));
+    state2.month || (state2.month = td.slice(0, 7));
     const deals = all("deals");
-    const f = finance(deals, state.month, td);
-    const [y, m] = state.month.split("-").map(Number);
+    const f = finance(deals, state2.month, td);
+    const [y, m] = state2.month.split("-").map(Number);
     const shift = (n2) => {
       const d = new Date(y, m - 1 + n2, 1);
-      state.month = "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"));
-      rerender();
+      state2.month = "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"));
+      rerender2();
     };
     const monthRaw = new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
     const monthName = monthRaw.charAt(0).toUpperCase() + monthRaw.slice(1);
     const open2 = deals.filter((d) => d.status !== "cancelado" && Number(d.value) > 0 && !["pago", "permuta"].includes(d.paymentStatus || "pendente")).sort((a, b) => (a.paymentDue || "9").localeCompare(b.paymentDue || "9"));
-    const paid = deals.filter((d) => d.paymentStatus === "pago" && (d.paidAt || "").startsWith(state.month));
+    const paid = deals.filter((d) => d.paymentStatus === "pago" && (d.paidAt || "").startsWith(state2.month));
     const months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(y, m - 1 - (5 - i), 1);
       return "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"));
@@ -5183,7 +5881,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           h(
             "div",
             { class: "stack" },
-            card({ title: "Recebido no m\xEAs por tipo", flush: true, children: group({ children: Object.entries(DEAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }) }),
+            card({ title: "Recebido no m\xEAs por tipo", flush: true, children: group({ children: Object.entries(REAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }) }),
             card({ title: "TikTok Shop", subtitle: "Total anotado em todos os produtos", flush: true, children: group({ children: [
               cell({ title: "Vendas", detail: String(f.ttsSales) }),
               cell({ title: "GMV", detail: money(f.ttsGmv) }),
@@ -5230,7 +5928,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     });
   }
   function renderContacts(root) {
-    const list = all("brands").filter((b) => !state.brandStatus || (b.status || "quero") === state.brandStatus);
+    const list = all("brands").filter((b) => !state2.brandStatus || (b.status || "quero") === state2.brandStatus);
     const portfolio = all("contents").filter((c) => c.portfolio);
     const deals = all("deals");
     root.append(page({
@@ -5244,9 +5942,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         h(
           "div",
           { class: "stack" },
-          h("div", { class: "filters" }, chips(BRAND_STATUS.map((s) => ({ value: s.value, label: s.label })), state.brandStatus, (v) => {
-            state.brandStatus = v;
-            rerender();
+          h("div", { class: "filters" }, chips(BRAND_STATUS.map((s) => ({ value: s.value, label: s.label })), state2.brandStatus, (v) => {
+            state2.brandStatus = v;
+            rerender2();
           })),
           card({ flush: true, children: table({
             caption: "Marcas",
@@ -5261,7 +5959,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
                 return tag(s == null ? void 0 : s.label, (s == null ? void 0 : s.value) === "fechado" ? "ok" : (s == null ? void 0 : s.value) === "conversando" ? "t-butter" : (s == null ? void 0 : s.value) === "contatei" ? "info" : "");
               } },
               { label: "Pr\xF3ximo passo", render: (b) => h("span", { class: "clamp-2" }, b.next || "\u2014") },
-              { label: "Campanhas", cls: "right", render: (b) => h("span", { class: "num" }, String(deals.filter((d) => norm(d.brandName) === norm(b.name)).length)) }
+              { label: "Campanhas", cls: "right", render: (b) => h("span", { class: "num" }, String(deals.filter((d) => d.type !== "treino" && norm(d.brandName) === norm(b.name)).length)) }
             ]
           }) })
         ),
@@ -5278,15 +5976,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       )
     }));
   }
-  var state, rerender, money, BRAND_STATUS, stageOptions, render;
+  var state2, rerender2, money, BRAND_STATUS, stageOptions, render;
   var init_brands = __esm({
     "src/js/views/brands.js"() {
       init_data();
       init_ui();
       init_deals();
       init_content_sheet();
-      state = { show: "abertas", type: "", stage: "", q: "", month: null, brandStatus: "" };
-      rerender = () => document.dispatchEvent(new Event("rerender"));
+      init_training();
+      state2 = { area: "campanhas", show: "abertas", type: "", stage: "", q: "", month: null, brandStatus: "" };
+      rerender2 = () => document.dispatchEvent(new Event("rerender"));
       money = (v) => "R$ ".concat(fmtMoney(v));
       BRAND_STATUS = [
         { value: "quero", label: "Quero trabalhar", emoji: "\u{1F4AD}", color: "gray" },
@@ -5296,7 +5995,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ];
       stageOptions = () => {
         const seen = /* @__PURE__ */ new Map();
-        for (const list of Object.values(PIPELINES)) for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
+        for (const [t, list] of Object.entries(PIPELINES)) if (REAL_TYPES[t]) {
+          for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
+        }
         return [...seen].map(([value, label]) => ({ value, label }));
       };
       render = renderCampaigns;
@@ -5592,8 +6293,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_formats();
   init_content_sheet();
   init_insights();
-  var state2 = { q: "", line: "", goal: "", used: "" };
-  var rerender2 = () => document.dispatchEvent(new Event("rerender"));
+  var state3 = { q: "", line: "", goal: "", used: "" };
+  var rerender3 = () => document.dispatchEvent(new Event("rerender"));
   var goalOptions = Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label }));
   var typeOptions = Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label }));
   function lineNames() {
@@ -5701,7 +6402,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const all2 = all("bank");
     const used = usedMap();
     const names = lineNames();
-    const list = all2.filter((b) => !state2.line || b.line === state2.line).filter((b) => !state2.goal || (b.goal || "seguidores") === state2.goal).filter((b) => !state2.used || (state2.used === "novo" ? !used.has(b.id) && !used.has(b.title) : used.has(b.id) || used.has(b.title))).filter((b) => !state2.q || norm(b.title).includes(norm(state2.q))).sort((a, b) => (a.line || "").localeCompare(b.line || "") || a.title.localeCompare(b.title));
+    const list = all2.filter((b) => !state3.line || b.line === state3.line).filter((b) => !state3.goal || (b.goal || "seguidores") === state3.goal).filter((b) => !state3.used || (state3.used === "novo" ? !used.has(b.id) && !used.has(b.title) : used.has(b.id) || used.has(b.title))).filter((b) => !state3.q || norm(b.title).includes(norm(state3.q))).sort((a, b) => (a.line || "").localeCompare(b.line || "") || a.title.localeCompare(b.title));
     const byGoal = Object.keys(GOALS).map((g) => all2.filter((b) => (b.goal || "seguidores") === g).length);
     return [
       h(
@@ -5724,21 +6425,21 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           h(
             "div",
             { class: "filters" },
-            searchBox(state2.q, (v) => {
-              state2.q = v;
-              rerender2();
+            searchBox(state3.q, (v) => {
+              state3.q = v;
+              rerender3();
             }, "Buscar tema"),
-            filterSelect("Linha", names.map((n2) => ({ value: n2, label: n2 })), state2.line, (v) => {
-              state2.line = v;
-              rerender2();
+            filterSelect("Linha", names.map((n2) => ({ value: n2, label: n2 })), state3.line, (v) => {
+              state3.line = v;
+              rerender3();
             }),
-            filterSelect("Funil", goalOptions, state2.goal, (v) => {
-              state2.goal = v;
-              rerender2();
+            filterSelect("Funil", goalOptions, state3.goal, (v) => {
+              state3.goal = v;
+              rerender3();
             }),
-            filterSelect("Uso", [{ value: "novo", label: "Ainda n\xE3o usados" }, { value: "usado", label: "J\xE1 usados" }], state2.used, (v) => {
-              state2.used = v;
-              rerender2();
+            filterSelect("Uso", [{ value: "novo", label: "Ainda n\xE3o usados" }, { value: "usado", label: "J\xE1 usados" }], state3.used, (v) => {
+              state3.used = v;
+              rerender3();
             })
           ),
           card({ flush: true, children: table({
@@ -5775,8 +6476,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_prompts();
   init_content_sheet();
   init_claude();
-  var state3 = { goal: "", q: "", type: "", tab: "formatos" };
-  var rerender3 = () => document.dispatchEvent(new Event("rerender"));
+  var state4 = { goal: "", q: "", type: "", tab: "formatos" };
+  var rerender4 = () => document.dispatchEvent(new Event("rerender"));
   var today2 = () => iso(/* @__PURE__ */ new Date());
   function openFormat(f) {
     const topic = h("input", { type: "text", placeholder: "Tema (opcional): ex. meu s\xE9rum novo", "aria-label": "Tema" });
@@ -5834,24 +6535,24 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const used = all("contents").reduce((m, c) => c.formatId ? m.set(c.formatId, (m.get(c.formatId) || 0) + 1) : m, /* @__PURE__ */ new Map());
     const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => {
       var _a;
-      return !state3.goal || ((_a = f.goals) == null ? void 0 : _a.includes(state3.goal));
-    }).filter((f) => !state3.type || (f.custom ? true : metaOf(f.id).types.includes(state3.type))).filter((f) => !state3.q || norm("".concat(f.name, " ").concat(f.why)).includes(norm(state3.q)));
+      return !state4.goal || ((_a = f.goals) == null ? void 0 : _a.includes(state4.goal));
+    }).filter((f) => !state4.type || (f.custom ? true : metaOf(f.id).types.includes(state4.type))).filter((f) => !state4.q || norm("".concat(f.name, " ").concat(f.why)).includes(norm(state4.q)));
     return [
       h(
         "div",
         { class: "filters" },
-        searchBox(state3.q, (v) => {
-          state3.q = v;
-          rerender3();
+        searchBox(state4.q, (v) => {
+          state4.q = v;
+          rerender4();
         }, "Buscar formato"),
-        filterSelect("Tipo de post", Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label })), state3.type, (v) => {
-          state3.type = v;
-          rerender3();
+        filterSelect("Tipo de post", Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label })), state4.type, (v) => {
+          state4.type = v;
+          rerender4();
         })
       ),
-      chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state3.goal, (v) => {
-        state3.goal = v;
-        rerender3();
+      chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state4.goal, (v) => {
+        state4.goal = v;
+        rerender4();
       }),
       h("div", { class: "format-grid" }, list.map((f) => h(
         "button",
@@ -5967,13 +6668,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var TABS = [{ value: "formatos", label: "Formatos" }, { value: "banco", label: "Banco de temas" }];
   function render2(root, params = {}) {
     if (params.aba && TABS.some((t) => t.value === params.aba)) {
-      state3.tab = params.aba;
+      state4.tab = params.aba;
       history.replaceState(null, "", "#/conteudo/formatos");
     }
-    const tab = state3.tab || "formatos";
+    const tab = state4.tab || "formatos";
     const tabsEl = tabs(TABS, tab, (v) => {
-      state3.tab = v;
-      rerender3();
+      state4.tab = v;
+      rerender4();
     }, "\xC1rea");
     root.append(page({
       kicker: "Conte\xFAdo",
@@ -6177,8 +6878,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_claude();
   init_designer();
   init_brands();
-  var state4 = { monday: null };
-  var rerender4 = () => document.dispatchEvent(new Event("rerender"));
+  var state5 = { monday: null };
+  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
   onClaudeResult("ideas", (text) => {
     const ideas = parseIdeas(text);
     if (!ideas.length) throw new Error("A resposta n\xE3o trouxe ideias.");
@@ -6257,8 +6958,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var DL_ICON2 = { entrega: "\u{1F4E6}", roteiro: "\u{1F4DD}", post: "\u{1F4E3}", pagamento: "\u{1F4B0}" };
   function render4(root) {
     const t = today();
-    state4.monday || (state4.monday = targetWeek(t));
-    const monday = state4.monday;
+    state5.monday || (state5.monday = targetWeek(t));
+    const monday = state5.monday;
     const days = weekdays(monday, planDays(profile()));
     const weekend = days.length === 7 ? [] : [addDays(monday, 5), addDays(monday, 6)];
     const plan = planFor(monday);
@@ -6328,16 +7029,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           "div",
           { class: "btn-group" },
           btn("", () => {
-            state4.monday = addDays(monday, -7);
-            rerender4();
+            state5.monday = addDays(monday, -7);
+            rerender5();
           }, { iconName: "back", title: "Semana anterior" }),
           btn(isCurrent ? "Esta semana" : "Ir para esta semana", () => {
-            state4.monday = weekStart(t);
-            rerender4();
+            state5.monday = weekStart(t);
+            rerender5();
           }),
           btn("", () => {
-            state4.monday = addDays(monday, 7);
-            rerender4();
+            state5.monday = addDays(monday, 7);
+            rerender5();
           }, { iconName: "chevron", title: "Pr\xF3xima semana" })
         )
       ],
@@ -6440,7 +7141,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_prompts();
   init_claude();
   init_insights();
-  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
   var today3 = () => iso(/* @__PURE__ */ new Date());
   var pct2 = (a, b) => b ? "".concat(Math.round(a / b * 100), "%") : "\u2014";
   var cache = /* @__PURE__ */ new Map();
@@ -6451,7 +7152,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     if (hit && !force && (hit.status === "loading" || Date.now() - hit.at < 10 * 6e4)) return hit;
     const entry = { status: "loading", at: Date.now() };
     cache.set(days, entry);
-    fetchPortfolioStats(cfg, days).then((raw) => cache.set(days, { status: "ok", summary: summarize(raw), at: Date.now() })).catch((err) => cache.set(days, { status: "error", error: err, at: Date.now() })).finally(rerender5);
+    fetchPortfolioStats(cfg, days).then((raw) => cache.set(days, { status: "ok", summary: summarize(raw), at: Date.now() })).catch((err) => cache.set(days, { status: "error", error: err, at: Date.now() })).finally(rerender6);
     return entry;
   }
   var clearPortfolioCache = () => cache.clear();
@@ -6597,10 +7298,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  function portfolioTab(state9) {
+  function portfolioTab(state10) {
     var _a;
     const cfg = gcConfig();
-    const days = Number(state9.portfolioDays || 30);
+    const days = Number(state10.portfolioDays || 30);
     if (!cfg.token) {
       return [
         card({ cls: "accent", id: "gc-connect", children: h(
@@ -6623,7 +7324,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         { class: "page-actions" },
         btn("Atualizar", () => {
           load(days, { force: true });
-          rerender5();
+          rerender6();
         }, { iconName: "refresh", small: true, kind: "ghost", id: "gc-refresh" }),
         btn("Configurar", openGcSheet, { small: true, kind: "ghost", id: "gc-settings" }),
         h("a", { class: "btn btn-sm btn-ghost", href: dashboardUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "GoatCounter")
@@ -6719,8 +7420,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
 
   // src/js/views/results.js
-  var state5 = { period: "90", platform: "", view: "grade", tab: "redes", portfolioDays: "30" };
-  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
+  var state6 = { period: "90", platform: "", view: "grade", tab: "redes", portfolioDays: "30" };
+  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
   var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
   var sum = (list, k) => {
     const vals = list.map((c) => {
@@ -6742,8 +7443,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var PERIODS = [{ value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }, { value: "365", label: "\xDAltimo ano" }, { value: "all", label: "Tudo" }];
   function inPeriod(c, t) {
     const d = c.postedAt || c.date || "";
-    if (state5.period === "all") return Boolean(d);
-    return d >= addDays(t, -Number(state5.period)) && d <= t;
+    if (state6.period === "all") return Boolean(d);
+    return d >= addDays(t, -Number(state6.period)) && d <= t;
   }
   function postGrid(list) {
     if (!list.length) return emptyNote("Nenhum post com n\xFAmeros neste per\xEDodo.");
@@ -6782,29 +7483,29 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function render5(root, params = {}) {
     var _a, _b;
     if (params.aba && TABS2.some((t2) => t2.value === params.aba)) {
-      state5.tab = params.aba;
+      state6.tab = params.aba;
       history.replaceState(null, "", "#/analise/desempenho");
     }
-    const tabsEl = tabs(TABS2, state5.tab, (v) => {
-      state5.tab = v;
-      rerender6();
+    const tabsEl = tabs(TABS2, state6.tab, (v) => {
+      state6.tab = v;
+      rerender7();
     }, "\xC1rea");
-    if (state5.tab === "portfolio") {
+    if (state6.tab === "portfolio") {
       root.append(page({
         kicker: "An\xE1lise",
         title: "Desempenho",
         subtitle: "Quem abre seu portf\xF3lio, de onde vem, o que assiste e se chama voc\xEA. E o que uma marca acharia dele.",
-        actions: filterSelect("Per\xEDodo", [{ value: "7", label: "\xDAltimos 7 dias" }, { value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }], state5.portfolioDays, (v) => {
-          state5.portfolioDays = v || "30";
-          rerender6();
+        actions: filterSelect("Per\xEDodo", [{ value: "7", label: "\xDAltimos 7 dias" }, { value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }], state6.portfolioDays, (v) => {
+          state6.portfolioDays = v || "30";
+          rerender7();
         }),
-        children: [tabsEl, ...portfolioTab(state5)]
+        children: [tabsEl, ...portfolioTab(state6)]
       }));
       return;
     }
     const t = today();
     const contents = all("contents");
-    const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state5.platform || (c.platforms || []).includes(state5.platform)));
+    const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state6.platform || (c.platforms || []).includes(state6.platform)));
     const measured = posted.filter(hasResults).sort((a, b) => (a.postedAt || a.date).localeCompare(b.postedAt || b.date));
     const conf = confidence(measured.length);
     const formats = byFormat(measured, all("formats"));
@@ -6826,13 +7527,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       title: "Desempenho",
       subtitle: "Seguidores, salvamentos e contatos de marcas, al\xE9m das views. Comparado sempre com a sua pr\xF3pria m\xE9dia.",
       actions: [
-        filterSelect("Per\xEDodo", PERIODS, state5.period, (v) => {
-          state5.period = v || "90";
-          rerender6();
+        filterSelect("Per\xEDodo", PERIODS, state6.period, (v) => {
+          state6.period = v || "90";
+          rerender7();
         }),
-        filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state5.platform, (v) => {
-          state5.platform = v;
-          rerender6();
+        filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state6.platform, (v) => {
+          state6.platform = v;
+          rerender7();
         })
       ],
       children: [
@@ -6884,12 +7585,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           card({
             title: "Posts com resultado",
             subtitle: ((_a = igConfig()) == null ? void 0 : _a.token) ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
-            actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state5.view, (v) => {
-              state5.view = v;
-              rerender6();
+            actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state6.view, (v) => {
+              state6.view = v;
+              rerender7();
             }, "Visualiza\xE7\xE3o dos posts"),
-            flush: state5.view === "tabela",
-            children: state5.view === "grade" ? postGrid(measured.slice().reverse()) : table({
+            flush: state6.view === "tabela",
+            children: state6.view === "grade" ? postGrid(measured.slice().reverse()) : table({
               caption: "Posts com resultado",
               rows: measured.slice().reverse(),
               onRowClick: (c) => openContent(c),
@@ -7002,7 +7703,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
   var when = (s) => s ? new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "nunca";
   function stepper(value, onChange2, min = 1, max = 14) {
     const out = h("span", { class: "step-val", "aria-live": "polite" }, String(value));
@@ -7213,7 +7914,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
               cell({ emoji: "\u2B07\uFE0F", color: "blue", title: "Baixar backup", subtitle: "Arquivo JSON com tudo (sem o token e sem fotos)", onClick: () => {
                 exportBackup();
                 toast("Backup baixado");
-                rerender7();
+                rerender8();
               }, id: "backup" }),
               cell({ emoji: "\u2B06\uFE0F", color: "blue", title: "Importar backup", onClick: importFile, id: "import" }),
               cell({ emoji: "\u{1F4C4}", color: "green", title: "Exportar conte\xFAdos (CSV)", onClick: () => exportCsv() }),
@@ -7242,8 +7943,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_render();
   init_designer();
   init_content_sheet();
-  var state6 = { filter: "" };
-  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
+  var state7 = { filter: "" };
+  var rerender9 = () => document.dispatchEvent(new Event("rerender"));
   function thumb(c) {
     var _a;
     const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
@@ -7255,15 +7956,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       var _a;
       return (c.type === "carrossel" || c.type === "estatico") && !c.noDesign && (((_a = c.slides) == null ? void 0 : _a.length) || c.status !== "postado");
     }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    const list = all2.filter((c) => state6.filter === "fotos" ? missingPhotos(c) > 0 : state6.filter ? c.type === state6.filter : true);
+    const list = all2.filter((c) => state7.filter === "fotos" ? missingPhotos(c) > 0 : state7.filter ? c.type === state7.filter : true);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Est\xFAdio",
       subtitle: "Artes de carrossel e est\xE1tico no seu estilo, prontas para salvar e postar.",
       children: [
-        chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state6.filter, (v) => {
-          state6.filter = v;
-          rerender8();
+        chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state7.filter, (v) => {
+          state7.filter = v;
+          rerender9();
         }),
         list.length ? h("div", { class: "gallery" }, list.map((c) => {
           var _a, _b, _c;
@@ -7323,11 +8024,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_insights();
   init_content_sheet();
   init_designer();
-  var state7 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
-  var rerender9 = () => document.dispatchEvent(new Event("rerender"));
+  var state8 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
+  var rerender10 = () => document.dispatchEvent(new Event("rerender"));
   var set = (k) => (v) => {
-    state7[k] = v;
-    rerender9();
+    state8[k] = v;
+    rerender10();
   };
   var PERIODS2 = [
     { value: "semana", label: "Pr\xF3ximos 7 dias" },
@@ -7338,17 +8039,17 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function filtered() {
     const t = today();
     return all("contents").filter((c) => {
-      if (state7.status && c.status !== state7.status) return false;
-      if (state7.type && (c.type || "video") !== state7.type) return false;
-      if (state7.formatId && c.formatId !== state7.formatId) return false;
-      if (state7.goal && c.goal !== state7.goal) return false;
-      if (state7.period === "semana" && !(c.date >= t && c.date <= addDays(t, 7))) return false;
-      if (state7.period === "mes" && !(c.date || "").startsWith(t.slice(0, 7))) return false;
-      if (state7.period === "passado" && !(c.date && c.date < t)) return false;
-      if (state7.period === "sem-data" && c.date) return false;
-      if (state7.q) {
+      if (state8.status && c.status !== state8.status) return false;
+      if (state8.type && (c.type || "video") !== state8.type) return false;
+      if (state8.formatId && c.formatId !== state8.formatId) return false;
+      if (state8.goal && c.goal !== state8.goal) return false;
+      if (state8.period === "semana" && !(c.date >= t && c.date <= addDays(t, 7))) return false;
+      if (state8.period === "mes" && !(c.date || "").startsWith(t.slice(0, 7))) return false;
+      if (state8.period === "passado" && !(c.date && c.date < t)) return false;
+      if (state8.period === "sem-data" && c.date) return false;
+      if (state8.q) {
         const hay = norm([c.title, c.theme, c.hook, c.notes, c.caption].join(" "));
-        if (!norm(state7.q).split(/\s+/).every((w) => hay.includes(w))) return false;
+        if (!norm(state8.q).split(/\s+/).every((w) => hay.includes(w))) return false;
       }
       return true;
     }).sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
@@ -7452,12 +8153,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function render8(root, params = {}) {
     if (params.periodo && PERIODS2.some((p) => p.value === params.periodo)) {
-      Object.assign(state7, { q: "", status: "", type: "", formatId: "", goal: "", period: params.periodo });
+      Object.assign(state8, { q: "", status: "", type: "", formatId: "", goal: "", period: params.periodo });
       history.replaceState(null, "", "#/conteudo/lista");
     }
     const list = filtered();
     const total = all("contents").length;
-    const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state7[k]);
+    const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state8[k]);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Conte\xFAdos",
@@ -7466,22 +8167,22 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         btn("Exportar CSV", () => exportCsv(), { iconName: "download", kind: "ghost" })
       ],
       children: [
-        tabs([{ value: "tabela", label: "Tabela" }, { value: "quadro", label: "Quadro por etapa" }], state7.view, set("view"), "Visualiza\xE7\xE3o"),
+        tabs([{ value: "tabela", label: "Tabela" }, { value: "quadro", label: "Quadro por etapa" }], state8.view, set("view"), "Visualiza\xE7\xE3o"),
         h(
           "div",
           { class: "filters" },
-          searchBox(state7.q, set("q"), "Buscar por t\xEDtulo, tema, gancho\u2026"),
-          state7.view === "tabela" && filterSelect("Etapa", STATUSES.map((s) => ({ value: s.id, label: s.label })), state7.status, set("status")),
-          filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state7.type, set("type")),
-          filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state7.goal, set("goal")),
-          filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state7.formatId, set("formatId")),
-          filterSelect("Per\xEDodo", PERIODS2, state7.period, set("period")),
+          searchBox(state8.q, set("q"), "Buscar por t\xEDtulo, tema, gancho\u2026"),
+          state8.view === "tabela" && filterSelect("Etapa", STATUSES.map((s) => ({ value: s.id, label: s.label })), state8.status, set("status")),
+          filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state8.type, set("type")),
+          filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state8.goal, set("goal")),
+          filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state8.formatId, set("formatId")),
+          filterSelect("Per\xEDodo", PERIODS2, state8.period, set("period")),
           active && btn("Limpar filtros", () => {
-            Object.assign(state7, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
-            rerender9();
+            Object.assign(state8, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
+            rerender10();
           }, { kind: "ghost", small: true })
         ),
-        !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state7.view === "tabela" ? tableView(list) : boardView(list)
+        !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state8.view === "tabela" ? tableView(list) : boardView(list)
       ]
     }));
   }
@@ -7494,12 +8195,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_data();
   init_ui();
   init_formats();
-  var state8 = { q: "", formatId: "" };
-  var rerender10 = () => document.dispatchEvent(new Event("rerender"));
+  var state9 = { q: "", formatId: "" };
+  var rerender11 = () => document.dispatchEvent(new Event("rerender"));
   function render9(root) {
     const all2 = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
     const formats = [...FORMATS, ...all("formats")];
-    const list = all2.filter((r) => !state8.formatId || r.formatId === state8.formatId).filter((r) => !state8.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state8.q)));
+    const list = all2.filter((r) => !state9.formatId || r.formatId === state9.formatId).filter((r) => !state9.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state9.q)));
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Refer\xEAncias",
@@ -7509,13 +8210,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         all2.length > 0 && h(
           "div",
           { class: "filters" },
-          searchBox(state8.q, (v) => {
-            state8.q = v;
-            rerender10();
+          searchBox(state9.q, (v) => {
+            state9.q = v;
+            rerender11();
           }, "Buscar refer\xEAncia"),
-          filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state8.formatId, (v) => {
-            state8.formatId = v;
-            rerender10();
+          filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state9.formatId, (v) => {
+            state9.formatId = v;
+            rerender11();
           })
         ),
         !all2.length ? emptyNote("Nenhuma refer\xEAncia ainda", "Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conte\xFAdo seu.", btn("Nova refer\xEAncia", () => editReference(), { kind: "primary" })) : card({

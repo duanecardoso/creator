@@ -14,7 +14,7 @@ Plataforma web para centralizar a criação de conteúdo (Instagram e TikTok) e 
 | | **Estúdio** | Galeria de carrosséis e estáticos e editor em página inteira: telas, textos, fotos e "Salvar imagens". |
 | | **Formatos** | 21 formatos que funcionam (estrutura, ganchos-modelo, por que funciona), com busca e filtros, mais os seus formatos. |
 | | **Referências** | Posts de outros criadores que você quer adaptar. |
-| Marcas | **Campanhas** | Entregas de UGC, Publi e TikTok Shop com as etapas de cada tipo, entregáveis com prazo, roteiro, data de publicação, direitos de uso e revisões. Atrasos ficam destacados. |
+| Marcas | **Campanhas** | Entregas de UGC, Publi e TikTok Shop com as etapas de cada tipo, entregáveis com prazo, roteiro, data de publicação, direitos de uso e revisões. Atrasos ficam destacados. Aba **Briefings de treino** (veja abaixo). |
 | | **Financeiro** | Recebido e a receber no mês, atrasados, gráfico dos últimos 6 meses, valores por tipo, comissões do TikTok Shop e aviso de nota fiscal. |
 | | **Contatos** | Marcas com que você conversa e lista de portfólio UGC. |
 | Análise | **Desempenho** | Seguidores, salvamentos e contatos de marcas por post e por formato, sempre comparados com a sua própria média e com o nível de confiança. |
@@ -38,6 +38,18 @@ O visual segue a mesma identidade do portfólio: fonte Montserrat, fundo claro p
 - **Carrossel com história:** formato de 8 telas (gancho, contexto, conflito, situação, virada, mudança, reflexão, frase final com pergunta).
 - **Antes de postar:** as 3 perguntas aparecem dentro de cada conteúdo.
 - **Desempenho:** mostra seguidores ganhos a cada mil visualizações.
+
+## Briefings de treino (Campanhas → Briefings de treino)
+
+Um job de UGC simulado, com briefing completo e prazos, para manter o perfil ativo e o portfólio atualizado quando não há marca.
+
+- **Briefing completo:** marca e produto, tipo de vídeo, objetivo, público, formato, mensagens-chave, o que fazer e evitar, 3 ganchos, roteiro, uso e 5 prazos (roteiro, gravação, edição, post, portfólio).
+- **Todos os nichos do portfólio:** haircare, skincare, bodycare, moda, fitness e tech. No automático, o gerador começa pelo nicho com menos treino.
+- **Produto:** um da sua lista "Produtos que você tem" (marca | produto | nicho) ou um produto inventado de marca fictícia.
+- **Outra sugestão** troca o produto e o tipo de vídeo. **Não tenho mais esse** tira o produto da sua lista e sugere outro.
+- **✨ Pedir ao Claude** gera um briefing mais criativo. As datas são sempre calculadas pelo site.
+- Ao aceitar, os prazos aparecem na Visão geral e no Planejamento (como "Treino · …"). O dia do post entra no plano da semana, e o conteúdo já vem marcado para o portfólio.
+- É treino: não entra no financeiro nem na lista de campanhas, e o briefing lembra de não usar #publi nem marcar a marca.
 
 ## Plano automático de sábado
 
@@ -117,8 +129,8 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 55 testes de lógica
-npm run test:e2e   # 29 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
+npm test           # 62 testes de lógica
+npm run test:e2e   # 30 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 
 ```
@@ -135,6 +147,7 @@ src/js/lib/planner.js    plano semanal automático
 src/js/lib/designs.js    telas de cada formato (carrossel/estático)
 src/js/lib/render.js     desenho das artes (canvas 1080×1350, identidade do portfólio)
 src/js/lib/media.js      fotos guardadas no aparelho (IndexedDB)
+src/js/lib/briefs.js     briefings de treino (nichos, prazos, gerador)
 src/js/lib/deals.js      campanhas, prazos, financeiro, calendário (.ics)
 src/js/lib/insights.js   meta semanal, sequência, destaques, sugestões do dia
 src/js/lib/prompts.js    prompts para o Claude e leitura das respostas

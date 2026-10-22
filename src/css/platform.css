@@ -877,3 +877,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 .before-post ol { margin: 4px 0 8px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
 
 .cell.tappable.need { background: var(--butter-soft); }
+
+/* Briefings de treino */
+.brief-intro { margin: 0 0 14px; max-width: 70ch; }
+.brief-head { display: grid; gap: 6px; padding: 0 4px; }
+.brief-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.brief-title { margin: 4px 0 0; font-size: 20px; font-weight: 800; color: var(--brown); line-height: 1.2; }
+.brief-actions { flex-wrap: wrap; justify-content: flex-start; }
+@media (max-width: 640px) {
+  [data-id="brief-generator"] .filter-select { flex: 1 1 100%; width: 100%; }
+}

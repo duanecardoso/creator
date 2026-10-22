@@ -95,7 +95,7 @@ export function generateWeek({ monday, contents = [], deals = [], profile = {}, 
   // Escolhe antes os temas do seu banco para cada dia e ajeita os tipos para respeitar o que o tema pede.
   const lineWeight = new Map((profile.lines || []).map((l) => [l.name, Math.max(0, Number(l.weight) || 0)]));
   const recentTitles = new Set(contents.filter((c) => (c.date || '') >= addDays(monday, -60)).flatMap((c) => [c.theme, c.title]).filter(Boolean));
-  const dealDay = (day) => deals.some((d) => d.postDate === day && (d.type === 'publi' || d.type === 'tts') && d.status !== 'cancelado');
+  const dealDay = (day) => deals.some((d) => d.postDate === day && ['publi', 'tts', 'treino'].includes(d.type) && d.status !== 'cancelado');
   const picks = [];
   const takenBank = new Set();
   days.forEach((day, i) => {
@@ -124,8 +124,16 @@ export function generateWeek({ monday, contents = [], deals = [], profile = {}, 
 
   days.forEach((day, i) => {
     // Publi / TikTok Shop com postagem neste dia ocupa o espaço.
-    const deal = deals.find((d) => d.postDate === day && (d.type === 'publi' || d.type === 'tts') && d.status !== 'cancelado');
+    const deal = deals.find((d) => d.postDate === day && ['publi', 'tts', 'treino'].includes(d.type) && d.status !== 'cancelado');
     if (deal) {
+      if (deal.type === 'treino') {
+        items.push({
+          date: day, title: `UGC de treino: ${deal.product || deal.brandName || 'produto'}`, type: 'video', goal: 'marcas', formatId: '',
+          theme: deal.product || '', dealId: deal.id, status: 'roteiro', portfolio: true, hook: deal.brief?.hooks?.[0] || '',
+          steps: deal.brief?.script?.length ? deal.brief.script : ['Seguir o briefing de treino'], platforms: ['instagram', 'tiktok'],
+        });
+        return;
+      }
       items.push({
         date: day, title: `${deal.type === 'tts' ? 'TikTok Shop' : 'Publi'}: ${deal.brandName || deal.title || 'marca'}`,
         type: 'video', goal: 'marcas', formatId: '', theme: deal.product || '', dealId: deal.id, status: 'roteiro',

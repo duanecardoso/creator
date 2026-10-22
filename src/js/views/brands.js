@@ -1,10 +1,11 @@
 // Marcas: Campanhas (UGC, Publi, TikTok Shop), Financeiro e Contatos. Também exporta o editor de campanha.
 import * as data from '../data.js';
-import { h, clone, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, badge, fmtDay, copyText, emptyNote, actionSheet, btn, card, kpi, table, tabs, tag, searchBox, filterSelect, barChart, norm } from '../ui.js';
-import { DEAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, deadlines, upcoming, nextDeadline, finance, fmtMoney } from '../lib/deals.js';
+import { h, clone, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, badge, fmtDay, copyText, emptyNote, actionSheet, btn, card, kpi, table, tabs, tag, searchBox, filterSelect, barChart, norm, go } from '../ui.js';
+import { DEAL_TYPES, REAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, deadlines, upcoming, nextDeadline, finance, fmtMoney } from '../lib/deals.js';
 import { openContent, today } from './content-sheet.js';
+import { trainingTab, openBrief } from './training.js';
 
-const state = { show: 'abertas', type: '', stage: '', q: '', month: null, brandStatus: '' };
+const state = { area: 'campanhas', show: 'abertas', type: '', stage: '', q: '', month: null, brandStatus: '' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const money = (v) => `R$ ${fmtMoney(v)}`;
 
@@ -21,6 +22,7 @@ export function newDeal(type = 'ugc') {
 }
 
 export function openDeal(d) {
+  if (d.type === 'treino') return openBrief(d);
   const isNew = !d.id;
   let type = d.type || 'ugc';
   let status = d.status || PIPELINES[type][0][0];
@@ -31,7 +33,7 @@ export function openDeal(d) {
   const delivBox = h('div');
   const conditional = h('div');
 
-  const drawType = () => typeSeg.replaceChildren(segmentedRaw(Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), type, (v) => {
+  const drawType = () => typeSeg.replaceChildren(segmentedRaw(Object.entries(REAL_TYPES).map(([value, t]) => ({ value, label: t.label })), type, (v) => {
     type = v;
     if (!PIPELINES[type].some(([k]) => k === status)) status = PIPELINES[type][0][0];
     drawType();
@@ -171,12 +173,12 @@ function segmentedRaw(options, value, onChange) {
 // ---------- Campanhas ----------
 const stageOptions = () => {
   const seen = new Map();
-  for (const list of Object.values(PIPELINES)) for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
+  for (const [t, list] of Object.entries(PIPELINES)) if (REAL_TYPES[t]) for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
   return [...seen].map(([value, label]) => ({ value, label }));
 };
 
 async function chooseNewDeal() {
-  const t = await actionSheet({ title: 'Nova campanha', message: 'Qual tipo?', actions: Object.entries(DEAL_TYPES).map(([value, t]) => ({ label: `${t.emoji} ${t.label}`, value, id: `new-${value}` })) });
+  const t = await actionSheet({ title: 'Nova campanha', message: 'Qual tipo?', actions: Object.entries(REAL_TYPES).map(([value, t]) => ({ label: `${t.emoji} ${t.label}`, value, id: `new-${value}` })) });
   if (t) newDeal(t);
 }
 
@@ -209,9 +211,18 @@ function campaignsTable(list, td) {
   });
 }
 
-export function renderCampaigns(root) {
+export function renderCampaigns(root, params = {}) {
+  if (params.aba === 'treino' || params.aba === 'campanhas') state.area = params.aba;
   const td = today();
-  const all = data.all('deals');
+  const areaTabs = tabs([{ value: 'campanhas', label: 'Campanhas' }, { value: 'treino', label: 'Briefings de treino' }], state.area, (v) => { state.area = v; go('marcas/campanhas', { aba: v }); }, 'Área');
+  if (state.area === 'treino') {
+    root.append(page({
+      kicker: 'Marcas', title: 'Campanhas', subtitle: 'Briefings de treino: um job de UGC simulado, com prazo, para quando não tem marca.',
+      children: [areaTabs, ...trainingTab()],
+    }));
+    return;
+  }
+  const all = data.all('deals').filter((d) => d.type !== 'treino');
   const open = all.filter((d) => !isDone(d));
   const up = upcoming(open, td, 7);
   const lateIds = new Set(up.overdue.map((x) => x.deal.id));
@@ -232,17 +243,18 @@ export function renderCampaigns(root) {
       btn('Nova campanha', chooseNewDeal, { kind: 'primary', iconName: 'plus', id: 'new-deal' }),
     ],
     children: [
+      areaTabs,
       h('div', { class: 'grid cols-4 kpis' },
         kpi({ label: 'Atrasados', value: String(lateIds.size), tone: lateIds.size ? 'danger' : '', hint: 'campanhas com prazo vencido' }),
         kpi({ label: 'Próximos 7 dias', value: String([...soonIds].filter((id) => !lateIds.has(id)).length), hint: 'campanhas com prazo chegando' }),
-        kpi({ label: 'Em andamento', value: String(open.length), hint: Object.entries(DEAL_TYPES).map(([k, t]) => `${open.filter((d) => d.type === k).length} ${t.label}`).join(' · ') }),
+        kpi({ label: 'Em andamento', value: String(open.length), hint: Object.entries(REAL_TYPES).map(([k, t]) => `${open.filter((d) => d.type === k).length} ${t.label}`).join(' · ') }),
         kpi({ label: 'A receber', value: money(fin.toReceive), tone: fin.overdue ? 'danger' : '', hint: fin.overdue ? `${money(fin.overdue)} atrasado` : 'nada atrasado' }),
       ),
       h('div', { class: 'section' },
         tabs([{ value: 'abertas', label: 'Em aberto' }, { value: 'concluidas', label: 'Concluídas' }, { value: 'todas', label: 'Todas' }], state.show, (v) => { state.show = v; rerender(); }, 'Mostrar'),
         h('div', { class: 'filters' },
           searchBox(state.q, (v) => { state.q = v; rerender(); }, 'Buscar marca ou campanha'),
-          filterSelect('Tipo', Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state.type, (v) => { state.type = v; rerender(); }),
+          filterSelect('Tipo', Object.entries(REAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state.type, (v) => { state.type = v; rerender(); }),
           filterSelect('Etapa', stageOptions(), state.stage, (v) => { state.stage = v; rerender(); })),
         !all.length
           ? emptyNote('Nenhuma campanha ainda', 'Registre um UGC, uma publi ou um produto do TikTok Shop para acompanhar prazos e pagamentos.', btn('Nova campanha', chooseNewDeal, { kind: 'primary' }))
@@ -320,7 +332,7 @@ export function renderFinance(root) {
           }) }),
         ),
         h('div', { class: 'stack' },
-          card({ title: 'Recebido no mês por tipo', flush: true, children: group({ children: Object.entries(DEAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }) }),
+          card({ title: 'Recebido no mês por tipo', flush: true, children: group({ children: Object.entries(REAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }) }),
           card({ title: 'TikTok Shop', subtitle: 'Total anotado em todos os produtos', flush: true, children: group({ children: [
             cell({ title: 'Vendas', detail: String(f.ttsSales) }),
             cell({ title: 'GMV', detail: money(f.ttsGmv) }),
@@ -376,7 +388,7 @@ export function renderContacts(root) {
             { label: 'Marca', main: true, render: (b) => h('div', {}, h('div', { class: 'td-title' }, b.name), b.handle && h('div', { class: 'td-sub' }, b.handle)) },
             { label: 'Etapa', render: (b) => { const s = BRAND_STATUS.find((x) => x.value === (b.status || 'quero')); return tag(s?.label, s?.value === 'fechado' ? 'ok' : s?.value === 'conversando' ? 't-butter' : s?.value === 'contatei' ? 'info' : ''); } },
             { label: 'Próximo passo', render: (b) => h('span', { class: 'clamp-2' }, b.next || '—') },
-            { label: 'Campanhas', cls: 'right', render: (b) => h('span', { class: 'num' }, String(deals.filter((d) => norm(d.brandName) === norm(b.name)).length)) },
+            { label: 'Campanhas', cls: 'right', render: (b) => h('span', { class: 'num' }, String(deals.filter((d) => d.type !== 'treino' && norm(d.brandName) === norm(b.name)).length)) },
           ],
         }) }),
       ),

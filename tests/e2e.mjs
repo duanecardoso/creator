@@ -354,6 +354,44 @@ try {
   await drawer().locator('[data-id="sheet-done"]').click();
   await page.waitForSelector('[data-id^="review-"]:has-text("nota 7")');
   ok('Portfólio: números do GoatCounter (visitantes, contato, vídeos, origem), link com etiqueta e análise como marca salva');
+
+  // ---- Briefings de treino ----
+  await nav('marcas/campanhas');
+  await page.click('.segmented button:has-text("Briefings de treino")');
+  await page.waitForSelector('[data-id="brief-generator"]');
+  await page.click('[data-id="brief-products-edit"]');
+  await drawer().locator('textarea[name="my-products"]').fill('Dove | óleo sérum corporal | bodycare\nBolsa preta transversal');
+  await save();
+  await page.waitForSelector('[data-id="brief-products"] .cell:has-text("Moda e acessórios")');
+  await page.locator('[data-id="brief-generator"] select').first().selectOption('bodycare');
+  await page.selectOption('[data-id="brief-source"]', 'tenho');
+  await page.click('[data-id="brief-generate"]');
+  await page.waitForSelector('[data-id="brief-product"]:has-text("Dove")');
+  await page.waitForSelector('[data-id="brief-draft"] .cell:has-text("Subir no portfólio")');
+  await noJunk('briefing de treino');
+  await snap('09-briefing');
+  await page.click('[data-id="brief-dont-have"]');
+  await page.waitForSelector('[data-id="brief-product"]:has-text("Marca fictícia")');
+  if ((await page.evaluate(() => JSON.parse(localStorage.getItem('creator:db')).profile.myProducts)).includes('Dove')) throw new Error('"Não tenho mais esse" não tirou o produto da lista');
+  const briefBefore = await page.locator('[data-id="brief-product"]').innerText();
+  await page.click('[data-id="brief-another"]');
+  await page.waitForFunction((b) => document.querySelector('[data-id="brief-product"]')?.innerText !== b, briefBefore);
+  const qBrief = await answerClaude(() => page.click('[data-id="brief-claude"]'), '{"brand": "Marca fictícia Aurora", "product": "body splash de baunilha", "fictional": true, "angle": "rotina", "objective": "mostrar o pós-banho", "hooks": ["meu cheiro favorito"], "script": ["abre no banheiro", "aplica", "fecha com o look"]}');
+  if (qBrief && !qBrief.includes('Bodycare')) throw new Error('Prompt do briefing sem o nicho');
+  await page.waitForSelector('[data-id="brief-product"]:has-text("body splash de baunilha")');
+  await page.click('[data-id="brief-accept"]');
+  await page.waitForSelector('dialog.sheet[open] .stage.on:has-text("Briefing")');
+  await drawer().locator('[data-id="brief-agenda"]').click();
+  await page.waitForFunction(() => [...document.querySelectorAll('dialog.sheet[open] input, dialog.sheet[open] textarea')].some((i) => i.value.includes('UGC de treino: body splash')));
+  await drawer().locator('[data-id="sheet-cancel"], [data-id="sheet-done"]').first().click().catch(() => page.keyboard.press('Escape'));
+  await page.waitForSelector('dialog.sheet[open]', { state: 'detached' });
+  await page.waitForSelector('tr[data-id^="brief-"]:has-text("body splash de baunilha")');
+  await page.click('.segmented button:has-text("Campanhas")');
+  await page.waitForSelector('[data-id="new-deal"]');
+  if (await page.locator('tbody tr:has-text("body splash")').count()) throw new Error('Treino apareceu na lista de campanhas');
+  await nav('visao-geral');
+  await page.waitForSelector('.cell:has-text("Treino · Marca fictícia Aurora")');
+  ok('Briefing de treino: lista de produtos, "não tenho mais esse", outra sugestão, briefing do Claude, prazos na Visão geral e conteúdo na agenda, fora das campanhas');
   await nav('configuracoes');
 
   await nav('conteudo/lista');

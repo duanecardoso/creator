@@ -124,7 +124,8 @@ export function generatePlan(monday, { seed = '', replace = false } = {}) {
   }
   const keepDays = new Set(all('contents').filter((c) => days.includes(c.date) && c.planWeek === monday).map((c) => c.date));
   const items = generateWeek({ monday, contents: all('contents'), deals: all('deals'), profile: profile(), customFormats: all('formats'), bank: all('bank'), seed: seed || String(Date.now()) })
-    .filter((it) => !keepDays.has(it.date));
+    .filter((it) => !keepDays.has(it.date))
+    .filter((it) => !it.dealId || !all('contents').some((c) => c.dealId === it.dealId));
   for (const it of items) store.create('contents', { ...it, planWeek: monday, source: 'plano' });
   const rec = { weekStart: monday, generatedAt: new Date().toISOString(), count: items.length };
   if (existing) store.update('plans', existing.id, rec);

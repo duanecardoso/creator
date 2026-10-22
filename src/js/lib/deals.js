@@ -1,11 +1,17 @@
 // Controle de entregas com marcas: UGC, Publi e TikTok Shop. Funções puras.
 import { addDays } from './insights.js';
+import { TRAINING_PIPELINE } from './briefs.js';
 
 export const DEAL_TYPES = {
   ugc: { label: 'UGC', emoji: '🎥', color: 'indigo' },
   publi: { label: 'Publi', emoji: '📣', color: 'pink' },
   tts: { label: 'TikTok Shop', emoji: '🛒', color: 'dark' },
+  // Briefing de treino: não é campanha de verdade, fica na aba própria e fora do financeiro.
+  treino: { label: 'Treino', emoji: '🎯', color: 'orange', hidden: true },
 };
+// Tipos que aparecem em "Nova campanha", filtros e financeiro.
+export const REAL_TYPES = Object.fromEntries(Object.entries(DEAL_TYPES).filter(([, t]) => !t.hidden));
+export const isTraining = (d) => d?.type === 'treino';
 
 // Etapas de cada tipo, na ordem.
 export const PIPELINES = {
@@ -20,6 +26,7 @@ export const PIPELINES = {
   tts: [
     ['amostra', 'Amostra pedida'], ['recebida', 'Amostra recebida'], ['gravacao', 'Gravação'], ['publicado', 'Publicado'], ['vendendo', 'Vendendo'], ['concluido', 'Concluído'],
   ],
+  treino: TRAINING_PIPELINE,
 };
 
 export const PAYMENT = { pendente: 'A receber', faturado: 'Faturado', pago: 'Pago', permuta: 'Permuta' };
@@ -35,11 +42,11 @@ export function deadlines(deals) {
   const out = [];
   for (const d of deals) {
     if (d.status === 'cancelado') continue;
-    const name = d.brandName || d.title || 'Marca';
+    const name = `${isTraining(d) ? 'Treino · ' : ''}${d.brandName || d.title || 'Marca'}`;
     if (!isDone(d)) {
       for (const it of d.deliverables || []) if (it.due && !it.done) out.push({ date: it.due, kind: 'entrega', label: it.text || 'Entregável', deal: d, name });
       if (d.scriptDue && stageIndex(d) <= (PIPELINES[d.type] || []).findIndex(([k]) => k === 'roteiro')) out.push({ date: d.scriptDue, kind: 'roteiro', label: 'Enviar roteiro', deal: d, name });
-      if (d.postDate && !['publicado', 'vendendo', 'relatorio', 'concluido'].includes(d.status)) out.push({ date: d.postDate, kind: 'post', label: 'Publicar', deal: d, name });
+      if (d.postDate && !['publicado', 'vendendo', 'relatorio', 'concluido', 'postado', 'portfolio'].includes(d.status)) out.push({ date: d.postDate, kind: 'post', label: 'Publicar', deal: d, name });
     }
     if (d.paymentDue && d.paymentStatus !== 'pago' && d.paymentStatus !== 'permuta' && num(d.value) > 0) out.push({ date: d.paymentDue, kind: 'pagamento', label: `Receber R$ ${fmtMoney(num(d.value))}`, deal: d, name });
   }
@@ -64,7 +71,7 @@ export function finance(deals, month, today) {
   const active = deals.filter((d) => d.status !== 'cancelado');
   const paid = active.filter((d) => d.paymentStatus === 'pago');
   const open = active.filter((d) => num(d.value) > 0 && !['pago', 'permuta'].includes(d.paymentStatus || 'pendente'));
-  const byType = Object.fromEntries(Object.keys(DEAL_TYPES).map((t) => [t, paid.filter((d) => d.type === t && inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0)]));
+  const byType = Object.fromEntries(Object.keys(REAL_TYPES).map((t) => [t, paid.filter((d) => d.type === t && inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0)]));
   const tts = active.filter((d) => d.type === 'tts');
   return {
     receivedMonth: paid.filter((d) => inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0),

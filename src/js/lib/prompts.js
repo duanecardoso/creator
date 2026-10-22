@@ -227,3 +227,39 @@ export function parseReview(text) {
     loose: false,
   };
 }
+
+// ---------- Briefing de treino (UGC simulado) ----------
+export function briefingPrompt({ profile, niche, nicheName, source = 'qualquer', products = [], brands = [], exclude = [], pace }) {
+  const mine = products.filter((p) => p.niche === niche).map((p) => [p.brand, p.product].filter(Boolean).join(' – '));
+  const src = source === 'tenho'
+    ? `Use UM produto desta lista (são produtos que eu tenho em casa): ${mine.join('; ') || '(lista vazia: invente um produto e diga que é fictício)'}.`
+    : source === 'inventado'
+      ? 'Invente um produto e uma marca fictícia (deixe claro que é fictícia; não use nome de marca que existe).'
+      : `Pode usar um produto que eu tenho (${mine.join('; ') || 'nenhum nesse nicho'}) ou inventar um produto de marca fictícia.`;
+  return `Sou criadora UGC brasileira e quero treinar como se fosse um job de marca, para manter meu perfil ativo e meu portfólio atualizado.
+Sobre mim: ${profile.about || '—'}
+Nichos: ${profile.niches || '—'}
+Meu jeito: ${profile.style || '—'}
+Evitar: ${profile.avoid || '—'}
+${brands.length ? `Marcas com que já trabalhei (para referência de nível de briefing): ${brands.slice(0, 20).join(', ')}.\n` : ''}
+Crie um briefing de UGC completo, como uma marca mandaria, para o nicho: ${nicheName}.
+${src}
+${exclude.length ? `Não repita estes (já recusei): ${exclude.join('; ')}.\n` : ''}Prazo do job: ${pace}. As datas eu calculo; não coloque datas.
+
+Regras: português do Brasil. É um conteúdo de treino, não é publi: nada de #publi nem marcar a marca. Não invente benefício, número ou resultado de produto real; para produto real, as mensagens-chave são sobre o que eu posso observar usando, e diga para conferir na embalagem. Ganchos curtos e naturais, do meu jeito.
+
+Responda SOMENTE com este JSON:
+{"brand": "marca", "product": "produto", "fictional": true, "angle": "tipo de vídeo (ex.: unboxing, problema-solução, rotina, depoimento, tutorial)", "objective": "objetivo do vídeo em 1 frase", "audience": "público", "keyMessages": ["3 mensagens-chave"], "dos": ["o que fazer"], "donts": ["o que evitar"], "format": "duração e formato", "hooks": ["3 ganchos"], "script": ["cena 1 com a fala", "cena 2", "..."], "caption": "legenda curta"}`;
+}
+
+export function parseBrief(text) {
+  const raw = String(text || '').trim();
+  if (!raw) throw new Error('Nada para colar. Copie a resposta do Claude primeiro.');
+  const d = extractJson(raw);
+  if (!d || typeof d !== 'object') throw new Error('Não encontrei o briefing na resposta. Copie a resposta inteira do Claude.');
+  return {
+    brand: str(d.brand), product: str(d.product), fictional: d.fictional === undefined ? undefined : d.fictional === true || d.fictional === 'true',
+    angle: str(d.angle), objective: str(d.objective), audience: str(d.audience), keyMessages: arr(d.keyMessages), dos: arr(d.dos), donts: arr(d.donts),
+    format: str(d.format), hooks: arr(d.hooks).slice(0, 5), script: arr(d.script), caption: str(d.caption),
+  };
+}
