@@ -22,6 +22,32 @@
       <main id="main" tabindex="-1"><p class="boot">Carregando…</p></main>
     </div>
   </div>
+  <script>
+    /* Se o site não abrir, mostra o motivo na tela em vez de ficar em branco. Escrito em JS antigo de propósito. */
+    (function () {
+      var erros = [];
+      function mostrar(titulo) {
+        if (window.__creatorStarted) return;
+        var main = document.getElementById('main');
+        if (!main) return;
+        main.innerHTML = '';
+        var box = document.createElement('div');
+        box.className = 'empty boot-error';
+        box.innerHTML = '<p class="empty-title"></p><p>Mande um print desta tela para eu arrumar.</p><pre class="boot-detail"></pre>';
+        box.querySelector('.empty-title').textContent = titulo;
+        box.querySelector('.boot-detail').textContent = erros.join('\n') + '\n\n' + navigator.userAgent;
+        main.appendChild(box);
+      }
+      window.addEventListener('error', function (e) {
+        erros.push((e && e.message) || 'Erro ao carregar');
+        mostrar('O site não conseguiu abrir');
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        erros.push(String((e && e.reason && (e.reason.message || e.reason)) || 'Erro'));
+      });
+      setTimeout(function () { mostrar('O site está demorando para abrir'); }, 8000);
+    })();
+  </script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

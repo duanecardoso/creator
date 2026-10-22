@@ -844,3 +844,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   .card-head .segmented { width: 100%; }
 }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+
+/* Celulares antigos sem <dialog> e mensagem de erro ao abrir */
+dialog.no-modal { position: fixed; inset: 0; z-index: 90; }
+dialog.sheet.no-modal { left: auto; }
+dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.boot-error { text-align: left; max-width: 640px; margin: 10vh auto; }
+.boot-detail { white-space: pre-wrap; font-size: 12px; color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; }

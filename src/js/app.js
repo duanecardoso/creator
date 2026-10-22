@@ -107,6 +107,7 @@ function route() {
 }
 
 async function start() {
+  window.__creatorStarted = true;
   try {
     await data.init();
   } catch (err) {

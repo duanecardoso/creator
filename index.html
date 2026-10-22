@@ -861,6 +861,13 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
 
+/* Celulares antigos sem <dialog> e mensagem de erro ao abrir */
+dialog.no-modal { position: fixed; inset: 0; z-index: 90; }
+dialog.sheet.no-modal { left: auto; }
+dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.boot-error { text-align: left; max-width: 640px; margin: 10vh auto; }
+.boot-detail { white-space: pre-wrap; font-size: 12px; color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; }
+
 </style>
 </head>
 <body>
@@ -871,6 +878,32 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       <main id="main" tabindex="-1"><p class="boot">Carregando…</p></main>
     </div>
   </div>
+  <script>
+    /* Se o site não abrir, mostra o motivo na tela em vez de ficar em branco. Escrito em JS antigo de propósito. */
+    (function () {
+      var erros = [];
+      function mostrar(titulo) {
+        if (window.__creatorStarted) return;
+        var main = document.getElementById('main');
+        if (!main) return;
+        main.innerHTML = '';
+        var box = document.createElement('div');
+        box.className = 'empty boot-error';
+        box.innerHTML = '<p class="empty-title"></p><p>Mande um print desta tela para eu arrumar.</p><pre class="boot-detail"></pre>';
+        box.querySelector('.empty-title').textContent = titulo;
+        box.querySelector('.boot-detail').textContent = erros.join('\n') + '\n\n' + navigator.userAgent;
+        main.appendChild(box);
+      }
+      window.addEventListener('error', function (e) {
+        erros.push((e && e.message) || 'Erro ao carregar');
+        mostrar('O site não conseguiu abrir');
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        erros.push(String((e && e.reason && (e.reason.message || e.reason)) || 'Erro'));
+      });
+      setTimeout(function () { mostrar('O site está demorando para abrir'); }, 8000);
+    })();
+  </script>
   <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -885,13 +918,14 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 
   // src/js/lib/store.js
   function newId() {
-    if (globalThis.crypto?.randomUUID) {
+    var _a;
+    if ((_a = globalThis.crypto) == null ? void 0 : _a.randomUUID) {
       try {
         return crypto.randomUUID();
-      } catch {
+      } catch (e) {
       }
     }
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    return "".concat(Date.now().toString(36), "-").concat(Math.random().toString(36).slice(2, 10));
   }
   function defaultProfile() {
     return {
@@ -916,13 +950,14 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return db;
   }
   function normalize(data) {
+    var _a;
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Arquivo de backup inv\xE1lido.");
     const db = emptyDb();
     db.meta = { ...db.meta, ...data.meta || {}, schemaVersion: SCHEMA_VERSION };
     db.profile = { ...defaultProfile(), ...data.profile || {} };
     for (const col of COLLECTIONS) {
-      const list = data[col] ?? [];
-      if (!Array.isArray(list)) throw new Error(`Campo "${col}" deveria ser uma lista.`);
+      const list = (_a = data[col]) != null ? _a : [];
+      if (!Array.isArray(list)) throw new Error('Campo "'.concat(col, '" deveria ser uma lista.'));
       db[col] = list.filter((r) => r && typeof r === "object").map((r) => ({ ...r, id: typeof r.id === "string" && r.id ? r.id : newId() }));
     }
     return db;
@@ -937,9 +972,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const cell2 = (v) => {
       if (v === null || v === void 0) return "";
       const s = Array.isArray(v) ? v.join("+") : String(v);
-      return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      return /[";\n\r]/.test(s) ? '"'.concat(s.replace(/"/g, '""'), '"') : s;
     };
-    const rows = items.map((p) => CSV_COLS.map(([k]) => cell2(k.startsWith("r.") ? p.results?.[k.slice(2)] : p[k])).join(";"));
+    const rows = items.map((p) => CSV_COLS.map(([k]) => {
+      var _a;
+      return cell2(k.startsWith("r.") ? (_a = p.results) == null ? void 0 : _a[k.slice(2)] : p[k]);
+    }).join(";"));
     return "\uFEFF" + [CSV_COLS.map(([, l]) => l).join(";"), ...rows].join("\r\n");
   }
   var COLLECTIONS, SCHEMA_VERSION, KEY, SNAP_KEY, PROTECTED, Store, counts, MemoryStorage, CSV_COLS;
@@ -959,7 +997,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           let raw = null;
           try {
             raw = this.storage.getItem(KEY);
-          } catch {
+          } catch (e) {
             throw new Error("Este navegador bloqueou o armazenamento local (modo an\xF4nimo ou cookies bloqueados). Abra em uma janela normal.");
           }
           if (!raw) {
@@ -971,10 +1009,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
             this.db = normalize(JSON.parse(raw));
           } catch (err) {
             try {
-              this.storage.setItem(`${KEY}:danificado`, raw);
-            } catch {
+              this.storage.setItem("".concat(KEY, ":danificado"), raw);
+            } catch (e) {
             }
-            throw new Error(`Os dados salvos est\xE3o danificados (${err.message}). Importe um backup em "Perfil e dados".`);
+            throw new Error("Os dados salvos est\xE3o danificados (".concat(err.message, '). Importe um backup em "Perfil e dados".'));
           }
           return this.db;
         }
@@ -985,7 +1023,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
             this.dailySnapshot();
             this.storage.setItem(KEY, json);
           } catch (err) {
-            if (err?.name === "QuotaExceededError" || /quota/i.test(err?.message || "")) {
+            if ((err == null ? void 0 : err.name) === "QuotaExceededError" || /quota/i.test((err == null ? void 0 : err.message) || "")) {
               throw new Error("O espa\xE7o do navegador acabou. Baixe um backup e apague registros antigos.");
             }
             throw err;
@@ -997,10 +1035,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           let snap = null;
           try {
             snap = JSON.parse(this.storage.getItem(SNAP_KEY) || "null");
-          } catch {
+          } catch (e) {
             snap = null;
           }
-          if (snap?.day === today3) return;
+          if ((snap == null ? void 0 : snap.day) === today3) return;
           const current2 = this.storage.getItem(KEY);
           if (current2) this.storage.setItem(SNAP_KEY, JSON.stringify({ day: today3, data: current2 }));
         }
@@ -1008,7 +1046,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           try {
             const s = JSON.parse(this.storage.getItem(SNAP_KEY) || "null");
             return s ? { day: s.day } : null;
-          } catch {
+          } catch (e) {
             return null;
           }
         }
@@ -1020,7 +1058,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           return counts(this.db);
         }
         assertCollection(col) {
-          if (!COLLECTIONS.includes(col)) throw new Error(`Cole\xE7\xE3o desconhecida: ${col}`);
+          if (!COLLECTIONS.includes(col)) throw new Error("Cole\xE7\xE3o desconhecida: ".concat(col));
         }
         list(col) {
           this.assertCollection(col);
@@ -1065,8 +1103,9 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           return this.db.profile;
         }
         importAll(data, mode = "merge") {
+          var _a;
           const incoming = normalize(data);
-          const pack = data?.meta?.kind === "pacote";
+          const pack = ((_a = data == null ? void 0 : data.meta) == null ? void 0 : _a.kind) === "pacote";
           if (pack && data.profile) this.db.profile = { ...this.db.profile, ...clean(data.profile) };
           if (mode === "replace" && !pack) this.db = incoming;
           else {
@@ -1123,7 +1162,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   function loadConfig(storage2) {
     try {
       return JSON.parse(storage2.getItem(CFG_KEY) || "null");
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -1135,33 +1174,34 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     storage2.removeItem(CFG_KEY);
   }
   function tokenStatus(cfg, now = Date.now()) {
-    if (!cfg?.token) return { state: "off" };
+    if (!(cfg == null ? void 0 : cfg.token)) return { state: "off" };
     const expiresAt = cfg.expiresAt ? Date.parse(cfg.expiresAt) : Date.parse(cfg.tokenSetAt) + 60 * DAY;
     const daysLeft = Math.floor((expiresAt - now) / DAY);
     if (daysLeft < 0) return { state: "expired", daysLeft };
     return { state: daysLeft <= 7 ? "expiring" : "ok", daysLeft, estimated: !cfg.expiresAt };
   }
   function isSyncDue(cfg, hours = 6, now = Date.now()) {
-    if (!cfg?.token) return false;
+    if (!(cfg == null ? void 0 : cfg.token)) return false;
     return !cfg.lastSync || now - Date.parse(cfg.lastSync) > hours * 36e5;
   }
   function translate(err, status) {
-    const code = err?.code ?? null;
+    var _a;
+    const code = (_a = err == null ? void 0 : err.code) != null ? _a : null;
     if (code === 190 || status === 401) return new IgError('O token do Instagram \xE9 inv\xE1lido ou expirou. Gere um novo no painel da Meta e cole em "Perfil e dados".', { code, kind: "auth" });
-    if (code === 10 || code === 200 || code >= 200 && code < 300 || status === 403) return new IgError(`Permiss\xE3o negada pelo Instagram. Confira se o app tem "instagram_business_manage_insights" e se sua conta \xE9 profissional. (${err?.message || status})`, { code, kind: "permission" });
+    if (code === 10 || code === 200 || code >= 200 && code < 300 || status === 403) return new IgError('Permiss\xE3o negada pelo Instagram. Confira se o app tem "instagram_business_manage_insights" e se sua conta \xE9 profissional. ('.concat((err == null ? void 0 : err.message) || status, ")"), { code, kind: "permission" });
     if ([4, 17, 32, 613].includes(code) || status === 429) return new IgError("Limite de consultas do Instagram atingido. Tente de novo em cerca de uma hora.", { code, kind: "rate" });
-    if (code === 100) return new IgError(err?.message || "Par\xE2metro n\xE3o aceito pela API.", { code, kind: "param" });
-    return new IgError(`Erro do Instagram${status ? ` (${status})` : ""}: ${err?.message || "resposta inesperada"}`, { code });
+    if (code === 100) return new IgError((err == null ? void 0 : err.message) || "Par\xE2metro n\xE3o aceito pela API.", { code, kind: "param" });
+    return new IgError("Erro do Instagram".concat(status ? " (".concat(status, ")") : "", ": ").concat((err == null ? void 0 : err.message) || "resposta inesperada"), { code });
   }
   async function getJson(url2, fetchImpl) {
     let res;
     try {
       res = await fetchImpl(url2);
-    } catch {
+    } catch (e) {
       throw new IgError("N\xE3o consegui falar com o Instagram. Verifique a internet. Se continuar, o navegador ou uma extens\xE3o pode estar bloqueando graph.instagram.com.", { kind: "network" });
     }
     const body = await res.json().catch(() => null);
-    if (!res.ok || body?.error) throw translate(body?.error, res.ok ? null : res.status);
+    if (!res.ok || (body == null ? void 0 : body.error)) throw translate(body == null ? void 0 : body.error, res.ok ? null : res.status);
     return body;
   }
   async function fetchAccount(cfg, fetchImpl = fetch) {
@@ -1169,7 +1209,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   }
   async function refreshToken(cfg, fetchImpl = fetch) {
     const q = new URLSearchParams({ grant_type: "ig_refresh_token", access_token: cfg.token });
-    const body = await getJson(`${IG_HOST}/refresh_access_token?${q}`, fetchImpl);
+    const body = await getJson("".concat(IG_HOST, "/refresh_access_token?").concat(q), fetchImpl);
     if (!body.access_token) throw new IgError("A renova\xE7\xE3o do token n\xE3o retornou um token novo.");
     const now = /* @__PURE__ */ new Date();
     return {
@@ -1180,6 +1220,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     };
   }
   async function listMedia(cfg, limit = 30, fetchImpl = fetch) {
+    var _a;
     const out = [];
     let next = url(cfg, "me/media", {
       fields: "id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count",
@@ -1188,34 +1229,35 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     while (next && out.length < limit) {
       const body = await getJson(next, fetchImpl);
       out.push(...body.data || []);
-      next = body.paging?.next || null;
+      next = ((_a = body.paging) == null ? void 0 : _a.next) || null;
     }
     return out.slice(0, limit);
   }
   function parseInsights(body) {
+    var _a, _b, _c, _d;
     const out = {};
-    for (const d of body?.data || []) {
-      const v = d.total_value?.value ?? d.values?.[0]?.value;
+    for (const d of (body == null ? void 0 : body.data) || []) {
+      const v = (_d = (_a = d.total_value) == null ? void 0 : _a.value) != null ? _d : (_c = (_b = d.values) == null ? void 0 : _b[0]) == null ? void 0 : _c.value;
       if (typeof v === "number") out[d.name] = v;
     }
     return out;
   }
   async function mediaInsights(cfg, media, unsupported = /* @__PURE__ */ new Set(), fetchImpl = fetch) {
     const kind = mediaKind(media);
-    const wanted = (METRICS_BY_KIND[kind] || []).filter((m) => !unsupported.has(`${kind}:${m}`));
+    const wanted = (METRICS_BY_KIND[kind] || []).filter((m) => !unsupported.has("".concat(kind, ":").concat(m)));
     if (!wanted.length) return {};
     try {
-      return parseInsights(await getJson(url(cfg, `${media.id}/insights`, { metric: wanted.join(",") }), fetchImpl));
+      return parseInsights(await getJson(url(cfg, "".concat(media.id, "/insights"), { metric: wanted.join(",") }), fetchImpl));
     } catch (err) {
       if (err.kind !== "param") throw err;
     }
     const out = {};
     for (const m of wanted) {
       try {
-        Object.assign(out, parseInsights(await getJson(url(cfg, `${media.id}/insights`, { metric: m }), fetchImpl)));
+        Object.assign(out, parseInsights(await getJson(url(cfg, "".concat(media.id, "/insights"), { metric: m }), fetchImpl)));
       } catch (err) {
         if (err.kind !== "param") throw err;
-        unsupported.add(`${kind}:${m}`);
+        unsupported.add("".concat(kind, ":").concat(m));
       }
     }
     return out;
@@ -1235,11 +1277,11 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   }
   function titleFromCaption(caption, timestamp) {
     const first = String(caption || "").split("\n").map((s) => s.trim()).find(Boolean);
-    if (first) return first.length > 80 ? `${first.slice(0, 77)}\u2026` : first;
-    return `Publica\xE7\xE3o de ${localDate(timestamp).split("-").reverse().join("/")}`;
+    if (first) return first.length > 80 ? "".concat(first.slice(0, 77), "\u2026") : first;
+    return "Publica\xE7\xE3o de ".concat(localDate(timestamp).split("-").reverse().join("/"));
   }
   function toResults(ins, media, previous = {}) {
-    const pick = (v, fallback) => typeof v === "number" ? v : fallback ?? null;
+    const pick = (v, fallback) => typeof v === "number" ? v : fallback != null ? fallback : null;
     return {
       ...previous,
       // mantém o que é manual (contatos de marcas)
@@ -1261,6 +1303,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   }
   async function syncInstagram({ cfg, db, limit = 30, fetchImpl = fetch, onProgress = () => {
   } }) {
+    var _a;
     const summary = { fetched: 0, created: 0, updated: 0, withInsights: 0, insightErrors: 0, skippedStories: 0, firstError: null };
     onProgress("Buscando publica\xE7\xF5es\u2026");
     const media = await listMedia(cfg, limit, fetchImpl);
@@ -1271,7 +1314,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         summary.skippedStories++;
         continue;
       }
-      onProgress(`Lendo m\xE9tricas ${i + 1} de ${media.length}\u2026`);
+      onProgress("Lendo m\xE9tricas ".concat(i + 1, " de ").concat(media.length, "\u2026"));
       let ins = {};
       try {
         ins = await mediaInsights(cfg, m, unsupported, fetchImpl);
@@ -1293,7 +1336,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           postedAt: existing.postedAt || date,
           date: existing.date || date,
           status: "postado",
-          platforms: existing.platforms?.length ? existing.platforms : ["instagram"],
+          platforms: ((_a = existing.platforms) == null ? void 0 : _a.length) ? existing.platforms : ["instagram"],
           results: toResults(ins, m, existing.results || {})
         });
         summary.updated++;
@@ -1338,19 +1381,19 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         }
       };
       needsRefresh = (cfg, now = Date.now()) => {
-        if (!cfg?.token) return false;
+        if (!(cfg == null ? void 0 : cfg.token)) return false;
         const last = Date.parse(cfg.tokenRefreshedAt || cfg.tokenSetAt);
         return now - last > REFRESH_AFTER_DAYS * DAY;
       };
       url = (cfg, path, params = {}) => {
         const q = new URLSearchParams({ ...params, access_token: cfg.token });
-        return `${IG_HOST}/${cfg.apiVersion || IG_DEFAULT_VERSION}/${path}?${q}`;
+        return "".concat(IG_HOST, "/").concat(cfg.apiVersion || IG_DEFAULT_VERSION, "/").concat(path, "?").concat(q);
       };
       mediaKind = (m) => m.media_product_type === "REELS" ? "REELS" : m.media_product_type === "STORY" ? "STORY" : "FEED";
       localDate = (iso2) => {
         const d = new Date(iso2);
         if (Number.isNaN(d.getTime())) return "";
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"), "-").concat(String(d.getDate()).padStart(2, "0"));
       };
     }
   });
@@ -1675,7 +1718,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 
   // src/js/lib/themes.js
   function nichesFromProfile(profile2) {
-    const text2 = String(profile2?.niches || "");
+    const text2 = String((profile2 == null ? void 0 : profile2.niches) || "");
     const keys = Object.entries(NICHE_KEYS).filter(([, re]) => re.test(text2)).map(([k]) => k);
     if (!keys.includes("ugc")) keys.push("ugc");
     return keys.length ? keys : ["lifestyle", "ugc"];
@@ -1890,14 +1933,15 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
   }
   function scores(c) {
+    var _a;
     const r = c.results || {};
-    const views = n(r.views) ?? n(r.reach);
+    const views = (_a = n(r.views)) != null ? _a : n(r.reach);
     const per1k = (x) => x === null || !views ? null : x / views * 1e3;
     const saves = n(r.saves);
     const shares = n(r.shares);
     return {
       views,
-      value: saves === null && shares === null ? null : per1k((saves ?? 0) + (shares ?? 0)),
+      value: saves === null && shares === null ? null : per1k((saves != null ? saves : 0) + (shares != null ? shares : 0)),
       // salvamentos + compartilhamentos por mil
       follows: per1k(n(r.follows)),
       // seguidores por mil visualizações
@@ -1912,10 +1956,11 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return { level: 3, label: "Consistente" };
   }
   function hits(contents) {
+    var _a, _b;
     const measured = contents.filter((c) => isPosted(c) && hasResults(c));
     const out = [];
     if (measured.length < 5) {
-      for (const c of measured) if ((scores(c).brand ?? 0) > 0) out.push({ content: c, reasons: ["trouxe contato de marca"] });
+      for (const c of measured) if (((_a = scores(c).brand) != null ? _a : 0) > 0) out.push({ content: c, reasons: ["trouxe contato de marca"] });
       return { items: out, enough: false, measured: measured.length };
     }
     const med = {
@@ -1929,7 +1974,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       if (s.follows !== null && med.follows && s.follows >= med.follows * 1.5) reasons.push("trouxe mais seguidores");
       if (s.value !== null && med.value && s.value >= med.value * 1.5) reasons.push("muito salvo/compartilhado");
       if (s.views !== null && med.views && s.views >= med.views * 2) reasons.push("alcance acima do seu normal");
-      if ((s.brand ?? 0) > 0) reasons.push("trouxe contato de marca");
+      if (((_b = s.brand) != null ? _b : 0) > 0) reasons.push("trouxe contato de marca");
       if (reasons.length) out.push({ content: c, reasons });
     }
     out.sort((a, b) => b.reasons.length - a.reasons.length);
@@ -1951,9 +1996,15 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       views: median(list.map((c) => scores(c).views)),
       follows: median(list.map((c) => scores(c).follows)),
       value: median(list.map((c) => scores(c).value)),
-      brand: list.reduce((a, c) => a + (scores(c).brand ?? 0), 0),
+      brand: list.reduce((a, c) => {
+        var _a;
+        return a + ((_a = scores(c).brand) != null ? _a : 0);
+      }, 0),
       confidence: confidence(list.length)
-    })).sort((a, b) => (b.follows ?? -1) - (a.follows ?? -1));
+    })).sort((a, b) => {
+      var _a, _b;
+      return ((_a = b.follows) != null ? _a : -1) - ((_b = a.follows) != null ? _b : -1);
+    });
   }
   function seeded(seed) {
     let h2 = 2166136261;
@@ -1968,14 +2019,17 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const pool = [...FORMATS, ...customFormats];
     const recent = new Set(contents.filter((c) => (c.date || "") >= addDays(today3, -14)).map((c) => c.formatId));
     const hitFormats = new Set(hits(contents).items.map((h2) => h2.content.formatId));
-    const rand = seeded(`${today3}:${shuffle3}`);
+    const rand = seeded("".concat(today3, ":").concat(shuffle3));
     const focusOrder = [FOCUS_BY_WEEKDAY[(parse(today3).getDay() + 6) % 7], "seguidores", "comunidade", "marcas"];
     const goals = [...new Set(focusOrder)];
     const picked = [];
     for (const goal of goals) {
       if (picked.length >= count) break;
-      const options = pool.filter((f) => f.goals?.includes(goal) && !picked.some((p) => p.format.id === f.id)).map((f) => ({ f, score: (recent.has(f.id) ? -2 : 0) + (hitFormats.has(f.id) ? 2 : 0) + rand() * 1.5 })).sort((a, b) => b.score - a.score);
-      if (options[0]) picked.push({ format: options[0].f, goal, reason: hitFormats.has(options[0].f.id) ? "j\xE1 funcionou pra voc\xEA" : recent.has(options[0].f.id) ? "voc\xEA usou h\xE1 pouco" : `foco do dia: ${goal}` });
+      const options = pool.filter((f) => {
+        var _a;
+        return ((_a = f.goals) == null ? void 0 : _a.includes(goal)) && !picked.some((p) => p.format.id === f.id);
+      }).map((f) => ({ f, score: (recent.has(f.id) ? -2 : 0) + (hitFormats.has(f.id) ? 2 : 0) + rand() * 1.5 })).sort((a, b) => b.score - a.score);
+      if (options[0]) picked.push({ format: options[0].f, goal, reason: hitFormats.has(options[0].f.id) ? "j\xE1 funcionou pra voc\xEA" : recent.has(options[0].f.id) ? "voc\xEA usou h\xE1 pouco" : "foco do dia: ".concat(goal) });
     }
     return picked;
   }
@@ -1991,8 +2045,8 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         { id: "postado", label: "Postado" }
       ];
       statusIndex = (s) => Math.max(0, STATUSES.findIndex((x) => x.id === s));
-      iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      parse = (s) => /* @__PURE__ */ new Date(`${s}T12:00:00`);
+      iso = (d) => "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"), "-").concat(String(d.getDate()).padStart(2, "0"));
+      parse = (s) => new Date("".concat(s, "T12:00:00"));
       addDays = (s, n2) => {
         const d = parse(s);
         d.setDate(d.getDate() + n2);
@@ -2034,7 +2088,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return tpl.replace("{S}", subject.charAt(0).toUpperCase() + subject.slice(1)).replace("{s}", subject).replace(/^./, (c) => c.toUpperCase());
   }
   function generateWeek({ monday, contents = [], deals = [], profile: profile2 = {}, customFormats = [], seed = "" }) {
-    const r = rng(`${monday}:${seed}`);
+    const r = rng("".concat(monday, ":").concat(seed));
     const days = weekdays(monday);
     const weekIndex = Math.round((parse(monday) - parse("2026-01-05")) / (7 * 864e5));
     const focus = FOCUS.map((_, i) => FOCUS[(i + weekIndex) % FOCUS.length]);
@@ -2059,11 +2113,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const usedThemes = /* @__PURE__ */ new Set();
     const items = [];
     days.forEach((day, i) => {
+      var _a, _b, _c;
       const deal = deals.find((d) => d.postDate === day && (d.type === "publi" || d.type === "tts") && d.status !== "cancelado");
       if (deal) {
         items.push({
           date: day,
-          title: `${deal.type === "tts" ? "TikTok Shop" : "Publi"}: ${deal.brandName || deal.title || "marca"}`,
+          title: "".concat(deal.type === "tts" ? "TikTok Shop" : "Publi", ": ").concat(deal.brandName || deal.title || "marca"),
           type: "video",
           goal: "marcas",
           formatId: "",
@@ -2091,12 +2146,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       let subject = "";
       for (let k = 0; k < niches.length && !subject; k++) {
         const niche = niches[(i + k) % niches.length];
-        const opts2 = shuffle(THEMES[niche]?.[meta2.kind] || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
+        const opts2 = shuffle(((_a = THEMES[niche]) == null ? void 0 : _a[meta2.kind]) || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
         if (opts2.length) subject = opts2[0];
       }
       if (!subject) subject = "algo da sua rotina desta semana";
       usedThemes.add(subject);
-      const title = format.custom ? `${format.name}: ${subject}` : fill(meta2.title, subject);
+      const title = format.custom ? "".concat(format.name, ": ").concat(subject) : fill(meta2.title, subject);
       const slides = type === "carrossel" || type === "estatico" ? slidesFor(format.id, type, { title, goal }) : [];
       items.push({
         date: day,
@@ -2105,13 +2160,13 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         type,
         goal,
         formatId: format.id,
-        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(format.hooks?.[0] || "", subject),
+        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(((_b = format.hooks) == null ? void 0 : _b[0]) || "", subject),
         altHooks: (format.hooks || []).slice(),
         steps: (format.structure || []).slice(),
         slides,
         needsPhoto: needsPhoto(slides),
         status: "roteiro",
-        platforms: format.platforms?.length ? format.platforms.slice() : ["instagram", "tiktok"]
+        platforms: ((_c = format.platforms) == null ? void 0 : _c.length) ? format.platforms.slice() : ["instagram", "tiktok"]
       });
     });
     return items;
@@ -2149,7 +2204,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         if (d.scriptDue && stageIndex(d) <= (PIPELINES[d.type] || []).findIndex(([k]) => k === "roteiro")) out.push({ date: d.scriptDue, kind: "roteiro", label: "Enviar roteiro", deal: d, name });
         if (d.postDate && !["publicado", "vendendo", "relatorio", "concluido"].includes(d.status)) out.push({ date: d.postDate, kind: "post", label: "Publicar", deal: d, name });
       }
-      if (d.paymentDue && d.paymentStatus !== "pago" && d.paymentStatus !== "permuta" && num(d.value) > 0) out.push({ date: d.paymentDue, kind: "pagamento", label: `Receber R$ ${fmtMoney(num(d.value))}`, deal: d, name });
+      if (d.paymentDue && d.paymentStatus !== "pago" && d.paymentStatus !== "permuta" && num(d.value) > 0) out.push({ date: d.paymentDue, kind: "pagamento", label: "Receber R$ ".concat(fmtMoney(num(d.value))), deal: d, name });
     }
     return out.sort((a, b) => a.date.localeCompare(b.date));
   }
@@ -2183,22 +2238,22 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     };
   }
   function toIcs(items, now = /* @__PURE__ */ new Date()) {
-    const esc = (s) => String(s).replace(/[\\,;]/g, (m) => `\\${m}`).replace(/\n/g, "\\n");
+    const esc = (s) => String(s).replace(/[\\,;]/g, (m) => "\\".concat(m)).replace(/\n/g, "\\n");
     const stamp2 = now.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
     const ev = items.map((x, i) => {
       const d = x.date.replace(/-/g, "");
       const next = addDays(x.date, 1).replace(/-/g, "");
       return [
         "BEGIN:VEVENT",
-        `UID:creator-${d}-${i}-${Math.abs(hash(x.label + x.name))}@creator`,
-        `DTSTAMP:${stamp2}`,
-        `DTSTART;VALUE=DATE:${d}`,
-        `DTEND;VALUE=DATE:${next}`,
-        `SUMMARY:${esc(`${x.name}: ${x.label}`)}`,
+        "UID:creator-".concat(d, "-").concat(i, "-").concat(Math.abs(hash(x.label + x.name)), "@creator"),
+        "DTSTAMP:".concat(stamp2),
+        "DTSTART;VALUE=DATE:".concat(d),
+        "DTEND;VALUE=DATE:".concat(next),
+        "SUMMARY:".concat(esc("".concat(x.name, ": ").concat(x.label))),
         "BEGIN:VALARM",
         "TRIGGER:-PT15H",
         "ACTION:DISPLAY",
-        `DESCRIPTION:${esc(x.label)}`,
+        "DESCRIPTION:".concat(esc(x.label)),
         "END:VALARM",
         "END:VEVENT"
       ].join("\r\n");
@@ -2215,9 +2270,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const cell2 = (v) => {
       if (v === null || v === void 0) return "";
       const s = typeof v === "boolean" ? v ? "sim" : "n\xE3o" : String(v);
-      return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      return /[";\n\r]/.test(s) ? '"'.concat(s.replace(/"/g, '""'), '"') : s;
     };
-    return "\uFEFF" + [cols.map(([, l]) => l).join(";"), ...deals.map((d) => cols.map(([k]) => cell2(k === "type" ? DEAL_TYPES[d.type]?.label : d[k])).join(";"))].join("\r\n");
+    return "\uFEFF" + [cols.map(([, l]) => l).join(";"), ...deals.map((d) => cols.map(([k]) => {
+      var _a;
+      return cell2(k === "type" ? (_a = DEAL_TYPES[d.type]) == null ? void 0 : _a.label : d[k]);
+    }).join(";"))].join("\r\n");
   }
   var DEAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, num, nextDeadline, fmtMoney;
   var init_deals = __esm({
@@ -2262,7 +2320,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         ]
       };
       PAYMENT = { pendente: "A receber", faturado: "Faturado", pago: "Pago", permuta: "Permuta" };
-      stageLabel = (deal) => (PIPELINES[deal.type] || PIPELINES.ugc).find(([k]) => k === deal.status)?.[1] || "Cancelado";
+      stageLabel = (deal) => {
+        var _a;
+        return ((_a = (PIPELINES[deal.type] || PIPELINES.ugc).find(([k]) => k === deal.status)) == null ? void 0 : _a[1]) || "Cancelado";
+      };
       stageIndex = (deal) => Math.max(0, (PIPELINES[deal.type] || PIPELINES.ugc).findIndex(([k]) => k === deal.status));
       isDone = (d) => d.status === "concluido" || d.status === "cancelado";
       num = (v) => v === null || v === void 0 || v === "" || Number.isNaN(Number(v)) ? 0 : Number(v);
@@ -2273,12 +2334,13 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 
   // src/js/data.js
   async function init() {
+    var _a, _b;
     try {
       const t = "__t__";
       localStorage.setItem(t, t);
       localStorage.removeItem(t);
       storage = localStorage;
-    } catch {
+    } catch (e) {
       storage = new MemoryStorage();
       store = new Store(storage);
       store.load();
@@ -2287,8 +2349,8 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     store = new Store(storage);
     store.load();
     try {
-      persistent = await navigator.storage?.persist?.() || false;
-    } catch {
+      persistent = await ((_b = (_a = navigator.storage) == null ? void 0 : _a.persist) == null ? void 0 : _b.call(_a)) || false;
+    } catch (e) {
       persistent = false;
     }
   }
@@ -2334,7 +2396,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     }, 1e3);
   }
   function exportBackup() {
-    download(JSON.stringify(store.db, null, 2), `creator-backup-${stamp()}.json`, "application/json");
+    download(JSON.stringify(store.db, null, 2), "creator-backup-".concat(stamp(), ".json"), "application/json");
     setMeta({ lastBackup: (/* @__PURE__ */ new Date()).toISOString() });
   }
   function generatePlan(monday, { seed = "", replace = false } = {}) {
@@ -2369,7 +2431,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     try {
       const p = JSON.parse(sessionStorage.getItem(PENDING_KEY) || "null");
       return p && Date.now() - p.at < 2 * 36e5 ? p : null;
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -2383,18 +2445,20 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     emit("instagram");
   }
   async function connectInstagram(token) {
+    var _a;
     const clean2 = String(token || "").trim();
     if (!clean2) throw new Error("Cole o token gerado no painel da Meta.");
     let cfg = { token: clean2, tokenSetAt: (/* @__PURE__ */ new Date()).toISOString(), apiVersion: IG_DEFAULT_VERSION };
     const acc = await fetchAccount(cfg);
-    cfg = { ...cfg, username: acc.username, accountType: acc.account_type, followersCount: acc.followers_count ?? null };
+    cfg = { ...cfg, username: acc.username, accountType: acc.account_type, followersCount: (_a = acc.followers_count) != null ? _a : null };
     return saveIgConfig(cfg);
   }
   function syncInstagram2({ onProgress } = {}) {
     if (syncing) return syncing;
     syncing = (async () => {
+      var _a;
       let cfg = igConfig();
-      if (!cfg?.token) throw new Error("Instagram n\xE3o conectado.");
+      if (!(cfg == null ? void 0 : cfg.token)) throw new Error("Instagram n\xE3o conectado.");
       if (needsRefresh(cfg)) {
         try {
           cfg = saveIgConfig(await refreshToken(cfg), { silent: true });
@@ -2404,7 +2468,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       }
       try {
         const acc = await fetchAccount(cfg);
-        cfg = { ...cfg, username: acc.username, followersCount: acc.followers_count ?? cfg.followersCount };
+        cfg = { ...cfg, username: acc.username, followersCount: (_a = acc.followers_count) != null ? _a : cfg.followersCount };
       } catch (err) {
         if (err.kind === "auth" || err.kind === "network") throw err;
       }
@@ -2440,25 +2504,34 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       persistent = false;
       onChange = (fn) => listeners.add(fn);
       emit = (what) => listeners.forEach((fn) => fn(what));
-      all = (col) => store?.list(col) ?? [];
-      get = (col, id) => store?.get(col, id);
-      profile = () => store?.db.profile ?? {};
-      sizeBytes = () => store?.sizeBytes() ?? 0;
-      snapshotInfo = () => store?.snapshotInfo();
+      all = (col) => {
+        var _a;
+        return (_a = store == null ? void 0 : store.list(col)) != null ? _a : [];
+      };
+      get = (col, id) => store == null ? void 0 : store.get(col, id);
+      profile = () => {
+        var _a;
+        return (_a = store == null ? void 0 : store.db.profile) != null ? _a : {};
+      };
+      sizeBytes = () => {
+        var _a;
+        return (_a = store == null ? void 0 : store.sizeBytes()) != null ? _a : 0;
+      };
+      snapshotInfo = () => store == null ? void 0 : store.snapshotInfo();
       stamp = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       META_KEY = "creator:meta";
       meta = () => {
         try {
           return JSON.parse(storage.getItem(META_KEY) || "{}");
-        } catch {
+        } catch (e) {
           return {};
         }
       };
       setMeta = (patch) => storage.setItem(META_KEY, JSON.stringify({ ...meta(), ...patch }));
-      exportCsv = () => download(contentsToCsv(all("contents")), `conteudos-${stamp()}.csv`, "text/csv;charset=utf-8");
+      exportCsv = () => download(contentsToCsv(all("contents")), "conteudos-".concat(stamp(), ".csv"), "text/csv;charset=utf-8");
       lastBackup = () => meta().lastBackup || null;
-      exportDealsCsv = () => download(dealsToCsv(all("deals")), `marcas-${stamp()}.csv`, "text/csv;charset=utf-8");
-      downloadIcs = (items, name = "prazos") => download(toIcs(items), `${name}-${stamp()}.ics`, "text/calendar;charset=utf-8");
+      exportDealsCsv = () => download(dealsToCsv(all("deals")), "marcas-".concat(stamp(), ".csv"), "text/csv;charset=utf-8");
+      downloadIcs = (items, name = "prazos") => download(toIcs(items), "".concat(name, "-").concat(stamp(), ".ics"), "text/calendar;charset=utf-8");
       planFor = (monday) => all("plans").find((p) => p.weekStart === monday) || null;
       PENDING_KEY = "creator:pending-ai";
       igConfig = () => storage ? loadConfig(storage) : null;
@@ -2467,6 +2540,17 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   });
 
   // src/js/ui.js
+  function openDialog(d) {
+    if (typeof d.showModal === "function") d.showModal();
+    else {
+      d.setAttribute("open", "");
+      d.classList.add("no-modal");
+    }
+  }
+  function closeDialog(d) {
+    if (typeof d.close === "function") d.close();
+    else d.removeAttribute("open");
+  }
   function h(tag2, props = {}, ...children) {
     const el = document.createElement(tag2);
     for (const [k, v] of Object.entries(props || {})) {
@@ -2491,15 +2575,15 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   }
   function fmtDay(isoDate, opts2 = { weekday: "short", day: "numeric", month: "short" }) {
     if (!isoDate) return "";
-    const d = /* @__PURE__ */ new Date(`${isoDate}T12:00:00`);
+    const d = new Date("".concat(isoDate, "T12:00:00"));
     return Number.isNaN(d.getTime()) ? isoDate : d.toLocaleDateString("pt-BR", opts2).replace(".", "");
   }
   function go(path, params) {
-    const qs = params ? `?${new URLSearchParams(params)}` : "";
-    location.hash = `#/${path}${qs}`;
+    const qs = params ? "?".concat(new URLSearchParams(params)) : "";
+    location.hash = "#/".concat(path).concat(qs);
   }
   function postThumb(c, { cls = "post-thumb", emoji = "\u{1F4F7}", color = "gray" } = {}) {
-    if (!c?.igThumb) return badge(emoji, color);
+    if (!(c == null ? void 0 : c.igThumb)) return badge(emoji, color);
     const img = h("img", { class: cls, src: c.igThumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer", decoding: "async" });
     img.addEventListener("error", () => img.replaceWith(badge(emoji, color)), { once: true });
     return img;
@@ -2520,19 +2604,19 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   function card({ title, subtitle, actions, children, foot, flush = false, cls = "", id }) {
     return h(
       "article",
-      { class: `card ${cls}`, "data-id": id },
+      { class: "card ".concat(cls), "data-id": id },
       (title || actions) && h("header", { class: "card-head" }, h("div", {}, title && h("h3", {}, title), subtitle && h("p", { class: "card-sub" }, subtitle)), actions),
-      h("div", { class: `card-body${flush ? " flush" : ""}` }, children),
+      h("div", { class: "card-body".concat(flush ? " flush" : "") }, children),
       foot && h("footer", { class: "card-foot" }, foot)
     );
   }
   function kpi({ label: label2, value, hint: hint2, tone = "", meter = null, id }) {
     return h(
       "div",
-      { class: `card kpi${tone ? ` tone-${tone}` : ""}`, "data-id": id },
+      { class: "card kpi".concat(tone ? " tone-".concat(tone) : ""), "data-id": id },
       h("p", { class: "kpi-label" }, label2),
       h("p", { class: "kpi-value" }, value),
-      meter !== null && h("div", { class: "meter", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(meter * 100)) }, h("span", { style: { width: `${Math.min(100, Math.round(meter * 100))}%` } })),
+      meter !== null && h("div", { class: "meter", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(meter * 100)) }, h("span", { style: { width: "".concat(Math.min(100, Math.round(meter * 100)), "%") } })),
       hint2 && h("p", { class: "kpi-hint" }, hint2)
     );
   }
@@ -2540,7 +2624,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const items = [children].flat(Infinity).filter((c) => c !== null && c !== void 0 && c !== false);
     return h(
       "section",
-      { class: `group ${cls}` },
+      { class: "group ".concat(cls) },
       header && h("h2", { class: "group-header" }, header),
       items.length ? h("div", { class: "group-body" }, items) : null,
       footer && h("p", { class: "group-footer" }, footer)
@@ -2554,7 +2638,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       accessory,
       chevron && icon("chevron", "chev")
     ];
-    return onClick ? h("button", { type: "button", class: `cell tappable ${cls}`, onclick: onClick, "data-id": id }, content) : h("div", { class: `cell ${cls}`, "data-id": id }, content);
+    return onClick ? h("button", { type: "button", class: "cell tappable ".concat(cls), onclick: onClick, "data-id": id }, content) : h("div", { class: "cell ".concat(cls), "data-id": id }, content);
   }
   function table({ columns, rows, onRowClick, rowId, rowCls, empty: empty2 = "Nada por aqui.", caption }) {
     if (!rows.length) return emptyNote(empty2);
@@ -2567,8 +2651,8 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         caption && h("caption", { class: "sr-only" }, caption),
         h("thead", {}, h("tr", {}, columns.map((c) => h("th", { scope: "col", class: c.cls }, c.label)))),
         h("tbody", {}, rows.map((r) => h("tr", {
-          class: [onRowClick ? "clickable" : "", rowCls?.(r) || ""].join(" ").trim() || null,
-          "data-id": rowId?.(r),
+          class: [onRowClick ? "clickable" : "", (rowCls == null ? void 0 : rowCls(r)) || ""].join(" ").trim() || null,
+          "data-id": rowId == null ? void 0 : rowId(r),
           tabindex: onRowClick ? "0" : null,
           onclick: onRowClick ? (e) => {
             if (!e.target.closest("button, a, input, select")) onRowClick(r);
@@ -2600,13 +2684,13 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return h(
       "div",
       { class: "chips", role: "group" },
-      options.map((o) => h("button", { type: "button", class: `chip${o.value === value ? " on" : ""}`, "aria-pressed": String(o.value === value), onclick: () => onChange2(o.value === value ? "" : o.value) }, o.label))
+      options.map((o) => h("button", { type: "button", class: "chip".concat(o.value === value ? " on" : ""), "aria-pressed": String(o.value === value), onclick: () => onChange2(o.value === value ? "" : o.value) }, o.label))
     );
   }
   function filterSelect(label2, options, value, onChange2) {
     const sel = h(
       "select",
-      { class: `filter-select${value ? " active" : ""}`, "aria-label": label2, onchange: (e) => onChange2(e.target.value) },
+      { class: "filter-select".concat(value ? " active" : ""), "aria-label": label2, onchange: (e) => onChange2(e.target.value) },
       h("option", { value: "" }, label2),
       options.map((o) => h("option", { value: o.value, selected: o.value === value }, o.label))
     );
@@ -2615,11 +2699,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   function searchBox(value, onInput, placeholder = "Buscar\u2026") {
     const s = h("input", { type: "search", class: "search", placeholder, value: value || "", "aria-label": placeholder });
     s.addEventListener("input", () => {
+      var _a;
       const pos = s.selectionStart;
       onInput(s.value);
       const again = document.querySelector(".search");
-      again?.focus();
-      again?.setSelectionRange?.(pos, pos);
+      again == null ? void 0 : again.focus();
+      (_a = again == null ? void 0 : again.setSelectionRange) == null ? void 0 : _a.call(again, pos, pos);
     });
     return s;
   }
@@ -2629,7 +2714,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       box = h("div", { id: "toasts", "aria-live": "polite" });
       document.body.append(box);
     }
-    const t = h("div", { class: `toast ${kind}`, role: kind === "error" ? "alert" : "status" }, kind === "ok" ? icon("check", "toast-ic") : null, h("span", {}, message));
+    const t = h("div", { class: "toast ".concat(kind), role: kind === "error" ? "alert" : "status" }, kind === "ok" ? icon("check", "toast-ic") : null, h("span", {}, message));
     box.append(t);
     while (box.children.length > 3) box.firstChild.remove();
     const ms = kind === "error" ? 5500 : 2600;
@@ -2637,14 +2722,14 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     setTimeout(() => t.remove(), ms + 400);
   }
   function sheet({ title, body, onSave, saveLabel = "Salvar", cancelLabel = "Cancelar", footer, tall = false, wide = false }) {
-    const dialog = h("dialog", { class: `sheet${tall ? " tall" : ""}${wide ? " wide" : ""}`, "aria-label": title });
+    const dialog = h("dialog", { class: "sheet".concat(tall ? " tall" : "").concat(wide ? " wide" : ""), "aria-label": title });
     let closed = false;
     const close = () => {
       if (closed) return;
       closed = true;
       dialog.classList.add("closing");
       setTimeout(() => {
-        dialog.close();
+        closeDialog(dialog);
         dialog.remove();
       }, 170);
     };
@@ -2679,14 +2764,14 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       if (e.target === dialog) close();
     });
     document.body.append(dialog);
-    dialog.showModal();
+    openDialog(dialog);
     return close;
   }
   function actionSheet({ title, message, actions }) {
     return new Promise((resolve) => {
       const dialog = h("dialog", { class: "action-sheet", "aria-label": title || "Escolha" });
       const done = (v) => {
-        dialog.close();
+        closeDialog(dialog);
         dialog.remove();
         resolve(v);
       };
@@ -2695,7 +2780,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         h(
           "div",
           { class: "as-group" },
-          actions.map((a) => h("button", { type: "button", class: `as-btn${a.destructive ? " destructive" : ""}`, "data-id": a.id, onclick: () => done(a.value ?? a.label) }, a.label))
+          actions.map((a) => h("button", { type: "button", class: "as-btn".concat(a.destructive ? " destructive" : ""), "data-id": a.id, onclick: () => {
+            var _a;
+            return done((_a = a.value) != null ? _a : a.label);
+          } }, a.label))
         ),
         h("button", { type: "button", class: "as-btn as-cancel", onclick: () => done(null) }, "Cancelar")
       );
@@ -2705,7 +2793,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       });
       dialog.addEventListener("click", (e) => e.target === dialog && done(null));
       document.body.append(dialog);
-      dialog.showModal();
+      openDialog(dialog);
     });
   }
   function formGroups(sections, values = {}) {
@@ -2721,21 +2809,21 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         }
         if (f.type === "textarea" || f.type === "list") {
           const ta = h("textarea", { name: f.name, rows: f.rows || 3, placeholder: f.placeholder || "", "aria-label": f.label });
-          ta.value = f.type === "list" ? Array.isArray(v) ? v.join("\n") : v || "" : v ?? "";
+          ta.value = f.type === "list" ? Array.isArray(v) ? v.join("\n") : v || "" : v != null ? v : "";
           getters[f.name] = () => f.type === "list" ? ta.value.split("\n").map((x) => x.trim()).filter(Boolean) : ta.value.trim();
           return h("label", { class: "field-area" }, lbl("field-label"), ta);
         }
         if (f.type === "select") {
           const opts2 = typeof f.options === "function" ? f.options() : f.options;
           const sel = h("select", { name: f.name, "aria-label": f.label }, f.placeholder !== false && h("option", { value: "" }, f.placeholder || "Nenhum"), opts2.map((o) => h("option", { value: o.value }, o.label)));
-          sel.value = v ?? "";
+          sel.value = v != null ? v : "";
           getters[f.name] = () => sel.value;
-          return h("label", { class: `field${f.full ? " full" : ""}` }, lbl("cell-title"), sel);
+          return h("label", { class: "field".concat(f.full ? " full" : "") }, lbl("cell-title"), sel);
         }
         const input = h("input", { name: f.name, type: f.type || "text", placeholder: f.placeholder || "", "aria-label": f.label, inputmode: f.type === "number" ? "decimal" : null, min: f.type === "number" ? 0 : null, step: f.type === "number" ? "any" : null });
-        input.value = v ?? "";
+        input.value = v != null ? v : "";
         getters[f.name] = () => f.type === "number" ? input.value === "" ? null : Number(input.value) : input.value.trim();
-        return h("label", { class: `field${f.full || f.name === "title" ? " full" : ""}` }, lbl("cell-title"), input);
+        return h("label", { class: "field".concat(f.full || f.name === "title" ? " full" : "") }, lbl("cell-title"), input);
       });
       return group({ header: sec.header, footer: sec.footer, children: rows });
     });
@@ -2756,7 +2844,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const tip = h("div", { class: "chart-tip", hidden: true });
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("viewBox", `0 0 ${W2} ${H2}`);
+    svg.setAttribute("viewBox", "0 0 ".concat(W2, " ").concat(H2));
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", label2);
     const el = (tagName, attrs, text2) => {
@@ -2777,17 +2865,17 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       const hgt = H2 - pad.b - top;
       const r = Math.min(4, hgt);
       const x0 = cx - bw / 2;
-      const path = hgt > 0 ? `M${x0},${H2 - pad.b}V${top + r}Q${x0},${top} ${x0 + r},${top}H${x0 + bw - r}Q${x0 + bw},${top} ${x0 + bw},${top + r}V${H2 - pad.b}Z` : "";
-      const hit = el("rect", { class: "hit", x: cx - band / 2, y: pad.t - 10, width: band, height: H2 - pad.t - pad.b + 10, tabindex: "0", "aria-label": `${d.label}: ${fmt(d.value || 0)}` });
-      if (path) el("path", { class: `bar${d.hl ? " hl" : ""}`, d: path });
+      const path = hgt > 0 ? "M".concat(x0, ",").concat(H2 - pad.b, "V").concat(top + r, "Q").concat(x0, ",").concat(top, " ").concat(x0 + r, ",").concat(top, "H").concat(x0 + bw - r, "Q").concat(x0 + bw, ",").concat(top, " ").concat(x0 + bw, ",").concat(top + r, "V").concat(H2 - pad.b, "Z") : "";
+      const hit = el("rect", { class: "hit", x: cx - band / 2, y: pad.t - 10, width: band, height: H2 - pad.t - pad.b + 10, tabindex: "0", "aria-label": "".concat(d.label, ": ").concat(fmt(d.value || 0)) });
+      if (path) el("path", { class: "bar".concat(d.hl ? " hl" : ""), d: path });
       if (d.hl || i === data.length - 1) el("text", { class: "value-label", x: cx, y: top - 6, "text-anchor": "middle" }, fmt(d.value || 0));
       el("text", { class: "axis-label", x: cx, y: H2 - 8, "text-anchor": "middle" }, d.label);
       const show = () => {
         tip.hidden = false;
         tip.replaceChildren(h("strong", {}, fmt(d.value || 0)), h("span", {}, d.tip || d.label));
         const box = wrap2.getBoundingClientRect();
-        tip.style.left = `${cx / W2 * box.width}px`;
-        tip.style.top = `${top / H2 * box.height}px`;
+        tip.style.left = "".concat(cx / W2 * box.width, "px");
+        tip.style.top = "".concat(top / H2 * box.height, "px");
       };
       hit.addEventListener("pointerenter", show);
       hit.addEventListener("focus", show);
@@ -2810,18 +2898,19 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     try {
       await navigator.clipboard.writeText(text2);
       return true;
-    } catch {
+    } catch (e) {
       return false;
     }
   }
-  var clear, norm, fmtNum, fmtDec, ICONS, icon, badge, tag, btn, tabs, confirmDelete, hbar, emptyNote;
+  var clone, clear, norm, fmtNum, fmtDec, ICONS, icon, badge, tag, btn, tabs, confirmDelete, hbar, emptyNote;
   var init_ui = __esm({
     "src/js/ui.js"() {
+      clone = (x) => typeof structuredClone === "function" ? structuredClone(x) : JSON.parse(JSON.stringify(x));
       clear = (el) => {
         el.replaceChildren();
         return el;
       };
-      norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      norm = (s) => String(s != null ? s : "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
       fmtNum = (v) => v === null || v === void 0 ? "\u2014" : Math.round(v).toLocaleString("pt-BR");
       fmtDec = (v) => v === null || v === void 0 ? "\u2014" : v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
       ICONS = {
@@ -2849,13 +2938,13 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
         camera: '<path d="M4 8.5h3l1.5-2h7l1.5 2h3v10H4z"/><circle cx="12" cy="13" r="3.2"/>'
       };
-      icon = (name, cls = "ic") => h("span", { class: cls, "aria-hidden": "true", html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ICONS.plus}</svg>` });
-      badge = (emoji, color = "gray") => h("span", { class: `badge c-${color}`, "aria-hidden": "true" }, emoji);
-      tag = (text2, tone = "") => text2 ? h("span", { class: `tag ${tone}` }, text2) : null;
-      btn = (label2, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: `btn${kind ? ` btn-${kind}` : ""}${small ? " btn-sm" : ""}`, onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label2 && h("span", { class: "btn-label" }, label2));
+      icon = (name, cls = "ic") => h("span", { class: cls, "aria-hidden": "true", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.concat(ICONS[name] || ICONS.plus, "</svg>") });
+      badge = (emoji, color = "gray") => h("span", { class: "badge c-".concat(color), "aria-hidden": "true" }, emoji);
+      tag = (text2, tone = "") => text2 ? h("span", { class: "tag ".concat(tone) }, text2) : null;
+      btn = (label2, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: "btn".concat(kind ? " btn-".concat(kind) : "").concat(small ? " btn-sm" : ""), onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label2 && h("span", { class: "btn-label" }, label2));
       tabs = segmented;
-      confirmDelete = (what) => actionSheet({ title: "Apagar", message: `Apagar ${what}? N\xE3o d\xE1 para desfazer.`, actions: [{ label: "Apagar", destructive: true, value: true, id: "confirm-delete" }] }).then((v) => v === true);
-      hbar = (value, max, text2) => value === null || value === void 0 ? h("span", { class: "subtle" }, "\u2014") : h("span", { class: "bar-cell" }, h("span", { class: "hbar", style: { width: `${Math.max(2, Math.round(value / (max || 1) * 120))}px` } }), h("span", { class: "num" }, text2));
+      confirmDelete = (what) => actionSheet({ title: "Apagar", message: "Apagar ".concat(what, "? N\xE3o d\xE1 para desfazer."), actions: [{ label: "Apagar", destructive: true, value: true, id: "confirm-delete" }] }).then((v) => v === true);
+      hbar = (value, max, text2) => value === null || value === void 0 ? h("span", { class: "subtle" }, "\u2014") : h("span", { class: "bar-cell" }, h("span", { class: "hbar", style: { width: "".concat(Math.max(2, Math.round(value / (max || 1) * 120)), "px") } }), h("span", { class: "num" }, text2));
       emptyNote = (title, text2, action) => h("div", { class: "empty" }, h("p", { class: "empty-title" }, title), text2 && h("p", {}, text2), action && h("p", { style: { marginTop: "12px" } }, action));
     }
   });
@@ -2864,12 +2953,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   async function askClaude({ kind, prompt, context = {} }) {
     const copying = copyText(prompt);
     setPendingAi({ kind, context });
-    const url2 = prompt.length < 6e3 ? `https://claude.ai/new?q=${encodeURIComponent(prompt)}` : "https://claude.ai/new";
+    const url2 = prompt.length < 6e3 ? "https://claude.ai/new?q=".concat(encodeURIComponent(prompt)) : "https://claude.ai/new";
     const win = window.open(url2, "_blank");
     if (win) {
       try {
         win.opener = null;
-      } catch {
+      } catch (e) {
       }
     }
     const copied = await copying;
@@ -2909,7 +2998,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           if (!text2.trim()) throw new Error("vazio");
           ta.value = text2;
           use(text2, closeRef);
-        } catch {
+        } catch (e) {
           err.textContent = "N\xE3o consegui ler a \xE1rea de transfer\xEAncia. Cole no campo abaixo (Ctrl+V / Cmd+V, ou toque e segure no celular).";
           ta.focus();
         }
@@ -2954,7 +3043,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 
   // src/js/lib/render.js
   function tracking(ctx, size, weight) {
-    if ("letterSpacing" in ctx) ctx.letterSpacing = weight >= 700 && size >= 56 ? `${-Math.round(size * 0.04)}px` : weight >= 700 ? `${-Math.round(size * 0.015)}px` : "0px";
+    if ("letterSpacing" in ctx) ctx.letterSpacing = weight >= 700 && size >= 56 ? "".concat(-Math.round(size * 0.04), "px") : weight >= 700 ? "".concat(-Math.round(size * 0.015), "px") : "0px";
   }
   function palette(p = {}, dark = false) {
     const base = { ...DEFAULT_PALETTE, ...p };
@@ -2970,7 +3059,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       }
       let line = "";
       for (const word of para.split(/\s+/)) {
-        const test = line ? `${line} ${word}` : word;
+        const test = line ? "".concat(line, " ").concat(word) : word;
         if (measure(test) <= maxWidth || !line) line = test;
         else {
           lines.push(line);
@@ -2981,7 +3070,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     }
     if (lines.length > maxLines) {
       const cut = lines.slice(0, maxLines);
-      cut[maxLines - 1] = `${cut[maxLines - 1].replace(/\s*\S*$/, "")}\u2026`;
+      cut[maxLines - 1] = "".concat(cut[maxLines - 1].replace(/\s*\S*$/, ""), "\u2026");
       return cut;
     }
     return lines;
@@ -3035,7 +3124,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     }
   }
   function hint(ctx, slide, x, y, P, preview, maxWidth = 860) {
-    if (preview && slide.hint) text(ctx, `\u270F\uFE0E ${slide.hint}`, x, y, { size: 36, color: P.muted, maxWidth, maxLines: 3 });
+    if (preview && slide.hint) text(ctx, "\u270F\uFE0E ".concat(slide.hint), x, y, { size: 36, color: P.muted, maxWidth, maxLines: 3 });
   }
   function chrome(ctx, P, { index, total, handle, dark }) {
     ctx.font = font(700, 30);
@@ -3123,7 +3212,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       W = 1080;
       H = 1350;
       FONT = 'Montserrat, system-ui, "Segoe UI", Roboto, Arial, sans-serif';
-      font = (weight, size) => `${weight} ${size}px ${FONT}`;
+      font = (weight, size) => "".concat(weight, " ").concat(size, "px ").concat(FONT);
       DEFAULT_PALETTE = {
         bg: "#FAFAF9",
         // fundo
@@ -3349,7 +3438,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         req.onupgradeneeded = () => req.result.createObjectStore(STORE);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => resolve(null);
-      } catch {
+      } catch (e) {
         resolve(null);
       }
     }));
@@ -3361,7 +3450,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       return new Promise((resolve, reject) => {
         const t = db.transaction(STORE, mode);
         const r = fn(t.objectStore(STORE));
-        t.oncomplete = () => resolve(r?.result);
+        t.oncomplete = () => resolve(r == null ? void 0 : r.result);
         t.onerror = () => reject(t.error);
       });
     });
@@ -3400,7 +3489,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       putPhoto = (id, blob) => tx("readwrite", (s) => s ? s.put(blob, id) : memory.set(id, blob));
       getPhoto = (id) => id ? tx("readonly", (s) => s ? s.get(id) : { result: memory.get(id) }) : Promise.resolve(null);
       deletePhoto = (id) => tx("readwrite", (s) => s ? s.delete(id) : memory.delete(id));
-      newPhotoId = () => `ph-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      newPhotoId = () => "ph-".concat(Date.now().toString(36), "-").concat(Math.random().toString(36).slice(2, 8));
     }
   });
 
@@ -3430,22 +3519,24 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     return true;
   }
   function openDesigner(contentId) {
+    var _a;
     const c = get("contents", contentId);
-    if (c?.noDesign) update("contents", contentId, { noDesign: false }, { silent: true });
-    document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')?.click();
+    if (c == null ? void 0 : c.noDesign) update("contents", contentId, { noDesign: false }, { silent: true });
+    (_a = document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')) == null ? void 0 : _a.click();
     go("conteudo/estudio", { id: contentId });
   }
   function buildDesigner(contentId) {
+    var _a, _b, _c, _d;
     let c = get("contents", contentId);
     if (!c) return null;
-    if (!c.slides?.length) {
+    if (!((_a = c.slides) == null ? void 0 : _a.length)) {
       const slides2 = slidesFor(c.formatId, c.type === "estatico" ? "estatico" : "carrossel", { title: c.title, goal: c.goal });
       c = update("contents", c.id, { slides: slides2, needsPhoto: needsPhoto(slides2) }, { silent: true });
     }
-    let slides = structuredClone(c.slides);
-    let dark = c.designDark ?? profile().designDark ?? false;
+    let slides = clone(c.slides);
+    let dark = (_c = (_b = c.designDark) != null ? _b : profile().designDark) != null ? _c : false;
     if (studio.id !== contentId) Object.assign(studio, { id: contentId, sel: 0 });
-    let sel = Math.min(studio.sel, Math.max(0, (c.slides?.length || 1) - 1));
+    let sel = Math.min(studio.sel, Math.max(0, (((_d = c.slides) == null ? void 0 : _d.length) || 1) - 1));
     const big = h("canvas", { class: "big-canvas", "aria-label": "Pr\xE9via da tela selecionada" });
     const drawBig = () => imageFor(slides[sel]).then((img) => drawSlide(big, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
     const strip = h("div", { class: "slide-strip", role: "listbox", "aria-label": "Telas" });
@@ -3456,17 +3547,17 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     };
     async function drawStrip() {
       strip.replaceChildren(...slides.map((s, i) => {
-        const cv = h("canvas", { class: "slide-canvas", "aria-label": `Tela ${i + 1}: ${LAYOUTS[s.layout]}` });
+        const cv = h("canvas", { class: "slide-canvas", "aria-label": "Tela ".concat(i + 1, ": ").concat(LAYOUTS[s.layout]) });
         const b = h(
           "button",
-          { type: "button", class: `slide-thumb${i === sel ? " sel" : ""}`, role: "option", "aria-selected": String(i === sel), "data-slide": i, onclick: () => {
+          { type: "button", class: "slide-thumb".concat(i === sel ? " sel" : ""), role: "option", "aria-selected": String(i === sel), "data-slide": i, onclick: () => {
             sel = i;
             studio.sel = i;
             drawStrip();
             drawEditor();
           } },
           cv,
-          h("span", { class: "slide-n" }, `${i + 1}`),
+          h("span", { class: "slide-n" }, "".concat(i + 1)),
           s.photo && !s.photoId ? h("span", { class: "need-photo" }, "\u{1F4F7}") : null
         );
         imageFor(s).then((img) => drawSlide(cv, s, { ...opts({ ...c, designDark: dark }, i, slides.length, true), image: img }));
@@ -3476,7 +3567,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     }
     const redrawCurrent = () => {
       drawBig();
-      const cv = strip.querySelector(`[data-slide="${sel}"] canvas`);
+      const cv = strip.querySelector('[data-slide="'.concat(sel, '"] canvas'));
       if (cv) imageFor(slides[sel]).then((img) => drawSlide(cv, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
     };
     const change = (patch) => {
@@ -3488,7 +3579,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       const el = h(area ? "textarea" : "input", { "aria-label": label2, placeholder: label2, rows: area ? rows : null, name });
       el.value = value || "";
       el.addEventListener("input", () => onInput(el.value));
-      return h("label", { class: `cell ${area ? "field-area" : "field"}` }, h("span", { class: area ? "field-label" : "cell-title" }, label2), el);
+      return h("label", { class: "cell ".concat(area ? "field-area" : "field") }, h("span", { class: area ? "field-label" : "cell-title" }, label2), el);
     };
     function drawEditor() {
       const s = slides[sel];
@@ -3497,7 +3588,8 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       if (s.photo) {
         const file = h("input", { type: "file", accept: "image/*", hidden: true, "data-id": "photo-input" });
         file.addEventListener("change", async () => {
-          const f = file.files?.[0];
+          var _a2;
+          const f = (_a2 = file.files) == null ? void 0 : _a2[0];
           if (!f) return;
           try {
             const blob = await shrink(f);
@@ -3511,7 +3603,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
             toast(e.message, "error");
           }
         });
-        rows.push(group({ header: "Foto sua", footer: s.photoHint ? `Pedido: ${s.photoHint}` : null, children: [
+        rows.push(group({ header: "Foto sua", footer: s.photoHint ? "Pedido: ".concat(s.photoHint) : null, children: [
           h("button", { type: "button", class: "cell tappable tint", "data-id": "add-photo", onclick: () => file.click() }, s.photoId ? "\u{1F504} Trocar foto" : "\u{1F4F7} Adicionar foto"),
           file
         ] }));
@@ -3520,16 +3612,16 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       if (["capa", "notas", "foto"].includes(s.layout)) fields.push(input("Etiqueta (opcional)", s.kicker, (v) => change({ kicker: v })));
       if (s.layout !== "imessage") fields.push(input(s.layout === "foto" ? "Legenda na foto (opcional)" : "T\xEDtulo", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
       if (["notas", "capa", "cta"].includes(s.layout)) fields.push(input(s.layout === "notas" ? "Texto" : "Subt\xEDtulo", s.body, (v) => change({ body: v }), { area: true, rows: s.layout === "notas" ? 6 : 2, name: "slide-body" }));
-      if (s.layout === "lista") fields.push(input('Itens (um por linha; comece com "x " para marcar como feito)', (s.items || []).map((i) => `${i.done ? "x " : ""}${i.text}`).join("\n"), (v) => change({ items: v.split("\n").map((l) => ({ done: /^x\s/i.test(l), text: l.replace(/^x\s/i, "").trim() })).filter((i) => i.text) }), { area: true, rows: 6, name: "slide-items" }));
+      if (s.layout === "lista") fields.push(input('Itens (um por linha; comece com "x " para marcar como feito)', (s.items || []).map((i) => "".concat(i.done ? "x " : "").concat(i.text)).join("\n"), (v) => change({ items: v.split("\n").map((l) => ({ done: /^x\s/i.test(l), text: l.replace(/^x\s/i, "").trim() })).filter((i) => i.text) }), { area: true, rows: 6, name: "slide-items" }));
       if (s.layout === "imessage") {
         fields.push(input("Nome no topo", s.contact, (v) => change({ contact: v })));
-        fields.push(input('Mensagens (uma por linha; "eu:" para as suas)', (s.messages || []).map((m) => `${m.me ? "eu: " : ""}${m.text}`).join("\n"), (v) => change({ messages: v.split("\n").filter((l) => l.trim()).map((l) => ({ me: /^eu:/i.test(l.trim()), text: l.trim().replace(/^eu:\s*/i, "") })) }), { area: true, rows: 6, name: "slide-messages" }));
+        fields.push(input('Mensagens (uma por linha; "eu:" para as suas)', (s.messages || []).map((m) => "".concat(m.me ? "eu: " : "").concat(m.text)).join("\n"), (v) => change({ messages: v.split("\n").filter((l) => l.trim()).map((l) => ({ me: /^eu:/i.test(l.trim()), text: l.trim().replace(/^eu:\s*/i, "") })) }), { area: true, rows: 6, name: "slide-messages" }));
       }
       if (s.layout === "widgets") {
-        (s.cells || []).forEach((cl, k) => fields.push(input(cl.label || `Widget ${k + 1}`, cl.value, (v) => change({ cells: slides[sel].cells.map((x, j) => j === k ? { ...x, value: v } : x) }), { area: true, rows: 2, name: `cell-${k}` })));
+        (s.cells || []).forEach((cl, k) => fields.push(input(cl.label || "Widget ".concat(k + 1), cl.value, (v) => change({ cells: slides[sel].cells.map((x, j) => j === k ? { ...x, value: v } : x) }), { area: true, rows: 2, name: "cell-".concat(k) })));
       }
-      if (s.hint) rows.unshift(h("p", { class: "hint-line" }, `\u270F\uFE0E ${s.hint}`));
-      rows.push(group({ header: `Tela ${sel + 1} \xB7 ${LAYOUTS[s.layout]}`, children: fields }));
+      if (s.hint) rows.unshift(h("p", { class: "hint-line" }, "\u270F\uFE0E ".concat(s.hint)));
+      rows.push(group({ header: "Tela ".concat(sel + 1, " \xB7 ").concat(LAYOUTS[s.layout]), children: fields }));
       rows.push(group({ children: [
         cell({ title: "Layout", accessory: (() => {
           const sl = h("select", { "aria-label": "Layout", class: "inline-select" }, Object.entries(LAYOUTS).map(([k, v]) => h("option", { value: k, selected: k === s.layout }, v)));
@@ -3561,7 +3653,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           h("button", { type: "button", class: "tool", disabled: sel === slides.length - 1, onclick: () => move(1), "aria-label": "Mover para a direita" }, "\u203A"),
           h("button", { type: "button", class: "tool", "data-id": "add-slide", onclick: addSlide }, "+ Tela"),
           h("button", { type: "button", class: "tool", onclick: () => {
-            slides.splice(sel + 1, 0, structuredClone({ ...slides[sel], photoId: null }));
+            slides.splice(sel + 1, 0, clone({ ...slides[sel], photoId: null }));
             sel++;
             persist();
             drawStrip();
@@ -3601,10 +3693,11 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       drawEditor();
     }
     async function exportAll() {
+      var _a2;
       const missing = slides.filter((s) => s.photo && !s.photoId).length;
       const empties = slides.map(emptyFields).filter((x) => x.length).length;
       if (missing || empties) {
-        const go2 = await actionSheet({ title: "Ainda falta", message: [missing && `${missing} foto(s) sua(s)`, empties && `texto em ${empties} tela(s)`].filter(Boolean).join(" e ") + ". Exportar mesmo assim?", actions: [{ label: "Exportar assim", value: true, id: "export-anyway" }] });
+        const go2 = await actionSheet({ title: "Ainda falta", message: [missing && "".concat(missing, " foto(s) sua(s)"), empties && "texto em ".concat(empties, " tela(s)")].filter(Boolean).join(" e ") + ". Exportar mesmo assim?", actions: [{ label: "Exportar assim", value: true, id: "export-anyway" }] });
         if (!go2) return;
       }
       const files = [];
@@ -3612,10 +3705,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         const cv = document.createElement("canvas");
         drawSlide(cv, slides[i], { ...opts({ ...c, designDark: dark }, i, slides.length, false), image: await imageFor(slides[i]) });
         const blob = await new Promise((r) => cv.toBlob(r, "image/jpeg", 0.93));
-        const name = `${(c.title || "post").replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40)}-${String(i + 1).padStart(2, "0")}.jpg`;
+        const name = "".concat((c.title || "post").replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40), "-").concat(String(i + 1).padStart(2, "0"), ".jpg");
         files.push(new File([blob], name, { type: "image/jpeg" }));
       }
-      if (navigator.canShare?.({ files })) {
+      if ((_a2 = navigator.canShare) == null ? void 0 : _a2.call(navigator, { files })) {
         try {
           await navigator.share({ files, title: c.title });
           return;
@@ -3632,7 +3725,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           a.remove();
         }, 1500);
       }
-      toast(`${files.length} imagem(ns) baixada(s)`);
+      toast("".concat(files.length, " imagem(ns) baixada(s)"));
     }
     drawStrip();
     drawEditor();
@@ -3661,7 +3754,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
             }, "Tema escuro"), "Tema escuro"),
             h("button", { type: "button", class: "btn btn-primary", "data-id": "export-design", onclick: exportAll }, icon("download"), "Salvar imagens")
           ),
-          miss > 0 && h("p", { class: "hint-line" }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.`),
+          miss > 0 && h("p", { class: "hint-line" }, "Faltam ".concat(miss, " foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.")),
           h("button", { type: "button", class: "btn btn-ghost btn-danger btn-sm", "data-id": "delete-design", onclick: async () => {
             if (await deleteDesign(contentId)) go("conteudo/estudio");
           } }, "Apagar design")
@@ -3680,8 +3773,9 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       init_media();
       imgCache = /* @__PURE__ */ new Map();
       opts = (c, i, total, preview) => {
+        var _a;
         const p = profile();
-        return { palette: p.palette, dark: c.designDark ?? p.designDark, handle: p.instagram ? `@${p.instagram.replace(/^@/, "")}` : "", index: i, total, preview };
+        return { palette: p.palette, dark: (_a = c.designDark) != null ? _a : p.designDark, handle: p.instagram ? "@".concat(p.instagram.replace(/^@/, "")) : "", index: i, total, preview };
       };
       missingPhotos = (c) => (c.slides || []).filter((s) => s.photo && !s.photoId).length;
       studio = { id: null, sel: 0 };
@@ -3690,38 +3784,14 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
 
   // src/js/lib/prompts.js
   function profileBlock(p) {
-    return `Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).
-Sobre mim: ${p.about || "\u2014"}
-Nichos: ${p.niches || "\u2014"}
-Meu jeito: ${p.style || "\u2014"}
-Evitar: ${p.avoid || "\u2014"}
-
-Regras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.`;
+    return "Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).\nSobre mim: ".concat(p.about || "\u2014", "\nNichos: ").concat(p.niches || "\u2014", "\nMeu jeito: ").concat(p.style || "\u2014", "\nEvitar: ").concat(p.avoid || "\u2014", "\n\nRegras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.");
   }
   function contentPrompt({ profile: profile2, format, topic, platform, hits: hits2 = [] }) {
-    return `${profileBlock(profile2)}
-
-Quero um conte\xFAdo pronto para gravar hoje.
-${format ? formatBlock(format) : ""}
-Tema: ${topic || "(sugira um tema do meu nicho que combine com o formato)"}
-Plataforma: ${platform || "Instagram e TikTok"}
-${hits2.length ? `Conte\xFAdos meus que funcionaram (use como refer\xEAncia de tom): ${hits2.slice(0, 5).join("; ")}` : ""}
-
-Responda SOMENTE com este JSON:
-{"title": "t\xEDtulo curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "caption": "legenda curta", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}`;
+    return "".concat(profileBlock(profile2), "\n\nQuero um conte\xFAdo pronto para gravar hoje.\n").concat(format ? formatBlock(format) : "", "\nTema: ").concat(topic || "(sugira um tema do meu nicho que combine com o formato)", "\nPlataforma: ").concat(platform || "Instagram e TikTok", "\n").concat(hits2.length ? "Conte\xFAdos meus que funcionaram (use como refer\xEAncia de tom): ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"title": "t\xEDtulo curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "caption": "legenda curta", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}');
   }
   function ideasPrompt({ profile: profile2, topic, goal, count = 5, hits: hits2 = [] }) {
-    const list = FORMATS.map((f) => `${f.id}: ${f.name}`).join("\n");
-    return `${profileBlock(profile2)}
-
-Me d\xEA ${count} ideias de conte\xFAdo ${goal ? `com foco em ${goal}` : "variando entre ganhar seguidores, comunidade e atrair marcas"}${topic ? ` sobre: ${topic}` : ""}.
-Use formatos DIFERENTES entre si, escolhidos desta lista (use o id):
-${list}
-${hits2.length ? `
-Conte\xFAdos meus que funcionaram: ${hits2.slice(0, 5).join("; ")}` : ""}
-
-Responda SOMENTE com este JSON:
-{"ideas": [{"title": "t\xEDtulo", "formatId": "id da lista", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}`;
+    const list = FORMATS.map((f) => "".concat(f.id, ": ").concat(f.name)).join("\n");
+    return "".concat(profileBlock(profile2), "\n\nMe d\xEA ").concat(count, " ideias de conte\xFAdo ").concat(goal ? "com foco em ".concat(goal) : "variando entre ganhar seguidores, comunidade e atrair marcas").concat(topic ? " sobre: ".concat(topic) : "", ".\nUse formatos DIFERENTES entre si, escolhidos desta lista (use o id):\n").concat(list, "\n").concat(hits2.length ? "\nConte\xFAdos meus que funcionaram: ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"ideas": [{"title": "t\xEDtulo", "formatId": "id da lista", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}');
   }
   function extractJson(text2) {
     const raw = String(text2 || "").trim();
@@ -3732,7 +3802,7 @@ Responda SOMENTE com este JSON:
     if (a < 0 || b < a) return null;
     try {
       return JSON.parse(body.slice(a, b + 1));
-    } catch {
+    } catch (e) {
       return null;
     }
   }
@@ -3766,23 +3836,10 @@ Responda SOMENTE com este JSON:
   function weekPrompt({ profile: profile2, items, formats }) {
     const list = items.map((c, i) => {
       const f = formats.find((x) => x.id === c.formatId);
-      const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${s.layout}${s.photo ? ", tem foto minha" : ""})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(" / ")}` : ""}`).join("\n");
-      return `${i + 1}. ${c.date} \xB7 ${TYPE_LABEL[c.type] || c.type} \xB7 foco ${c.goal || "\u2014"} \xB7 formato ${f?.name || "livre"}
-   Tema: ${c.theme || c.title}
-   Estrutura do formato: ${(f?.structure || c.steps || []).join(" \u2192 ")}${slides ? `
-${slides}` : ""}`;
+      const slides = (c.slides || []).map((s, k) => "   tela ".concat(k + 1, " (").concat(s.layout).concat(s.photo ? ", tem foto minha" : "", ")").concat(s.cells ? ": widgets ".concat(s.cells.map((x) => x.label).join(" / ")) : "")).join("\n");
+      return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 foco ").concat(c.goal || "\u2014", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
     }).join("\n");
-    return `${profileBlock(profile2)}
-
-Este \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.
-
-${list}
-
-Para v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.
-Para carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para listas; "cells" para widgets com label e value; "messages" para conversas com me=true quando sou eu). Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.
-
-Responda SOMENTE com este JSON:
-{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}`;
+    return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para listas; "cells" para widgets com label e value; "messages" para conversas com me=true quando sou eu). Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
   }
   function parseWeek(text2) {
     const raw = String(text2 || "").trim();
@@ -3802,8 +3859,8 @@ Responda SOMENTE com este JSON:
         title: str(s.title),
         body: str(s.body),
         items: arr(s.items),
-        cells: Array.isArray(s.cells) ? s.cells.map((c) => ({ label: str(c?.label), value: str(c?.value) })) : [],
-        messages: Array.isArray(s.messages) ? s.messages.map((m) => ({ me: Boolean(m?.me), text: str(m?.text) })) : []
+        cells: Array.isArray(s.cells) ? s.cells.map((c) => ({ label: str(c == null ? void 0 : c.label), value: str(c == null ? void 0 : c.value) })) : [],
+        messages: Array.isArray(s.messages) ? s.messages.map((m) => ({ me: Boolean(m == null ? void 0 : m.me), text: str(m == null ? void 0 : m.text) })) : []
       })) : []
     }));
   }
@@ -3815,8 +3872,14 @@ Responda SOMENTE com este JSON:
       if (t.title && s.layout !== "foto") out.title = t.title;
       else if (t.title && s.layout === "foto") out.title = t.title.slice(0, 80);
       if (t.body && ["notas", "capa", "cta"].includes(s.layout)) out.body = t.body;
-      if (s.layout === "lista" && t.items.length) out.items = t.items.map((text2, k) => ({ text: text2, done: s.items?.[k]?.done || false }));
-      if (s.layout === "widgets" && t.cells.length) out.cells = (s.cells || []).map((c, k) => ({ label: t.cells[k]?.label || c.label, value: t.cells[k]?.value || c.value }));
+      if (s.layout === "lista" && t.items.length) out.items = t.items.map((text2, k) => {
+        var _a, _b;
+        return { text: text2, done: ((_b = (_a = s.items) == null ? void 0 : _a[k]) == null ? void 0 : _b.done) || false };
+      });
+      if (s.layout === "widgets" && t.cells.length) out.cells = (s.cells || []).map((c, k) => {
+        var _a, _b;
+        return { label: ((_a = t.cells[k]) == null ? void 0 : _a.label) || c.label, value: ((_b = t.cells[k]) == null ? void 0 : _b.value) || c.value };
+      });
       if (s.layout === "imessage" && t.messages.length) out.messages = t.messages;
       return out;
     });
@@ -3825,10 +3888,7 @@ Responda SOMENTE com este JSON:
   var init_prompts = __esm({
     "src/js/lib/prompts.js"() {
       init_formats();
-      formatBlock = (f) => `Formato: ${f.name}
-Por que funciona: ${f.why}
-Estrutura: ${f.structure.map((s, i) => `${i + 1}) ${s}`).join(" ")}
-Ganchos-modelo: ${f.hooks.join(" | ")}`;
+      formatBlock = (f) => "Formato: ".concat(f.name, "\nPor que funciona: ").concat(f.why, "\nEstrutura: ").concat(f.structure.map((s, i) => "".concat(i + 1, ") ").concat(s)).join(" "), "\nGanchos-modelo: ").concat(f.hooks.join(" | "));
       str = (v) => typeof v === "string" ? v.trim() : v == null ? "" : String(v);
       arr = (v) => Array.isArray(v) ? v.map(str).filter(Boolean) : v ? [str(v)] : [];
       TYPE_LABEL = { video: "v\xEDdeo", carrossel: "carrossel", estatico: "post est\xE1tico", stories: "stories" };
@@ -3841,7 +3901,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     if (!t) return [];
     const issues = RULES.filter((r) => r.re.test(t)).map((r) => r.msg);
     const words = t.split(/\s+/).length;
-    if (words > 22) issues.push(`Gancho com ${words} palavras. Para a abertura falada, costuma caber em uma frase curta.`);
+    if (words > 22) issues.push("Gancho com ".concat(words, " palavras. Para a abertura falada, costuma caber em uma frase curta."));
     if (/[!]{2,}|[?]{2,}/.test(t)) issues.push("Pontua\xE7\xE3o exagerada (!!, ??).");
     return issues;
   }
@@ -3885,7 +3945,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     const isNew = !d.id;
     let type = d.type || "ugc";
     let status = d.status || PIPELINES[type][0][0];
-    let deliverables = structuredClone(d.deliverables || []);
+    let deliverables = clone(d.deliverables || []);
     const typeSeg = h("div", { class: "pad-x" });
     const stageBox = h("div", { class: "stage-scroll", role: "radiogroup", "aria-label": "Etapa" });
     const delivBox = h("div");
@@ -3902,7 +3962,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       role: "radio",
       "aria-checked": String(k === status),
       "data-stage": k,
-      class: `stage${k === status ? " on" : ""}${i < PIPELINES[type].findIndex(([x]) => x === status) ? " done" : ""}`,
+      class: "stage".concat(k === status ? " on" : "").concat(i < PIPELINES[type].findIndex(([x]) => x === status) ? " done" : ""),
       onclick: () => {
         status = k;
         drawStages();
@@ -3985,7 +4045,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         ...type !== "ugc" ? [{ name: "postLink", label: "Link do post", type: "url", placeholder: "https://" }] : []
       ] });
       sections.push({ header: "Notas", fields: [{ name: "notes", label: "Notas", type: "textarea", rows: 3, showLabel: false, placeholder: "Pontos obrigat\xF3rios, o que evitar, feedbacks\u2026" }] });
-      const prev = cond?.read() || {};
+      const prev = (cond == null ? void 0 : cond.read()) || {};
       cond = formGroups(sections, { paymentStatus: "pendente", ...d, ...prev });
       conditional.replaceChildren(cond.el);
     };
@@ -4023,7 +4083,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           h("button", { type: "button", class: "cell tappable tint", "data-id": "deal-ics", onclick: () => {
             const evs = deadlines([{ ...d, ...read() }]);
             if (!evs.length) return toast("Sem prazos para adicionar.", "error");
-            downloadIcs(evs, `prazos-${(d.brandName || "marca").toLowerCase()}`);
+            downloadIcs(evs, "prazos-".concat((d.brandName || "marca").toLowerCase()));
           } }, "\u{1F4C5} Prazos no Calend\xE1rio"),
           type !== "ugc" && h("button", { type: "button", class: "cell tappable tint", onclick: () => {
             const v = read();
@@ -4031,7 +4091,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
             update("deals", d.id, v);
             const exists = all("contents").find((c2) => c2.dealId === d.id);
             if (exists) return openContent(exists);
-            const c = create("contents", { title: `${type === "tts" ? "TikTok Shop" : "Publi"}: ${v.brandName}`, date: v.postDate, type: "video", goal: "marcas", dealId: d.id, status: "roteiro", theme: v.product || "", platforms: type === "tts" ? ["tiktok"] : ["instagram"], steps: ["Conferir briefing e pontos obrigat\xF3rios", "Gravar seguindo o roteiro aprovado", "Postar com a marca\xE7\xE3o/link combinados"] });
+            const c = create("contents", { title: "".concat(type === "tts" ? "TikTok Shop" : "Publi", ": ").concat(v.brandName), date: v.postDate, type: "video", goal: "marcas", dealId: d.id, status: "roteiro", theme: v.product || "", platforms: type === "tts" ? ["tiktok"] : ["instagram"], steps: ["Conferir briefing e pontos obrigat\xF3rios", "Gravar seguindo o roteiro aprovado", "Postar com a marca\xE7\xE3o/link combinados"] });
             close();
             setTimeout(() => openContent(c), 260);
           } }, "\u{1F5D3}\uFE0F Colocar o post na agenda"),
@@ -4054,33 +4114,42 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     return segmented(options, value, onChange2, "Tipo");
   }
   async function chooseNewDeal() {
-    const t = await actionSheet({ title: "Nova campanha", message: "Qual tipo?", actions: Object.entries(DEAL_TYPES).map(([value, t2]) => ({ label: `${t2.emoji} ${t2.label}`, value, id: `new-${value}` })) });
+    const t = await actionSheet({ title: "Nova campanha", message: "Qual tipo?", actions: Object.entries(DEAL_TYPES).map(([value, t2]) => ({ label: "".concat(t2.emoji, " ").concat(t2.label), value, id: "new-".concat(value) })) });
     if (t) newDeal(t);
   }
   function campaignsTable(list, td) {
     return table({
       caption: "Campanhas",
       rows: list,
-      rowId: (d) => `deal-${d.id}`,
-      rowCls: (d) => (nextDeadline(d)?.date || "9") < td && !isDone(d) ? "is-late" : "",
+      rowId: (d) => "deal-".concat(d.id),
+      rowCls: (d) => {
+        var _a;
+        return (((_a = nextDeadline(d)) == null ? void 0 : _a.date) || "9") < td && !isDone(d) ? "is-late" : "";
+      },
       onRowClick: (d) => openDeal(d),
       empty: "Nenhuma campanha com esses filtros.",
       columns: [
-        { label: "Marca", main: true, render: (d) => h("div", { class: "td-flex" }, badge(DEAL_TYPES[d.type]?.emoji, DEAL_TYPES[d.type]?.color), h("div", {}, h("div", { class: "td-title" }, d.brandName), d.title && h("div", { class: "td-sub" }, d.title))) },
-        { label: "Tipo", render: (d) => tag(DEAL_TYPES[d.type]?.label, d.type === "publi" ? "t-pink" : d.type === "tts" ? "t-butter" : "t-brown") },
+        { label: "Marca", main: true, render: (d) => {
+          var _a, _b;
+          return h("div", { class: "td-flex" }, badge((_a = DEAL_TYPES[d.type]) == null ? void 0 : _a.emoji, (_b = DEAL_TYPES[d.type]) == null ? void 0 : _b.color), h("div", {}, h("div", { class: "td-title" }, d.brandName), d.title && h("div", { class: "td-sub" }, d.title)));
+        } },
+        { label: "Tipo", render: (d) => {
+          var _a;
+          return tag((_a = DEAL_TYPES[d.type]) == null ? void 0 : _a.label, d.type === "publi" ? "t-pink" : d.type === "tts" ? "t-butter" : "t-brown");
+        } },
         { label: "Etapa", render: (d) => d.status === "cancelado" ? tag("Cancelado") : isDone(d) ? tag("Conclu\xEDdo", "ok") : h("span", {}, stageLabel(d)) },
         { label: "Pr\xF3ximo prazo", render: (d) => {
           const nd = nextDeadline(d);
           if (!nd) return h("span", { class: "subtle" }, "\u2014");
-          return h("span", { class: `deadline${nd.date < td ? " late" : nd.date === td ? " today" : ""}` }, `${nd.date < td ? "Atrasado \xB7 " : nd.date === td ? "Hoje \xB7 " : ""}${nd.label} \xB7 ${fmtDay(nd.date, { day: "numeric", month: "short" })}`);
+          return h("span", { class: "deadline".concat(nd.date < td ? " late" : nd.date === td ? " today" : "") }, "".concat(nd.date < td ? "Atrasado \xB7 " : nd.date === td ? "Hoje \xB7 " : "").concat(nd.label, " \xB7 ").concat(fmtDay(nd.date, { day: "numeric", month: "short" })));
         } },
         { label: "Entreg\xE1veis", render: (d) => {
           const items = d.deliverables || [];
           if (!items.length) return h("span", { class: "subtle" }, "\u2014");
           const done = items.filter((x) => x.done).length;
-          return h("span", { class: "bar-cell" }, h("span", { class: "meter mini" }, h("span", { style: { width: `${Math.round(done / items.length * 100)}%` } })), h("span", { class: "num small" }, `${done}/${items.length}`));
+          return h("span", { class: "bar-cell" }, h("span", { class: "meter mini" }, h("span", { style: { width: "".concat(Math.round(done / items.length * 100), "%") } })), h("span", { class: "num small" }, "".concat(done, "/").concat(items.length)));
         } },
-        { label: "Valor", cls: "right", render: (d) => Number(d.value) > 0 ? h("span", { class: "num" }, money(d.value)) : d.type === "tts" && d.commissionPct ? h("span", { class: "subtle" }, `${d.commissionPct}% comiss\xE3o`) : h("span", { class: "subtle" }, "\u2014") },
+        { label: "Valor", cls: "right", render: (d) => Number(d.value) > 0 ? h("span", { class: "num" }, money(d.value)) : d.type === "tts" && d.commissionPct ? h("span", { class: "subtle" }, "".concat(d.commissionPct, "% comiss\xE3o")) : h("span", { class: "subtle" }, "\u2014") },
         { label: "Pagamento", render: (d) => Number(d.value) > 0 ? tag(PAYMENT[d.paymentStatus || "pendente"], d.paymentStatus === "pago" ? "ok" : d.paymentDue && d.paymentDue < td ? "danger" : "warn") : h("span", { class: "subtle" }, "\u2014") }
       ]
     });
@@ -4093,7 +4162,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     const lateIds = new Set(up.overdue.map((x) => x.deal.id));
     const soonIds = new Set([...up.today, ...up.soon].map((x) => x.deal.id));
     const fin = finance(all2, td.slice(0, 7), td);
-    const list = all2.filter((d) => !state.type || d.type === state.type).filter((d) => state.show === "abertas" ? !isDone(d) : state.show === "concluidas" ? isDone(d) : true).filter((d) => !state.stage || d.status === state.stage).filter((d) => !state.q || norm([d.brandName, d.title, d.product, d.notes].join(" ")).includes(norm(state.q))).sort((a, b) => isDone(a) - isDone(b) || (nextDeadline(a)?.date || "9").localeCompare(nextDeadline(b)?.date || "9"));
+    const list = all2.filter((d) => !state.type || d.type === state.type).filter((d) => state.show === "abertas" ? !isDone(d) : state.show === "concluidas" ? isDone(d) : true).filter((d) => !state.stage || d.status === state.stage).filter((d) => !state.q || norm([d.brandName, d.title, d.product, d.notes].join(" ")).includes(norm(state.q))).sort((a, b) => {
+      var _a, _b;
+      return isDone(a) - isDone(b) || (((_a = nextDeadline(a)) == null ? void 0 : _a.date) || "9").localeCompare(((_b = nextDeadline(b)) == null ? void 0 : _b.date) || "9");
+    });
     root.append(page({
       kicker: "Marcas",
       title: "Campanhas",
@@ -4112,8 +4184,8 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           { class: "grid cols-4 kpis" },
           kpi({ label: "Atrasados", value: String(lateIds.size), tone: lateIds.size ? "danger" : "", hint: "campanhas com prazo vencido" }),
           kpi({ label: "Pr\xF3ximos 7 dias", value: String([...soonIds].filter((id) => !lateIds.has(id)).length), hint: "campanhas com prazo chegando" }),
-          kpi({ label: "Em andamento", value: String(open2.length), hint: Object.entries(DEAL_TYPES).map(([k, t]) => `${open2.filter((d) => d.type === k).length} ${t.label}`).join(" \xB7 ") }),
-          kpi({ label: "A receber", value: money(fin.toReceive), tone: fin.overdue ? "danger" : "", hint: fin.overdue ? `${money(fin.overdue)} atrasado` : "nada atrasado" })
+          kpi({ label: "Em andamento", value: String(open2.length), hint: Object.entries(DEAL_TYPES).map(([k, t]) => "".concat(open2.filter((d) => d.type === k).length, " ").concat(t.label)).join(" \xB7 ") }),
+          kpi({ label: "A receber", value: money(fin.toReceive), tone: fin.overdue ? "danger" : "", hint: fin.overdue ? "".concat(money(fin.overdue), " atrasado") : "nada atrasado" })
         ),
         h(
           "div",
@@ -4151,7 +4223,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     const [y, m] = state.month.split("-").map(Number);
     const shift = (n2) => {
       const d = new Date(y, m - 1 + n2, 1);
-      state.month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      state.month = "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"));
       rerender();
     };
     const monthRaw = new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
@@ -4160,11 +4232,11 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     const paid = deals.filter((d) => d.paymentStatus === "pago" && (d.paidAt || "").startsWith(state.month));
     const months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date(y, m - 1 - (5 - i), 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"));
     });
     const chart = barChart({
       label: "Recebido por m\xEAs",
-      fmt: (v) => v >= 1e3 ? `R$ ${(v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(v)}`,
+      fmt: (v) => v >= 1e3 ? "R$ ".concat((v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " mil") : "R$ ".concat(Math.round(v)),
       data: months.map((mm, i) => {
         const [yy, mo] = mm.split("-").map(Number);
         const lbl = new Date(yy, mo - 1, 1).toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
@@ -4184,11 +4256,11 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           "div",
           { class: "grid cols-4 kpis" },
           kpi({ label: "Recebido no m\xEAs", value: money(f.receivedMonth), id: "kpi-received" }),
-          kpi({ label: "A receber", value: money(f.toReceive), hint: `${open2.length} pagamento(s) em aberto`, id: "kpi-to-receive" }),
-          kpi({ label: "Atrasado", value: money(f.overdue), tone: f.overdue ? "danger" : "", hint: f.overdueCount ? `${f.overdueCount} vencido(s)` : "nada vencido" }),
+          kpi({ label: "A receber", value: money(f.toReceive), hint: "".concat(open2.length, " pagamento(s) em aberto"), id: "kpi-to-receive" }),
+          kpi({ label: "Atrasado", value: money(f.overdue), tone: f.overdue ? "danger" : "", hint: f.overdueCount ? "".concat(f.overdueCount, " vencido(s)") : "nada vencido" }),
           kpi({ label: "Fechado no m\xEAs", value: money(f.closedMonth), hint: "valor das campanhas fechadas" })
         ),
-        f.noInvoice > 0 && h("p", { class: "data-note warn-note" }, `\u26A0\uFE0F ${f.noInvoice} pagamento(s) recebido(s) sem nota fiscal marcada.`),
+        f.noInvoice > 0 && h("p", { class: "data-note warn-note" }, "\u26A0\uFE0F ".concat(f.noInvoice, " pagamento(s) recebido(s) sem nota fiscal marcada.")),
         h(
           "div",
           { class: "grid cols-main section" },
@@ -4203,12 +4275,15 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
               empty: "Nada a receber.",
               columns: [
                 { label: "Marca", main: true, render: (d) => h("span", { class: "td-title" }, d.brandName) },
-                { label: "Tipo", render: (d) => DEAL_TYPES[d.type]?.label },
+                { label: "Tipo", render: (d) => {
+                  var _a;
+                  return (_a = DEAL_TYPES[d.type]) == null ? void 0 : _a.label;
+                } },
                 { label: "Vencimento", render: (d) => d.paymentDue ? h("span", { class: d.paymentDue < td ? "deadline late" : "" }, fmtDay(d.paymentDue, { day: "numeric", month: "short" })) : h("span", { class: "subtle" }, "sem data") },
                 { label: "Valor", cls: "right", render: (d) => h("span", { class: "num" }, money(d.value)) }
               ]
             }) }),
-            card({ title: `Recebidos em ${monthName.toLowerCase()}`, flush: true, children: table({
+            card({ title: "Recebidos em ".concat(monthName.toLowerCase()), flush: true, children: table({
               caption: "Recebidos",
               rows: paid,
               onRowClick: (d) => openDeal(d),
@@ -4292,14 +4367,14 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           card({ flush: true, children: table({
             caption: "Marcas",
             rows: list,
-            rowId: (b) => `brand-${b.id}`,
+            rowId: (b) => "brand-".concat(b.id),
             onRowClick: (b) => editBrand(b),
             empty: "Nenhuma marca na lista. Anote marcas com quem quer trabalhar: quero \u2192 contatei \u2192 conversando.",
             columns: [
               { label: "Marca", main: true, render: (b) => h("div", {}, h("div", { class: "td-title" }, b.name), b.handle && h("div", { class: "td-sub" }, b.handle)) },
               { label: "Etapa", render: (b) => {
                 const s = BRAND_STATUS.find((x) => x.value === (b.status || "quero"));
-                return tag(s?.label, s?.value === "fechado" ? "ok" : s?.value === "conversando" ? "t-butter" : s?.value === "contatei" ? "info" : "");
+                return tag(s == null ? void 0 : s.label, (s == null ? void 0 : s.value) === "fechado" ? "ok" : (s == null ? void 0 : s.value) === "conversando" ? "t-butter" : (s == null ? void 0 : s.value) === "contatei" ? "info" : "");
               } },
               { label: "Pr\xF3ximo passo", render: (b) => h("span", { class: "clamp-2" }, b.next || "\u2014") },
               { label: "Campanhas", cls: "right", render: (b) => h("span", { class: "num" }, String(deals.filter((d) => norm(d.brandName) === norm(b.name)).length)) }
@@ -4307,11 +4382,11 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           }) })
         ),
         card({
-          title: `Portf\xF3lio UGC (${portfolio.length})`,
+          title: "Portf\xF3lio UGC (".concat(portfolio.length, ")"),
           subtitle: "Conte\xFAdos marcados para portf\xF3lio",
           flush: true,
           actions: portfolio.length > 0 && btn("Copiar links", async () => {
-            const text2 = portfolio.map((c) => `\u2022 ${c.title}${c.link ? ` \u2014 ${c.link}` : ""}`).join("\n");
+            const text2 = portfolio.map((c) => "\u2022 ".concat(c.title).concat(c.link ? " \u2014 ".concat(c.link) : "")).join("\n");
             toast(await copyText(text2) ? "Lista copiada" : "N\xE3o consegui copiar", "ok");
           }, { small: true, iconName: "link" }),
           children: portfolio.length ? group({ children: portfolio.map((c) => cell({ emoji: "\u{1F3AC}", color: "indigo", title: c.title, subtitle: c.link || "sem link ainda", chevron: true, onClick: () => openContent(c) })) }) : emptyNote("Nenhum conte\xFAdo no portf\xF3lio", 'Ative "Usar no portf\xF3lio UGC" ao editar um conte\xFAdo.')
@@ -4328,7 +4403,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       init_content_sheet();
       state = { show: "abertas", type: "", stage: "", q: "", month: null, brandStatus: "" };
       rerender = () => document.dispatchEvent(new Event("rerender"));
-      money = (v) => `R$ ${fmtMoney(v)}`;
+      money = (v) => "R$ ".concat(fmtMoney(v));
       BRAND_STATUS = [
         { value: "quero", label: "Quero trabalhar", emoji: "\u{1F4AD}", color: "gray" },
         { value: "contatei", label: "Contatei", emoji: "\u{1F4E8}", color: "blue" },
@@ -4354,6 +4429,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     openContent({ title: "", status: "ideia", platforms: ["instagram", "tiktok"], date: "", ...defaults });
   }
   function openContent(c) {
+    var _a, _b, _c;
     const isNew = !c.id;
     const format = formatById(c.formatId, all("formats"));
     let status = c.status || "ideia";
@@ -4364,7 +4440,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         type: "button",
         role: "radio",
         "aria-checked": String(s.id === status),
-        class: `pipe${i <= STATUSES.findIndex((x) => x.id === status) ? " done" : ""}${s.id === status ? " on" : ""}`,
+        class: "pipe".concat(i <= STATUSES.findIndex((x) => x.id === status) ? " done" : "").concat(s.id === status ? " on" : ""),
         onclick: () => {
           status = s.id;
           drawStepper();
@@ -4387,7 +4463,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       { fields: [
         { name: "title", label: "T\xEDtulo", placeholder: "Sobre o que \xE9?", showLabel: false, type: "text" },
         { name: "formatId", label: "Formato", type: "select", options: formatOptions, placeholder: "Escolher\u2026" },
-        { name: "type", label: "Tipo", type: "select", options: Object.entries(TYPES).map(([value, t]) => ({ value, label: `${t.emoji} ${t.label}` })), placeholder: false },
+        { name: "type", label: "Tipo", type: "select", options: Object.entries(TYPES).map(([value, t]) => ({ value, label: "".concat(t.emoji, " ").concat(t.label) })), placeholder: false },
         { name: "goal", label: "Foco", type: "select", options: Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), placeholder: "Livre" },
         { name: "date", label: "Data", type: "date" },
         { name: "theme", label: "Tema", placeholder: "Sobre o qu\xEA" }
@@ -4434,7 +4510,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     const formatCard = format && h(
       "details",
       { class: "format-help" },
-      h("summary", {}, badge(format.emoji, format.color), h("span", {}, `Como fazer: ${format.name}`)),
+      h("summary", {}, badge(format.emoji, format.color), h("span", {}, "Como fazer: ".concat(format.name))),
       h("ol", {}, format.structure.map((s) => h("li", {}, s))),
       h("p", { class: "muted small" }, "Clique num gancho para usar:"),
       h("div", { class: "hook-pills" }, [...c.altHooks || [], ...format.hooks].map((t) => h("button", { type: "button", class: "hook-pill", onclick: () => {
@@ -4442,13 +4518,14 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         updateWarn();
         hookInput.focus();
       } }, t))),
-      format.tip && h("p", { class: "tip" }, `\u{1F4A1} ${format.tip}`)
+      format.tip && h("p", { class: "tip" }, "\u{1F4A1} ".concat(format.tip))
     );
     const notesFromClaude = Boolean(c.critique || (c.check || []).length) && group({ header: "Do Claude", children: [
       c.critique && cell({ emoji: "\u{1F9D0}", color: "orange", title: "Ponto fraco", subtitle: c.critique }),
       (c.check || []).length > 0 && cell({ emoji: "\u2705", color: "green", title: "Confirmar antes de postar", subtitle: c.check.join(" \xB7 ") })
     ] });
     const read = () => {
+      var _a2;
       const m = main2.read();
       const s = script.read();
       const e = extra.read();
@@ -4459,23 +4536,25 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         out.link = link;
         out.postedAt = c.postedAt || m.date || today();
         if (!out.date) out.date = out.postedAt;
-        out.results = { ...c.results || {}, ...nums, source: c.results?.source || "manual" };
+        out.results = { ...c.results || {}, ...nums, source: ((_a2 = c.results) == null ? void 0 : _a2.source) || "manual" };
       }
       return out;
     };
     const deal = c.dealId && get("deals", c.dealId);
     const designBtn = h("div");
     const drawDesignBtn = () => {
+      var _a2, _b2;
       const ty = typeSel.value;
       if (ty !== "carrossel" && ty !== "estatico") return designBtn.replaceChildren();
       const miss = c.id ? missingPhotos(c) : 0;
-      designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : "Artes 1080\xD71350 no seu estilo, prontas para salvar no Fotos.", children: [
+      designBtn.replaceChildren(group({ footer: miss ? "Falta ".concat(miss, " foto(s) sua(s) para este design.") : "Artes 1080\xD71350 no seu estilo, prontas para salvar no Fotos.", children: [
         h("button", { type: "button", class: "cell tappable tint", "data-id": "content-design", onclick: () => {
+          var _a3;
           const saved = saveNow();
-          document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
+          (_a3 = document.querySelector('dialog.sheet [data-id="sheet-cancel"]')) == null ? void 0 : _a3.click();
           setTimeout(() => openDesigner(saved.id), 260);
-        } }, miss ? `\u{1F4F7} Design: adicionar ${miss} foto(s)` : c.slides?.length ? `\u{1F3A8} Abrir design (${c.slides.length} tela${c.slides.length > 1 ? "s" : ""})` : "\u{1F3A8} Criar design"),
-        c.id && c.slides?.length ? h("button", { type: "button", class: "cell tappable destructive", "data-id": "content-delete-design", onclick: async () => {
+        } }, miss ? "\u{1F4F7} Design: adicionar ".concat(miss, " foto(s)") : ((_a2 = c.slides) == null ? void 0 : _a2.length) ? "\u{1F3A8} Abrir design (".concat(c.slides.length, " tela").concat(c.slides.length > 1 ? "s" : "", ")") : "\u{1F3A8} Criar design"),
+        c.id && ((_b2 = c.slides) == null ? void 0 : _b2.length) ? h("button", { type: "button", class: "cell tappable destructive", "data-id": "content-delete-design", onclick: async () => {
           if (await deleteDesign(c.id)) {
             c = get("contents", c.id);
             drawDesignBtn();
@@ -4497,7 +4576,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         "div",
         { class: "sheet-stack" },
         c.igThumb && h("div", { class: "sheet-thumb" }, postThumb(c), h("div", { class: "cell-text" }, h("span", { class: "cell-title" }, "Post do Instagram"), c.link && h("a", { href: c.link, target: "_blank", rel: "noopener noreferrer", class: "small" }, "Ver no Instagram"))),
-        deal && group({ children: [cell({ emoji: DEAL_TYPES[deal.type]?.emoji, color: DEAL_TYPES[deal.type]?.color, title: `Campanha: ${deal.brandName}`, subtitle: `${DEAL_TYPES[deal.type]?.label} \xB7 ${stageLabel(deal)}`, chevron: true, onClick: () => Promise.resolve().then(() => (init_brands(), brands_exports)).then((m) => m.openDeal(deal)) })] }),
+        deal && group({ children: [cell({ emoji: (_a = DEAL_TYPES[deal.type]) == null ? void 0 : _a.emoji, color: (_b = DEAL_TYPES[deal.type]) == null ? void 0 : _b.color, title: "Campanha: ".concat(deal.brandName), subtitle: "".concat((_c = DEAL_TYPES[deal.type]) == null ? void 0 : _c.label, " \xB7 ").concat(stageLabel(deal)), chevron: true, onClick: () => Promise.resolve().then(() => (init_brands(), brands_exports)).then((m) => m.openDeal(deal)) })] }),
         main2.el,
         stepper2,
         designBtn,
@@ -4506,9 +4585,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           class: "btn-claude",
           "data-id": "content-claude",
           onclick: () => {
+            var _a2;
             const saved = saveNow();
             claudeForContent(saved);
-            document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
+            (_a2 = document.querySelector('dialog.sheet [data-id="sheet-cancel"]')) == null ? void 0 : _a2.click();
           }
         }, "\u2728 Escrever roteiro com o Claude"),
         formatCard,
@@ -4522,9 +4602,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           class: "cell tappable destructive",
           "data-id": "delete-content",
           onclick: async () => {
+            var _a2;
             if (await confirmDelete("este conte\xFAdo")) {
               remove("contents", c.id);
-              document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
+              (_a2 = document.querySelector('dialog.sheet [data-id="sheet-cancel"]')) == null ? void 0 : _a2.click();
               toast("Apagado");
             }
           }
@@ -4544,7 +4625,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       init_prompts();
       init_claude();
       init_hookcheck();
-      formatOptions = () => [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: `${f.emoji || "\u2022"} ${f.name}` }));
+      formatOptions = () => [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: "".concat(f.emoji || "\u2022", " ").concat(f.name) }));
       today = () => iso(/* @__PURE__ */ new Date());
       onClaudeResult("content", (text2, ctx) => {
         const r = parseContent(text2);
@@ -4627,10 +4708,13 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         h(
           "div",
           { class: "format-hero" },
-          h("span", { class: `hero-badge c-${f.color}` }, f.emoji),
+          h("span", { class: "hero-badge c-".concat(f.color) }, f.emoji),
           h("h3", {}, f.name),
           h("p", { class: "muted" }, [f.duration, (f.platforms || []).map((p) => p === "tiktok" ? "TikTok" : "Instagram").join(" + ")].filter(Boolean).join(" \xB7 ")),
-          h("div", { class: "goal-tags" }, (f.goals || []).map((g) => h("span", { class: `tag t-${GOALS[g]?.color}` }, GOALS[g]?.label)))
+          h("div", { class: "goal-tags" }, (f.goals || []).map((g) => {
+            var _a, _b;
+            return h("span", { class: "tag t-".concat((_a = GOALS[g]) == null ? void 0 : _a.color) }, (_b = GOALS[g]) == null ? void 0 : _b.label);
+          }))
         ),
         group({ header: "Por que funciona", children: [h("p", { class: "cell prose" }, f.why)] }),
         group({ header: "Estrutura", children: f.structure.map((s, i) => cell({ iconEl: h("span", { class: "step-n" }, String(i + 1)), title: s })) }),
@@ -4666,7 +4750,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
   function library() {
     const hitIds = new Set(hits(all("contents")).items.map((x) => x.content.formatId));
     const used = all("contents").reduce((m, c) => c.formatId ? m.set(c.formatId, (m.get(c.formatId) || 0) + 1) : m, /* @__PURE__ */ new Map());
-    const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => !state2.goal || f.goals?.includes(state2.goal)).filter((f) => !state2.type || (f.custom ? true : metaOf(f.id).types.includes(state2.type))).filter((f) => !state2.q || norm(`${f.name} ${f.why}`).includes(norm(state2.q)));
+    const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => {
+      var _a;
+      return !state2.goal || ((_a = f.goals) == null ? void 0 : _a.includes(state2.goal));
+    }).filter((f) => !state2.type || (f.custom ? true : metaOf(f.id).types.includes(state2.type))).filter((f) => !state2.q || norm("".concat(f.name, " ").concat(f.why)).includes(norm(state2.q)));
     return [
       h(
         "div",
@@ -4686,12 +4773,18 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       }),
       h("div", { class: "format-grid" }, list.map((f) => h(
         "button",
-        { type: "button", class: "format-card", "data-id": `format-${f.id}`, onclick: () => openFormat(f) },
-        h("span", { class: "fc-top" }, h("span", { class: `fc-emoji c-${f.color || "gray"}` }, f.emoji || "\u2726"), hitIds.has(f.id) ? tag("Funcionou para voc\xEA", "ok") : f.custom ? tag("Seu formato", "t-brown") : null),
+        { type: "button", class: "format-card", "data-id": "format-".concat(f.id), onclick: () => openFormat(f) },
+        h("span", { class: "fc-top" }, h("span", { class: "fc-emoji c-".concat(f.color || "gray") }, f.emoji || "\u2726"), hitIds.has(f.id) ? tag("Funcionou para voc\xEA", "ok") : f.custom ? tag("Seu formato", "t-brown") : null),
         h("span", { class: "fc-name" }, f.name),
         h("span", { class: "fc-why" }, f.why),
-        h("span", { class: "tags" }, (f.custom ? [] : metaOf(f.id).types).map((t) => tag(TYPES[t]?.label, `type-${t}`))),
-        h("span", { class: "fc-goals" }, [(f.goals || []).map((g) => GOALS[g]?.label).join(" \xB7 "), used.get(f.id) ? `usado ${used.get(f.id)}x` : null].filter(Boolean).join(" \u2014 "))
+        h("span", { class: "tags" }, (f.custom ? [] : metaOf(f.id).types).map((t) => {
+          var _a;
+          return tag((_a = TYPES[t]) == null ? void 0 : _a.label, "type-".concat(t));
+        })),
+        h("span", { class: "fc-goals" }, [(f.goals || []).map((g) => {
+          var _a;
+          return (_a = GOALS[g]) == null ? void 0 : _a.label;
+        }).join(" \xB7 "), used.get(f.id) ? "usado ".concat(used.get(f.id), "x") : null].filter(Boolean).join(" \u2014 "))
       ))),
       !list.length && emptyNote("Nenhum formato encontrado."),
       h("p", { class: "subtle small" }, "Formatos s\xE3o estruturas que se repetem entre criadores porque funcionam pelo motivo descrito em cada um. O que funciona para voc\xEA aparece em Desempenho conforme voc\xEA registra resultados.")
@@ -4721,7 +4814,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           hooks: v.hooks,
           tip: "",
           platforms: ["instagram", "tiktok"],
-          goals: ["seguidores", "comunidade", "marcas"].filter((g) => v[`g_${g}`])
+          goals: ["seguidores", "comunidade", "marcas"].filter((g) => v["g_".concat(g)])
         });
         toast("Formato criado");
       }
@@ -4732,11 +4825,11 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     if (!r.items.length) {
       return emptyNote(
         "Seus destaques aparecem aqui",
-        r.measured < 5 ? `Registre os resultados de pelo menos 5 posts (hoje: ${r.measured}). A\xED cada post \xE9 comparado com a sua pr\xF3pria m\xE9dia.` : "Nenhum post ficou claramente acima da sua m\xE9dia ainda."
+        r.measured < 5 ? "Registre os resultados de pelo menos 5 posts (hoje: ".concat(r.measured, "). A\xED cada post \xE9 comparado com a sua pr\xF3pria m\xE9dia.") : "Nenhum post ficou claramente acima da sua m\xE9dia ainda."
       );
     }
     return group({
-      footer: r.enough ? `Comparado com a sua mediana em ${r.measured} posts com resultado.` : "Com menos de 5 posts medidos, s\xF3 aparecem os que trouxeram contato de marca.",
+      footer: r.enough ? "Comparado com a sua mediana em ".concat(r.measured, " posts com resultado.") : "Com menos de 5 posts medidos, s\xF3 aparecem os que trouxeram contato de marca.",
       children: r.items.map(({ content: c, reasons }) => {
         const f = [...FORMATS, ...all("formats")].find((x) => x.id === c.formatId);
         return h(
@@ -4745,10 +4838,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           h(
             "div",
             { class: "content-main static" },
-            badge(f?.emoji || "\u2B50\uFE0F", f?.color || "yellow"),
-            h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, `${f ? `${f.name} \xB7 ` : ""}${reasons.join(", ")}`))
+            badge((f == null ? void 0 : f.emoji) || "\u2B50\uFE0F", (f == null ? void 0 : f.color) || "yellow"),
+            h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, "".concat(f ? "".concat(f.name, " \xB7 ") : "").concat(reasons.join(", "))))
           ),
-          h("button", { type: "button", class: "btn btn-sm", onclick: () => newContent({ formatId: c.formatId, notes: `Varia\xE7\xE3o de: ${c.title}`, title: "" }) }, "Repetir")
+          h("button", { type: "button", class: "btn btn-sm", onclick: () => newContent({ formatId: c.formatId, notes: "Varia\xE7\xE3o de: ".concat(c.title), title: "" }) }, "Repetir")
         );
       })
     });
@@ -4771,9 +4864,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
           r.link && h("a", { class: "cell tappable tint", href: r.link, target: "_blank", rel: "noopener noreferrer" }, "Abrir link"),
           h("button", { type: "button", class: "cell tappable tint", onclick: () => {
             close();
-            setTimeout(() => newContent({ formatId: r.formatId || "", title: "", notes: `Inspirado em: ${r.title || r.link}
-O que funcionou: ${r.worked || ""}
-Meu jeito: ${r.adapt || ""}` }), 250);
+            setTimeout(() => newContent({ formatId: r.formatId || "", title: "", notes: "Inspirado em: ".concat(r.title || r.link, "\nO que funcionou: ").concat(r.worked || "", "\nMeu jeito: ").concat(r.adapt || "") }), 250);
           } }, "Transformar em conte\xFAdo"),
           h("button", { type: "button", class: "cell tappable destructive", onclick: async () => {
             if (await confirmDelete("esta refer\xEAncia")) {
@@ -4814,7 +4905,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       if (!c.date) patch.date = today();
     }
     update("contents", c.id, patch);
-    toast(next === "postado" ? "Postado! \u{1F389}" : `Marcado como ${STATUSES[i + 1].label.toLowerCase()}`);
+    toast(next === "postado" ? "Postado! \u{1F389}" : "Marcado como ".concat(STATUSES[i + 1].label.toLowerCase()));
   }
   function contentRow(c, { showDate = false } = {}) {
     const f = formatById(c.formatId, all("formats"));
@@ -4823,20 +4914,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const next = STATUSES[i + 1];
     return h(
       "div",
-      { class: "content-row", "data-id": `content-${c.id}` },
+      { class: "content-row", "data-id": "content-".concat(c.id) },
       h(
         "button",
         { type: "button", class: "content-main", onclick: () => openContent(c) },
-        badge(f?.emoji || (c.source === "instagram" ? "\u{1F4F8}" : "\u{1F4DD}"), f?.color || "gray"),
+        badge((f == null ? void 0 : f.emoji) || (c.source === "instagram" ? "\u{1F4F8}" : "\u{1F4DD}"), (f == null ? void 0 : f.color) || "gray"),
         h(
           "span",
           { class: "cell-text" },
           h("span", { class: "cell-title" }, c.title || "Sem t\xEDtulo"),
-          h("span", { class: "cell-sub" }, [showDate && c.date ? fmtDay(c.date) : null, f?.name, (c.platforms || []).map((p) => p === "tiktok" ? "TikTok" : "Instagram").join(" + ")].filter(Boolean).join(" \xB7 ")),
-          h("span", { class: "mini-steps", "aria-label": `Etapa: ${STATUSES[i].label}` }, STATUSES.map((s, k) => h("span", { class: `ms${k <= i ? " on" : ""}` })))
+          h("span", { class: "cell-sub" }, [showDate && c.date ? fmtDay(c.date) : null, f == null ? void 0 : f.name, (c.platforms || []).map((p) => p === "tiktok" ? "TikTok" : "Instagram").join(" + ")].filter(Boolean).join(" \xB7 ")),
+          h("span", { class: "mini-steps", "aria-label": "Etapa: ".concat(STATUSES[i].label) }, STATUSES.map((s, k) => h("span", { class: "ms".concat(k <= i ? " on" : "") })))
         )
       ),
-      done ? h("span", { class: "done-mark", "aria-label": "Postado" }, icon("check")) : h("button", { type: "button", class: "btn btn-sm", "data-id": "advance", onclick: () => advance(c), "aria-label": `Marcar como ${next.label.toLowerCase()}` }, ACTION[next.id])
+      done ? h("span", { class: "done-mark", "aria-label": "Postado" }, icon("check")) : h("button", { type: "button", class: "btn btn-sm", "data-id": "advance", onclick: () => advance(c), "aria-label": "Marcar como ".concat(next.label.toLowerCase()) }, ACTION[next.id])
     );
   }
   var DL_ICON = { entrega: "\u{1F4E6}", roteiro: "\u{1F4DD}", post: "\u{1F4E3}", pagamento: "\u{1F4B0}" };
@@ -4845,22 +4936,28 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const rows = [...up.overdue.map((x) => ({ ...x, tag: "atrasado" })), ...up.today.map((x) => ({ ...x, tag: "hoje" })), ...up.soon.map((x) => ({ ...x, tag: fmtDay(x.date, { weekday: "short", day: "numeric" }) }))];
     if (!rows.length) return emptyNote("Nada pendente", "Prazos de campanhas aparecem aqui.");
     return group({
-      children: rows.slice(0, 7).map((x) => cell({
-        emoji: DL_ICON[x.kind],
-        color: x.tag === "atrasado" ? "red" : DEAL_TYPES[x.deal.type]?.color || "gray",
-        title: `${x.name}: ${x.label}`,
-        subtitle: `${DEAL_TYPES[x.deal.type]?.label} \xB7 ${x.tag}`,
-        chevron: true,
-        onClick: () => openDeal(x.deal),
-        cls: x.tag === "atrasado" ? "late-row" : ""
-      }))
+      children: rows.slice(0, 7).map((x) => {
+        var _a, _b;
+        return cell({
+          emoji: DL_ICON[x.kind],
+          color: x.tag === "atrasado" ? "red" : ((_a = DEAL_TYPES[x.deal.type]) == null ? void 0 : _a.color) || "gray",
+          title: "".concat(x.name, ": ").concat(x.label),
+          subtitle: "".concat((_b = DEAL_TYPES[x.deal.type]) == null ? void 0 : _b.label, " \xB7 ").concat(x.tag),
+          chevron: true,
+          onClick: () => openDeal(x.deal),
+          cls: x.tag === "atrasado" ? "late-row" : ""
+        });
+      })
     });
   }
   function photoGroup(t) {
     const end = addDays(t, 7);
     const list = all("contents").filter((c) => c.date >= t && c.date <= end && c.status !== "postado" && missingPhotos(c) > 0);
     if (!list.length) return null;
-    return card({ title: "Fotos que eu preciso de voc\xEA", subtitle: "Abra para ver o pedido de cada foto e enviar", flush: true, id: "photos-card", children: group({ children: list.map((c) => cell({ emoji: "\u{1F4F7}", color: "orange", title: c.title, subtitle: `${fmtDay(c.date, { weekday: "short", day: "numeric" })} \xB7 ${missingPhotos(c)} foto(s): ${(c.slides || []).find((s) => s.photo && !s.photoId)?.photoHint || ""}`, chevron: true, onClick: () => openDesigner(c.id), id: `photo-${c.id}` })) }) });
+    return card({ title: "Fotos que eu preciso de voc\xEA", subtitle: "Abra para ver o pedido de cada foto e enviar", flush: true, id: "photos-card", children: group({ children: list.map((c) => {
+      var _a;
+      return cell({ emoji: "\u{1F4F7}", color: "orange", title: c.title, subtitle: "".concat(fmtDay(c.date, { weekday: "short", day: "numeric" }), " \xB7 ").concat(missingPhotos(c), " foto(s): ").concat(((_a = (c.slides || []).find((s) => s.photo && !s.photoId)) == null ? void 0 : _a.photoHint) || ""), chevron: true, onClick: () => openDesigner(c.id), id: "photo-".concat(c.id) });
+    }) }) });
   }
   function planBanner(t) {
     const monday = targetWeek(t);
@@ -4871,7 +4968,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       "div",
       { class: "card accent plan-banner", "data-id": "plan-banner" },
       h("span", { class: "badge c-yellow" }, "\u{1F5D3}\uFE0F"),
-      h("div", { class: "cell-text" }, h("strong", {}, "Plano da pr\xF3xima semana pronto"), h("span", { class: "muted small" }, `${fmtDay(days[0], { day: "numeric", month: "short" })} \u2013 ${fmtDay(days[4], { day: "numeric", month: "short" })}: tema, formato e estrutura de cada dia.`)),
+      h("div", { class: "cell-text" }, h("strong", {}, "Plano da pr\xF3xima semana pronto"), h("span", { class: "muted small" }, "".concat(fmtDay(days[0], { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[4], { day: "numeric", month: "short" }), ": tema, formato e estrutura de cada dia."))),
       btn("Abrir planejamento", () => go("conteudo/planejamento"), { kind: "primary", small: true })
     );
   }
@@ -4879,11 +4976,11 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const weeks = Array.from({ length: 8 }, (_, i) => addDays(weekStart(t), -7 * (7 - i)));
     const data = weeks.map((w, i) => ({
       label: fmtDay(w, { day: "numeric", month: "short" }),
-      tip: `Semana de ${fmtDay(w, { day: "numeric", month: "short" })}`,
+      tip: "Semana de ".concat(fmtDay(w, { day: "numeric", month: "short" })),
       value: weekProgress(contents, w, goal).posted,
       hl: i === weeks.length - 1
     }));
-    return barChart({ data, height: 170, refValue: goal, refLabel: `meta ${goal}`, label: "Posts publicados por semana", fmt: (v) => String(v) });
+    return barChart({ data, height: 170, refValue: goal, refLabel: "meta ".concat(goal), label: "Posts publicados por semana", fmt: (v) => String(v) });
   }
   function render3(root) {
     const p = profile();
@@ -4904,7 +5001,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const upcomingContent = contents.filter((c) => c.date > t && c.date <= addDays(t, 6) && c.status !== "postado").sort((a, b) => a.date.localeCompare(b.date));
     root.append(page({
       kicker: fmtDay(t, { weekday: "long", day: "numeric", month: "long" }),
-      title: first ? `Ol\xE1, ${first}` : "Vis\xE3o geral",
+      title: first ? "Ol\xE1, ".concat(first) : "Vis\xE3o geral",
       subtitle: "O que precisa de voc\xEA hoje, o ritmo da semana e as entregas para marcas.",
       actions: btn("Planejamento da semana", () => go("conteudo/planejamento"), { iconName: "plan" }),
       children: [
@@ -4912,10 +5009,10 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         h(
           "div",
           { class: "grid cols-4 kpis" },
-          kpi({ label: "Posts nesta semana", value: `${wp.posted}/${wp.goal}`, meter: wp.posted / wp.goal, hint: wp.posted >= wp.goal ? "Meta batida" : `${wp.goal - wp.posted} para a meta \xB7 ${wp.planned} planejados`, id: "week-widget" }),
-          kpi({ label: "Sequ\xEAncia", value: `${st} ${st === 1 ? "semana" : "semanas"}`, hint: st ? "batendo a meta seguidas" : "comece batendo a meta desta semana" }),
-          kpi({ label: "Entregas atrasadas", value: String(up.overdue.length), tone: up.overdue.length ? "danger" : "", hint: `${up.today.length + up.soon.length} prazo(s) nos pr\xF3ximos 7 dias`, id: "late-kpi" }),
-          kpi({ label: "A receber de marcas", value: `R$ ${fmtMoney(fin.toReceive)}`, hint: fin.overdue ? `R$ ${fmtMoney(fin.overdue)} atrasado` : `R$ ${fmtMoney(fin.receivedMonth)} recebido no m\xEAs` })
+          kpi({ label: "Posts nesta semana", value: "".concat(wp.posted, "/").concat(wp.goal), meter: wp.posted / wp.goal, hint: wp.posted >= wp.goal ? "Meta batida" : "".concat(wp.goal - wp.posted, " para a meta \xB7 ").concat(wp.planned, " planejados"), id: "week-widget" }),
+          kpi({ label: "Sequ\xEAncia", value: "".concat(st, " ").concat(st === 1 ? "semana" : "semanas"), hint: st ? "batendo a meta seguidas" : "comece batendo a meta desta semana" }),
+          kpi({ label: "Entregas atrasadas", value: String(up.overdue.length), tone: up.overdue.length ? "danger" : "", hint: "".concat(up.today.length + up.soon.length, " prazo(s) nos pr\xF3ximos 7 dias"), id: "late-kpi" }),
+          kpi({ label: "A receber de marcas", value: "R$ ".concat(fmtMoney(fin.toReceive)), hint: fin.overdue ? "R$ ".concat(fmtMoney(fin.overdue), " atrasado") : "R$ ".concat(fmtMoney(fin.receivedMonth), " recebido no m\xEAs") })
         ),
         h(
           "div",
@@ -4923,7 +5020,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           h(
             "div",
             { class: "stack" },
-            todays.length ? card({ title: "Para hoje", subtitle: `${todays.filter((c) => c.status === "postado").length} de ${todays.length} postado(s)`, flush: true, id: "today-card", children: group({ children: todays.map((c) => contentRow(c)) }) }) : card({
+            todays.length ? card({ title: "Para hoje", subtitle: "".concat(todays.filter((c) => c.status === "postado").length, " de ").concat(todays.length, " postado(s)"), flush: true, id: "today-card", children: group({ children: todays.map((c) => contentRow(c)) }) }) : card({
               title: "Sugest\xF5es para hoje",
               subtitle: "Foco do dia, sem repetir formatos das \xFAltimas 2 semanas, priorizando o que j\xE1 funcionou para voc\xEA",
               flush: true,
@@ -4931,17 +5028,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
                 shuffle2++;
                 document.dispatchEvent(new Event("rerender"));
               }, { kind: "ghost", small: true, iconName: "refresh" }),
-              children: group({ children: sugg.map((s) => h(
-                "div",
-                { class: "sugg", "data-id": `sugg-${s.format.id}` },
-                h(
-                  "button",
-                  { type: "button", class: "content-main", onclick: () => openFormat(s.format) },
-                  badge(s.format.emoji, s.format.color),
-                  h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, s.format.name), h("span", { class: "cell-sub" }, `${GOALS[s.goal]?.label} \xB7 ${s.reason}`))
-                ),
-                h("button", { type: "button", class: "btn btn-sm", "data-id": "do-this", onclick: () => newContent({ formatId: s.format.id, date: t, title: "" }) }, "Fazer hoje")
-              )) })
+              children: group({ children: sugg.map((s) => {
+                var _a;
+                return h(
+                  "div",
+                  { class: "sugg", "data-id": "sugg-".concat(s.format.id) },
+                  h(
+                    "button",
+                    { type: "button", class: "content-main", onclick: () => openFormat(s.format) },
+                    badge(s.format.emoji, s.format.color),
+                    h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, s.format.name), h("span", { class: "cell-sub" }, "".concat((_a = GOALS[s.goal]) == null ? void 0 : _a.label, " \xB7 ").concat(s.reason)))
+                  ),
+                  h("button", { type: "button", class: "btn btn-sm", "data-id": "do-this", onclick: () => newContent({ formatId: s.format.id, date: t, title: "" }) }, "Fazer hoje")
+                );
+              }) })
             }),
             late.length > 0 && card({ title: "Atrasados", subtitle: "Planejados para dias que j\xE1 passaram", flush: true, children: group({ children: late.slice(0, 5).map((c) => contentRow(c, { showDate: true })) }) }),
             upcomingContent.length > 0 && card({ title: "Pr\xF3ximos dias", flush: true, children: group({ children: upcomingContent.slice(0, 6).map((c) => contentRow(c, { showDate: true })) }) }),
@@ -4956,7 +5056,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               title: "Como foi?",
               subtitle: "Anote os n\xFAmeros para saber o que traz seguidores e marcas",
               flush: true,
-              children: group({ children: pending.slice(0, 4).map((c) => cell({ emoji: "\u{1F4CA}", color: "green", title: c.title, subtitle: `Postado ${fmtDay(c.postedAt || c.date)}`, chevron: true, onClick: () => openContent(c) })) })
+              children: group({ children: pending.slice(0, 4).map((c) => cell({ emoji: "\u{1F4CA}", color: "green", title: c.title, subtitle: "Postado ".concat(fmtDay(c.postedAt || c.date)), chevron: true, onClick: () => openContent(c) })) })
             }),
             card({ flush: true, children: group({ children: [
               cell({ emoji: "\u{1F4A1}", color: "yellow", title: "Ideias guardadas", detail: String(ideas.length), chevron: true, onClick: () => go("conteudo/planejamento") })
@@ -4990,8 +5090,8 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   onClaudeResult("ideas", (text2) => {
     const ideas = parseIdeas(text2);
     if (!ideas.length) throw new Error("A resposta n\xE3o trouxe ideias.");
-    for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, hook: i.hook, notes: i.why ? `Por qu\xEA: ${i.why}` : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
-    toast(`${ideas.length} ideias guardadas`);
+    for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, hook: i.hook, notes: i.why ? "Por qu\xEA: ".concat(i.why) : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
+    toast("".concat(ideas.length, " ideias guardadas"));
     location.hash = "#/conteudo/planejamento";
   });
   onClaudeResult("week", (text2, ctx) => {
@@ -5014,7 +5114,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       });
       n2++;
     });
-    toast(`${n2} conte\xFAdos preenchidos pelo Claude`);
+    toast("".concat(n2, " conte\xFAdos preenchidos pelo Claude"));
     location.hash = "#/conteudo/planejamento";
   });
   var planItems = (monday) => {
@@ -5022,7 +5122,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     return all("contents").filter((c) => days.includes(c.date) && c.planWeek === monday).sort((a, b) => a.date.localeCompare(b.date));
   };
   function reroll(c) {
-    const seed = `${Date.now()}`;
+    const seed = "".concat(Date.now());
     const [fresh] = generateWeek({ monday: weekStart(c.date), contents: all("contents").filter((x) => x.id !== c.id), deals: [], profile: profile(), customFormats: all("formats"), seed }).filter((x) => x.date === c.date);
     if (!fresh) return;
     update("contents", c.id, { ...fresh, planWeek: c.planWeek, touched: false });
@@ -5036,26 +5136,26 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const hasDesign = c.type === "carrossel" || c.type === "estatico";
     return h(
       "div",
-      { class: "plan-card", "data-id": `plan-${c.date}` },
+      { class: "plan-card", "data-id": "plan-".concat(c.date) },
       h(
         "button",
         { type: "button", class: "plan-main", onclick: () => openContent(c) },
         h(
           "div",
           { class: "plan-tags" },
-          h("span", { class: `tag type-${c.type || "video"}` }, t.label),
-          g && h("span", { class: `tag t-${g.color}` }, g.label),
+          h("span", { class: "tag type-".concat(c.type || "video") }, t.label),
+          g && h("span", { class: "tag t-".concat(g.color) }, g.label),
           f && h("span", { class: "tag" }, f.name),
           c.dealId && h("span", { class: "tag t-indigo" }, "Marca")
         ),
         h("span", { class: "plan-title" }, c.title),
-        c.hook && h("span", { class: "plan-hook" }, `\u201C${c.hook}\u201D`),
-        h("span", { class: "mini-steps" }, STATUSES.map((s, k) => h("span", { class: `ms${k <= statusIndex(c.status) ? " on" : ""}` })))
+        c.hook && h("span", { class: "plan-hook" }, "\u201C".concat(c.hook, "\u201D")),
+        h("span", { class: "mini-steps" }, STATUSES.map((s, k) => h("span", { class: "ms".concat(k <= statusIndex(c.status) ? " on" : "") })))
       ),
       h(
         "div",
         { class: "plan-actions" },
-        hasDesign && h("button", { type: "button", class: `btn btn-sm${miss ? " btn-accent" : ""}`, "data-id": "open-design", onclick: () => openDesigner(c.id) }, miss ? `\u{1F4F7} ${miss} foto${miss > 1 ? "s" : ""}` : "Design"),
+        hasDesign && h("button", { type: "button", class: "btn btn-sm".concat(miss ? " btn-accent" : ""), "data-id": "open-design", onclick: () => openDesigner(c.id) }, miss ? "\u{1F4F7} ".concat(miss, " foto").concat(miss > 1 ? "s" : "") : "Design"),
         !c.dealId && c.status !== "postado" && h("button", { type: "button", class: "icon-btn", "data-id": "reroll", onclick: () => reroll(c), "aria-label": "Trocar sugest\xE3o", title: "Trocar sugest\xE3o" }, "\u21BB")
       )
     );
@@ -5071,7 +5171,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const items = all("contents");
     const dls = deadlines(all("deals")).filter((d) => [...days, ...weekend].includes(d.date));
     const ideas = items.filter((c) => !c.date && c.status !== "postado").sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-    const label2 = `${fmtDay(monday, { day: "numeric", month: "short" })} \u2013 ${fmtDay(days[4], { day: "numeric", month: "short" })}`;
+    const label2 = "".concat(fmtDay(monday, { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[4], { day: "numeric", month: "short" }));
     const isNext = monday > weekStart(t);
     const isCurrent = monday === weekStart(t);
     const pItems = planItems(monday);
@@ -5081,7 +5181,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       const dl = dls.filter((x) => x.date === d);
       return h(
         "section",
-        { class: `day-col${d === t ? " is-today" : ""}`, "aria-label": fmtDay(d, { weekday: "long", day: "numeric", month: "long" }) },
+        { class: "day-col".concat(d === t ? " is-today" : ""), "aria-label": fmtDay(d, { weekday: "long", day: "numeric", month: "long" }) },
         h(
           "header",
           { class: "day-head" },
@@ -5095,7 +5195,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           ...list.map(planCard),
           ...dl.map((x) => h(
             "button",
-            { type: "button", class: `deadline-chip k-${x.kind}`, onclick: () => openDeal(x.deal) },
+            { type: "button", class: "deadline-chip k-".concat(x.kind), onclick: () => openDeal(x.deal) },
             h("span", {}, DL_ICON2[x.kind]),
             h("span", { class: "cell-text" }, h("strong", {}, x.name), h("span", {}, x.label))
           )),
@@ -5111,8 +5211,11 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         askClaude({ kind: "week", context: { monday }, prompt: weekPrompt({ profile: profile(), items: pItems, formats: [...FORMATS, ...all("formats")] }) });
       }, { iconName: "sparkle", id: "claude-week" }),
       btn("Calend\xE1rio", () => {
-        const evs = [...pItems.map((c) => ({ date: c.date, label: c.title, name: TYPES[c.type]?.label || "Post" })), ...dls];
-        downloadIcs(evs, `semana-${monday}`);
+        const evs = [...pItems.map((c) => {
+          var _a;
+          return { date: c.date, label: c.title, name: ((_a = TYPES[c.type]) == null ? void 0 : _a.label) || "Post" };
+        }), ...dls];
+        downloadIcs(evs, "semana-".concat(monday));
       }, { iconName: "calendar", id: "week-ics", title: "Adicionar a semana ao Calend\xE1rio (.ics)" }),
       btn("Refazer sugest\xF5es", async () => {
         const ok = await actionSheet({ title: "Refazer o plano", message: "Troca as sugest\xF5es que voc\xEA ainda n\xE3o editou. O que voc\xEA j\xE1 mexeu fica.", actions: [{ label: "Refazer", value: true, id: "confirm-regenerate" }] });
@@ -5125,7 +5228,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Planejamento",
-      subtitle: `Semana de ${label2}${isNext ? " \xB7 pr\xF3xima semana" : isCurrent ? " \xB7 esta semana" : ""}`,
+      subtitle: "Semana de ".concat(label2).concat(isNext ? " \xB7 pr\xF3xima semana" : isCurrent ? " \xB7 esta semana" : ""),
       actions: [
         h(
           "div",
@@ -5152,24 +5255,30 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           h("p", { class: "muted" }, "Gera de segunda a sexta com tema, foco, formato, tipo (v\xEDdeo, carrossel ou est\xE1tico) e estrutura. Publis e TikTok Shop com data entram sozinhos. A partir de s\xE1bado, a pr\xF3xima semana \xE9 gerada quando voc\xEA abre a plataforma."),
           btn("Gerar plano desta semana", () => {
             const n2 = generatePlan(monday, { seed: monday });
-            toast(`${n2} conte\xFAdos planejados`);
+            toast("".concat(n2, " conte\xFAdos planejados"));
           }, { kind: "primary", id: "generate-plan", iconName: "sparkle" })
         ) : h(
           "div",
           { class: "toolbar" },
-          h("p", { class: "muted small" }, `Plano gerado em ${fmtDay(plan.generatedAt.slice(0, 10), { weekday: "short", day: "numeric", month: "short" })} \xB7 ${Object.entries(mix).map(([k, v]) => `${v} ${(TYPES[k]?.label || k).toLowerCase()}`).join(" \xB7 ")}`),
+          h("p", { class: "muted small" }, "Plano gerado em ".concat(fmtDay(plan.generatedAt.slice(0, 10), { weekday: "short", day: "numeric", month: "short" }), " \xB7 ").concat(Object.entries(mix).map(([k, v]) => {
+            var _a;
+            return "".concat(v, " ").concat((((_a = TYPES[k]) == null ? void 0 : _a.label) || k).toLowerCase());
+          }).join(" \xB7 "))),
           h("div", { class: "page-actions" }, weekActions)
         ),
         h("div", { class: "board" }, days.map(dayColumn)),
         (weekendItems.length > 0 || weekendDls.length > 0) && card({ title: "Fim de semana", flush: true, children: group({ children: [
           ...weekendItems.map(planCard),
-          ...weekendDls.map((x) => cell({ emoji: DL_ICON2[x.kind], color: DEAL_TYPES[x.deal.type]?.color || "gray", title: `${x.name}: ${x.label}`, subtitle: fmtDay(x.date), chevron: true, onClick: () => openDeal(x.deal) }))
+          ...weekendDls.map((x) => {
+            var _a;
+            return cell({ emoji: DL_ICON2[x.kind], color: ((_a = DEAL_TYPES[x.deal.type]) == null ? void 0 : _a.color) || "gray", title: "".concat(x.name, ": ").concat(x.label), subtitle: fmtDay(x.date), chevron: true, onClick: () => openDeal(x.deal) });
+          })
         ] }) }),
         h(
           "div",
           { class: "grid cols-2 section" },
           card({
-            title: `Ideias guardadas (${ideas.length})`,
+            title: "Ideias guardadas (".concat(ideas.length, ")"),
             subtitle: "Agende num dia da semana exibida",
             flush: true,
             actions: btn("Pedir 5 ideias ao Claude", () => askClaude({ kind: "ideas", prompt: ideasPrompt({ profile: profile(), count: 5, hits: items.filter((c) => c.status === "postado").map((c) => c.title).slice(-5) }) }), { iconName: "sparkle", small: true, id: "claude-ideas" }),
@@ -5178,23 +5287,23 @@ Meu jeito: ${r.adapt || ""}` }), 250);
                 const f = formatById(c.formatId, all("formats"));
                 return h(
                   "div",
-                  { class: "sugg", "data-id": `idea-${c.id}` },
+                  { class: "sugg", "data-id": "idea-".concat(c.id) },
                   h(
                     "button",
                     { type: "button", class: "content-main", onclick: () => openContent(c) },
-                    badge(f?.emoji || "\u{1F4A1}", f?.color || "yellow"),
-                    h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, f?.name || c.hook || ""))
+                    badge((f == null ? void 0 : f.emoji) || "\u{1F4A1}", (f == null ? void 0 : f.color) || "yellow"),
+                    h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, (f == null ? void 0 : f.name) || c.hook || ""))
                   ),
                   h("button", { type: "button", class: "btn btn-sm", "data-id": "schedule", onclick: async () => {
                     const day = await actionSheet({ title: "Agendar para", actions: days.map((d) => ({ label: fmtDay(d, { weekday: "long", day: "numeric", month: "short" }), value: d })) });
                     if (day) {
                       update("contents", c.id, { date: day, planWeek: monday });
-                      toast(`Agendado: ${fmtDay(day)}`);
+                      toast("Agendado: ".concat(fmtDay(day)));
                     }
                   } }, "Agendar")
                 );
               }),
-              ideas.length > 12 && h("button", { type: "button", class: "cell tappable link-cell", "data-id": "all-ideas", onclick: () => go("conteudo/lista", { periodo: "sem-data" }) }, `Ver todas as ${ideas.length} ideias`),
+              ideas.length > 12 && h("button", { type: "button", class: "cell tappable link-cell", "data-id": "all-ideas", onclick: () => go("conteudo/lista", { periodo: "sem-data" }) }, "Ver todas as ".concat(ideas.length, " ideias")),
               !ideas.length && emptyNote("Nenhuma ideia guardada", "Salve ideias de formatos, refer\xEAncias ou pe\xE7a ao Claude."),
               h("button", { type: "button", class: "cell tappable link-cell", onclick: () => newContent({ date: "" }) }, "+ Nova ideia")
             ] })
@@ -5233,7 +5342,10 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   var rerender4 = () => document.dispatchEvent(new Event("rerender"));
   var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
   var sum = (list, k) => {
-    const vals = list.map((c) => num2(c.results?.[k])).filter((v) => v !== null);
+    const vals = list.map((c) => {
+      var _a;
+      return num2((_a = c.results) == null ? void 0 : _a[k]);
+    }).filter((v) => v !== null);
     return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
   };
   var PERIODS = [{ value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }, { value: "365", label: "\xDAltimo ano" }, { value: "all", label: "Tudo" }];
@@ -5245,29 +5357,31 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   function postGrid(list) {
     if (!list.length) return emptyNote("Nenhum post com n\xFAmeros neste per\xEDodo.");
     return h("div", { class: "post-grid" }, list.map((c) => {
+      var _a, _b, _c;
       const f = formatById(c.formatId, all("formats"));
       const s = scores(c);
-      const stat = (label2, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, `${prefix}${fmtNum(v)}`), label2);
+      const stat = (label2, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, "".concat(prefix).concat(fmtNum(v))), label2);
       return h(
         "button",
-        { type: "button", class: "post-card", "data-id": `post-${c.id}`, onclick: () => openContent(c) },
+        { type: "button", class: "post-card", "data-id": "post-".concat(c.id), onclick: () => openContent(c) },
         h(
           "span",
           { class: "pg-media" },
-          c.igThumb ? postThumb(c, { cls: "pg-img", emoji: f?.emoji || "\u{1F4F7}", color: f?.color || "gray" }) : h("span", { class: "pg-empty" }, h("span", { class: "pg-emoji" }, f?.emoji || "\u{1F4DD}"), h("span", {}, "Sem capa")),
+          c.igThumb ? postThumb(c, { cls: "pg-img", emoji: (f == null ? void 0 : f.emoji) || "\u{1F4F7}", color: (f == null ? void 0 : f.color) || "gray" }) : h("span", { class: "pg-empty" }, h("span", { class: "pg-emoji" }, (f == null ? void 0 : f.emoji) || "\u{1F4DD}"), h("span", {}, "Sem capa")),
           h("span", { class: "pg-type" }, c.igFormat === "reels" || !c.igFormat && (c.type || "video") === "video" ? "Reels" : c.igFormat === "carrossel" || c.type === "carrossel" ? "Carrossel" : c.igFormat === "foto" || c.type === "estatico" ? "Foto" : "Post")
         ),
         h(
           "span",
           { class: "pg-body" },
-          h("span", { class: "pg-top" }, h("span", { class: "subtle small" }, fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" })), c.results?.source === "instagram" ? tag("Instagram", "info") : tag("Manual")),
+          h("span", { class: "pg-top" }, h("span", { class: "subtle small" }, fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" })), ((_a = c.results) == null ? void 0 : _a.source) === "instagram" ? tag("Instagram", "info") : tag("Manual")),
           h("span", { class: "pg-title" }, c.title),
-          h("span", { class: "pg-stats" }, stat("views", s.views), stat("seguidores", num2(c.results?.follows), "+"), stat("salvos", num2(c.results?.saves)))
+          h("span", { class: "pg-stats" }, stat("views", s.views), stat("seguidores", num2((_b = c.results) == null ? void 0 : _b.follows), "+"), stat("salvos", num2((_c = c.results) == null ? void 0 : _c.saves)))
         )
       );
     }));
   }
   function render5(root) {
+    var _a, _b;
     const t = today();
     const contents = all("contents");
     const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state4.platform || (c.platforms || []).includes(state4.platform)));
@@ -5279,13 +5393,13 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const last = measured.slice(-12);
     const viewsChart = last.length ? barChart({
       label: "Visualiza\xE7\xF5es por post",
-      fmt: (v) => v >= 1e3 ? `${(v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : String(Math.round(v)),
+      fmt: (v) => v >= 1e3 ? "".concat((v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " mil") : String(Math.round(v)),
       data: last.map((c, i) => ({ label: fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), tip: c.title, value: scores(c).views || 0, hl: i === last.length - 1 }))
     }) : emptyNote("Sem n\xFAmeros ainda", "Anote as visualiza\xE7\xF5es dos posts ou conecte o Instagram em Configura\xE7\xF5es.");
     const weeks = Array.from({ length: 8 }, (_, i) => addDays(weekStart(t), -7 * (7 - i)));
     const followsByWeek = weeks.map((w, i) => {
       const list = contents.filter((c) => c.status === "postado" && (c.postedAt || c.date) >= w && (c.postedAt || c.date) <= addDays(w, 6));
-      return { label: fmtDay(w, { day: "numeric", month: "short" }), tip: `Semana de ${fmtDay(w, { day: "numeric", month: "short" })}`, value: sum(list, "follows") || 0, hl: i === weeks.length - 1 };
+      return { label: fmtDay(w, { day: "numeric", month: "short" }), tip: "Semana de ".concat(fmtDay(w, { day: "numeric", month: "short" })), value: sum(list, "follows") || 0, hl: i === weeks.length - 1 };
     });
     root.append(page({
       kicker: "An\xE1lise",
@@ -5305,12 +5419,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         h(
           "div",
           { class: "grid cols-4 kpis" },
-          kpi({ label: "Posts publicados", value: fmtNum(posted.length), hint: `${measured.length} com n\xFAmeros anotados` }),
+          kpi({ label: "Posts publicados", value: fmtNum(posted.length), hint: "".concat(measured.length, " com n\xFAmeros anotados") }),
           kpi({ label: "Novos seguidores", value: fmtNum(sum(posted, "follows")), hint: "soma dos posts com esse dado" }),
           kpi({ label: "Views t\xEDpicas por post", value: fmtNum(median(measured.map((c) => scores(c).views))), hint: "mediana (n\xE3o \xE9 afetada por um viral)" }),
           kpi({ label: "Contatos de marcas", value: fmtNum(sum(posted, "brandContacts")), hint: "vindos de posts" })
         ),
-        h("p", { class: "data-note" }, measured.length ? `Base: ${measured.length} post(s) com resultado \xB7 n\xEDvel de confian\xE7a: ${conf.label.toLowerCase()}. ${measured.length < 15 ? "Use como pista, n\xE3o como regra." : ""}` : "Ainda n\xE3o h\xE1 posts com n\xFAmeros neste per\xEDodo."),
+        h("p", { class: "data-note" }, measured.length ? "Base: ".concat(measured.length, " post(s) com resultado \xB7 n\xEDvel de confian\xE7a: ").concat(conf.label.toLowerCase(), ". ").concat(measured.length < 15 ? "Use como pista, n\xE3o como regra." : "") : "Ainda n\xE3o h\xE1 posts com n\xFAmeros neste per\xEDodo."),
         h(
           "div",
           { class: "grid cols-2" },
@@ -5329,12 +5443,15 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               rows: formats,
               empty: "Escolha o formato dos conte\xFAdos e anote os resultados para comparar.",
               columns: [
-                { label: "Formato", main: true, render: (r) => h("div", { class: "td-flex" }, badge(r.format?.emoji || "\u2022", r.format?.color || "gray"), h("span", { class: "td-title" }, r.format?.name || (r.formatId === "sem-formato" ? "Sem formato" : r.formatId))) },
+                { label: "Formato", main: true, render: (r) => {
+                  var _a2, _b2, _c;
+                  return h("div", { class: "td-flex" }, badge(((_a2 = r.format) == null ? void 0 : _a2.emoji) || "\u2022", ((_b2 = r.format) == null ? void 0 : _b2.color) || "gray"), h("span", { class: "td-title" }, ((_c = r.format) == null ? void 0 : _c.name) || (r.formatId === "sem-formato" ? "Sem formato" : r.formatId)));
+                } },
                 { label: "Posts", cls: "right", render: (r) => h("span", { class: "num" }, String(r.count)) },
                 { label: "Seguidores / mil", render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
                 { label: "Salv. + compart. / mil", render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },
                 { label: "Marcas", cls: "right", render: (r) => h("span", { class: "num" }, String(r.brand)) },
-                { label: "Confian\xE7a", render: (r) => tag(r.confidence.label, `conf-${r.confidence.level}`) }
+                { label: "Confian\xE7a", render: (r) => tag(r.confidence.label, "conf-".concat(r.confidence.level)) }
               ]
             })
           }),
@@ -5345,7 +5462,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           { class: "section" },
           card({
             title: "Posts com resultado",
-            subtitle: igConfig()?.token ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
+            subtitle: ((_a = igConfig()) == null ? void 0 : _a.token) ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
             actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state4.view, (v) => {
               state4.view = v;
               rerender4();
@@ -5355,23 +5472,47 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               caption: "Posts com resultado",
               rows: measured.slice().reverse(),
               onRowClick: (c) => openContent(c),
-              rowId: (c) => `post-${c.id}`,
+              rowId: (c) => "post-".concat(c.id),
               empty: "Nenhum post com n\xFAmeros neste per\xEDodo.",
               columns: [
-                { label: "Post", main: true, render: (c) => h("div", { class: "td-flex" }, postThumb(c, { cls: "td-thumb", emoji: formatById(c.formatId, all("formats"))?.emoji || "\u{1F4DD}" }), h("div", {}, h("div", { class: "td-title" }, c.title), h("div", { class: "td-sub" }, [fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), TYPES[c.type || "video"]?.label, GOALS[c.goal]?.label].filter(Boolean).join(" \xB7 ")))) },
+                { label: "Post", main: true, render: (c) => {
+                  var _a2, _b2, _c;
+                  return h("div", { class: "td-flex" }, postThumb(c, { cls: "td-thumb", emoji: ((_a2 = formatById(c.formatId, all("formats"))) == null ? void 0 : _a2.emoji) || "\u{1F4DD}" }), h("div", {}, h("div", { class: "td-title" }, c.title), h("div", { class: "td-sub" }, [fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), (_b2 = TYPES[c.type || "video"]) == null ? void 0 : _b2.label, (_c = GOALS[c.goal]) == null ? void 0 : _c.label].filter(Boolean).join(" \xB7 "))));
+                } },
                 { label: "Views", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(scores(c).views)) },
-                { label: "Curtidas", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.likes))) },
-                { label: "Coment.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.comments))) },
-                { label: "Salv.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.saves))) },
-                { label: "Compart.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.shares))) },
-                { label: "Seguidores", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.follows))) },
-                { label: "Marcas", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.brandContacts))) },
-                { label: "Origem", render: (c) => c.results?.source === "instagram" ? tag("Instagram", "info") : tag("Manual") }
+                { label: "Curtidas", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.likes)));
+                } },
+                { label: "Coment.", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.comments)));
+                } },
+                { label: "Salv.", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.saves)));
+                } },
+                { label: "Compart.", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.shares)));
+                } },
+                { label: "Seguidores", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.follows)));
+                } },
+                { label: "Marcas", cls: "right", render: (c) => {
+                  var _a2;
+                  return h("span", { class: "num" }, fmtNum(num2((_a2 = c.results) == null ? void 0 : _a2.brandContacts)));
+                } },
+                { label: "Origem", render: (c) => {
+                  var _a2;
+                  return ((_a2 = c.results) == null ? void 0 : _a2.source) === "instagram" ? tag("Instagram", "info") : tag("Manual");
+                } }
               ]
             })
           })
         ),
-        !igConfig()?.token && h("p", { class: "subtle small" }, "Quer os n\xFAmeros autom\xE1ticos do Instagram? ", h("button", { type: "button", class: "link-btn", onclick: () => go("configuracoes") }, "Conecte em Configura\xE7\xF5es"), ".")
+        !((_b = igConfig()) == null ? void 0 : _b.token) && h("p", { class: "subtle small" }, "Quer os n\xFAmeros autom\xE1ticos do Instagram? ", h("button", { type: "button", class: "link-btn", onclick: () => go("configuracoes") }, "Conecte em Configura\xE7\xF5es"), ".")
       ]
     }));
   }
@@ -5399,7 +5540,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const pal = { ...DEFAULT_PALETTE, ...p.palette || {} };
     const preview = h("canvas", { class: "palette-preview", "aria-label": "Pr\xE9via do estilo" });
     const sample = { layout: "notas", kicker: "review honesto", title: "Testei o protetor da minha m\xE3e", body: "Textura leve, n\xE3o deixou branco.\nNo calor, precisei reaplicar." };
-    const redraw = () => drawSlide(preview, sample, { palette: pal, dark: profile().designDark, handle: p.instagram ? `@${p.instagram.replace(/^@/, "")}` : "@voce", index: 0, total: 3 });
+    const redraw = () => drawSlide(preview, sample, { palette: pal, dark: profile().designDark, handle: p.instagram ? "@".concat(p.instagram.replace(/^@/, "")) : "@voce", index: 0, total: 3 });
     queueMicrotask(redraw);
     const rows = SWATCHES.map(([k, label2]) => {
       const inp = h("input", { type: "color", value: pal[k], "aria-label": label2, class: "swatch" });
@@ -5435,7 +5576,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const total = mix.video + mix.carrossel + mix.estatico;
     return group({
       header: "Plano semanal (seg a sex)",
-      footer: `${total} conte\xFAdos por semana. ${total !== 5 ? "O plano tem 5 dias: o que passar de 5 \xE9 ignorado e o que faltar vira v\xEDdeo." : ""} A partir de s\xE1bado, o plano da pr\xF3xima semana \xE9 gerado quando voc\xEA abre o app.`,
+      footer: "".concat(total, " conte\xFAdos por semana. ").concat(total !== 5 ? "O plano tem 5 dias: o que passar de 5 \xE9 ignorado e o que faltar vira v\xEDdeo." : "", " A partir de s\xE1bado, o plano da pr\xF3xima semana \xE9 gerado quando voc\xEA abre o app."),
       children: [
         cell({ emoji: "\u2728", color: "orange", title: "Gerar sozinho aos s\xE1bados", accessory: toggle(p.autoPlan !== false, (v) => saveProfile({ autoPlan: v }), "Gerar sozinho") }),
         cell({ emoji: "\u{1F3AC}", color: "red", title: "V\xEDdeos", accessory: step("video") }),
@@ -5463,7 +5604,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   }
   function instagramSheet() {
     const cfg = igConfig();
-    if (cfg?.token) {
+    if (cfg == null ? void 0 : cfg.token) {
       const ts = tokenStatus(cfg);
       const s = cfg.lastSummary;
       const progress = h("p", { class: "muted pad-x", "aria-live": "polite" });
@@ -5474,10 +5615,10 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           "div",
           { class: "sheet-stack" },
           group({ children: [
-            cell({ emoji: "\u{1F4F8}", color: "pink", title: `@${cfg.username || "conta"}`, subtitle: cfg.followersCount != null ? `${Number(cfg.followersCount).toLocaleString("pt-BR")} seguidores` : "" }),
-            cell({ title: "Token", detail: cfg.lastErrorKind === "auth" ? "recusado" : ts.state === "expired" ? "expirado" : `~${ts.daysLeft} dias` }),
+            cell({ emoji: "\u{1F4F8}", color: "pink", title: "@".concat(cfg.username || "conta"), subtitle: cfg.followersCount != null ? "".concat(Number(cfg.followersCount).toLocaleString("pt-BR"), " seguidores") : "" }),
+            cell({ title: "Token", detail: cfg.lastErrorKind === "auth" ? "recusado" : ts.state === "expired" ? "expirado" : "~".concat(ts.daysLeft, " dias") }),
             cell({ title: "\xDAltima sincroniza\xE7\xE3o", detail: when(cfg.lastSync) }),
-            s && cell({ title: "Resultado", subtitle: `${s.fetched} posts lidos \xB7 ${s.created} novos \xB7 ${s.updated} atualizados${s.insightErrors ? ` \xB7 ${s.insightErrors} sem m\xE9tricas` : ""}` })
+            s && cell({ title: "Resultado", subtitle: "".concat(s.fetched, " posts lidos \xB7 ").concat(s.created, " novos \xB7 ").concat(s.updated, " atualizados").concat(s.insightErrors ? " \xB7 ".concat(s.insightErrors, " sem m\xE9tricas") : "") })
           ] }),
           cfg.lastError && h("p", { class: "form-error pad-x" }, cfg.lastError),
           progress,
@@ -5487,7 +5628,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               btn2.disabled = true;
               try {
                 const r = await syncInstagram2({ onProgress: (m) => progress.textContent = m });
-                toast(`${r.fetched} posts lidos`);
+                toast("".concat(r.fetched, " posts lidos"));
                 close();
               } catch (err2) {
                 progress.textContent = "";
@@ -5536,7 +5677,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         err.textContent = "";
         try {
           const cfg2 = await connectInstagram(input.value);
-          toast(`Conectado: @${cfg2.username}`);
+          toast("Conectado: @".concat(cfg2.username));
           syncInstagram2().catch(() => {
           });
         } catch (e) {
@@ -5549,19 +5690,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   async function importFile() {
     const input = h("input", { type: "file", accept: "application/json,.json" });
     input.addEventListener("change", async () => {
-      const file = input.files?.[0];
+      var _a, _b;
+      const file = (_a = input.files) == null ? void 0 : _a[0];
       if (!file) return;
       let parsed;
       try {
         parsed = JSON.parse(await file.text());
-      } catch {
+      } catch (e) {
         return toast("Esse arquivo n\xE3o \xE9 um backup v\xE1lido.", "error");
       }
-      if (parsed?.meta?.kind === "pacote") {
+      if (((_b = parsed == null ? void 0 : parsed.meta) == null ? void 0 : _b.kind) === "pacote") {
         const n2 = (k) => Array.isArray(parsed[k]) ? parsed[k].length : 0;
         const ok = await actionSheet({
           title: parsed.meta.title || "Importar pacote",
-          message: [n2("contents") && `${n2("contents")} ideia(s)`, n2("formats") && `${n2("formats")} formato(s)`, parsed.profile && "textos do seu perfil"].filter(Boolean).join(", ") + ". Junta com o que j\xE1 existe; nada \xE9 apagado.",
+          message: [n2("contents") && "".concat(n2("contents"), " ideia(s)"), n2("formats") && "".concat(n2("formats"), " formato(s)"), parsed.profile && "textos do seu perfil"].filter(Boolean).join(", ") + ". Junta com o que j\xE1 existe; nada \xE9 apagado.",
           actions: [{ label: "Importar", value: true, id: "import-pack" }]
         });
         if (!ok) return;
@@ -5577,7 +5719,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       if (!mode) return;
       try {
         const c = importBackup(parsed, mode);
-        toast(`Importado: ${c.contents} conte\xFAdos`);
+        toast("Importado: ".concat(c.contents, " conte\xFAdos"));
       } catch (e) {
         toast(e.message, "error");
       }
@@ -5634,7 +5776,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           "div",
           { class: "stack" },
           card({ title: "Conex\xF5es", flush: true, children: group({ children: [
-            cell({ emoji: "\u{1F4F8}", color: "pink", title: "Instagram", detail: cfg?.token ? cfg.lastError ? "erro" : `@${cfg.username}` : "Conectar", chevron: true, onClick: instagramSheet, id: "instagram-cell" }),
+            cell({ emoji: "\u{1F4F8}", color: "pink", title: "Instagram", detail: (cfg == null ? void 0 : cfg.token) ? cfg.lastError ? "erro" : "@".concat(cfg.username) : "Conectar", chevron: true, onClick: instagramSheet, id: "instagram-cell" }),
             cell({ emoji: "\u2728", color: "orange", title: "Claude", subtitle: "Copiar e colar, sem chave de API", chevron: true, onClick: () => sheet({ title: "Como o Claude ajuda", body: h(
               "div",
               { class: "stack" },
@@ -5647,7 +5789,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             title: "Seus dados",
             flush: true,
             id: "data-card",
-            foot: `Tudo fica salvo s\xF3 neste navegador (${Math.max(1, Math.round(sizeBytes() / 1024))} KB). Limpar os dados do navegador apaga. ${last ? `\xDAltimo backup: ${fmtDay(last.slice(0, 10), { day: "numeric", month: "short" })}.` : "Voc\xEA ainda n\xE3o fez backup."}`,
+            foot: "Tudo fica salvo s\xF3 neste navegador (".concat(Math.max(1, Math.round(sizeBytes() / 1024)), " KB). Limpar os dados do navegador apaga. ").concat(last ? "\xDAltimo backup: ".concat(fmtDay(last.slice(0, 10), { day: "numeric", month: "short" }), ".") : "Voc\xEA ainda n\xE3o fez backup."),
             children: group({ children: [
               cell({ emoji: "\u2B07\uFE0F", color: "blue", title: "Baixar backup", subtitle: "Arquivo JSON com tudo (sem o token e sem fotos)", onClick: () => {
                 exportBackup();
@@ -5656,7 +5798,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               }, id: "backup" }),
               cell({ emoji: "\u2B06\uFE0F", color: "blue", title: "Importar backup", onClick: importFile, id: "import" }),
               cell({ emoji: "\u{1F4C4}", color: "green", title: "Exportar conte\xFAdos (CSV)", onClick: () => exportCsv() }),
-              snap && cell({ emoji: "\u21A9\uFE0F", color: "gray", title: `Voltar ao in\xEDcio de ${fmtDay(snap.day, { day: "numeric", month: "short" })}`, subtitle: "Desfaz um erro recente", onClick: async () => {
+              snap && cell({ emoji: "\u21A9\uFE0F", color: "gray", title: "Voltar ao in\xEDcio de ".concat(fmtDay(snap.day, { day: "numeric", month: "short" })), subtitle: "Desfaz um erro recente", onClick: async () => {
                 const ok = await actionSheet({ message: "Voltar todos os dados para essa c\xF3pia? O que foi feito depois ser\xE1 perdido.", actions: [{ label: "Voltar", destructive: true, value: true }] });
                 if (ok) {
                   restoreSnapshot();
@@ -5684,13 +5826,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   var state5 = { filter: "" };
   var rerender6 = () => document.dispatchEvent(new Event("rerender"));
   function thumb(c) {
+    var _a;
     const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
     const p = profile();
-    if (c.slides?.length) queueMicrotask(() => drawSlide(cv, c.slides[0], { palette: p.palette, dark: c.designDark ?? p.designDark, handle: "", index: 0, total: c.slides.length, preview: true }));
+    if ((_a = c.slides) == null ? void 0 : _a.length) queueMicrotask(() => {
+      var _a2;
+      return drawSlide(cv, c.slides[0], { palette: p.palette, dark: (_a2 = c.designDark) != null ? _a2 : p.designDark, handle: "", index: 0, total: c.slides.length, preview: true });
+    });
     return cv;
   }
   function gallery(root) {
-    const all2 = all("contents").filter((c) => (c.type === "carrossel" || c.type === "estatico") && !c.noDesign && (c.slides?.length || c.status !== "postado")).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const all2 = all("contents").filter((c) => {
+      var _a;
+      return (c.type === "carrossel" || c.type === "estatico") && !c.noDesign && (((_a = c.slides) == null ? void 0 : _a.length) || c.status !== "postado");
+    }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     const list = all2.filter((c) => state5.filter === "fotos" ? missingPhotos(c) > 0 : state5.filter ? c.type === state5.filter : true);
     root.append(page({
       kicker: "Conte\xFAdo",
@@ -5702,18 +5851,19 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           rerender6();
         }),
         list.length ? h("div", { class: "gallery" }, list.map((c) => {
+          var _a, _b, _c;
           const miss = missingPhotos(c);
           const f = formatById(c.formatId, all("formats"));
           return h(
             "button",
-            { type: "button", class: "gallery-item", "data-id": `studio-${c.id}`, onclick: () => go("conteudo/estudio", { id: c.id }) },
-            h("span", { class: "gallery-thumb" }, c.slides?.length ? thumb(c) : h("span", { class: "gallery-empty" }, "Sem telas ainda")),
+            { type: "button", class: "gallery-item", "data-id": "studio-".concat(c.id), onclick: () => go("conteudo/estudio", { id: c.id }) },
+            h("span", { class: "gallery-thumb" }, ((_a = c.slides) == null ? void 0 : _a.length) ? thumb(c) : h("span", { class: "gallery-empty" }, "Sem telas ainda")),
             h(
               "span",
               { class: "gallery-meta" },
-              h("span", { class: "tags" }, tag(TYPES[c.type]?.label, `type-${c.type}`), miss ? tag(`\u{1F4F7} ${miss} foto(s)`, "warn") : null),
+              h("span", { class: "tags" }, tag((_b = TYPES[c.type]) == null ? void 0 : _b.label, "type-".concat(c.type)), miss ? tag("\u{1F4F7} ".concat(miss, " foto(s)"), "warn") : null),
               h("strong", {}, c.title),
-              h("span", { class: "subtle small" }, [c.date ? fmtDay(c.date) : "sem data", f?.name, c.slides?.length ? `${c.slides.length} tela(s)` : null].filter(Boolean).join(" \xB7 "))
+              h("span", { class: "subtle small" }, [c.date ? fmtDay(c.date) : "sem data", f == null ? void 0 : f.name, ((_c = c.slides) == null ? void 0 : _c.length) ? "".concat(c.slides.length, " tela(s)") : null].filter(Boolean).join(" \xB7 "))
             )
           );
         })) : emptyNote("Nenhuma arte por aqui", "Carross\xE9is e est\xE1ticos do Planejamento aparecem aqui. Mude o tipo de um conte\xFAdo para carrossel ou est\xE1tico para criar a arte.")
@@ -5721,6 +5871,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }));
   }
   function render7(root, params = {}) {
+    var _a, _b;
     if (!params.id) return gallery(root);
     const c = get("contents", params.id);
     if (!c) {
@@ -5735,9 +5886,9 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }
     const designer = buildDesigner(c.id);
     root.append(page({
-      kicker: `Est\xFAdio \xB7 ${TYPES[c.type]?.label || "Arte"}`,
+      kicker: "Est\xFAdio \xB7 ".concat(((_a = TYPES[c.type]) == null ? void 0 : _a.label) || "Arte"),
       title: c.title || "Sem t\xEDtulo",
-      subtitle: [c.date ? fmtDay(c.date, { weekday: "long", day: "numeric", month: "long" }) : null, formatById(c.formatId, all("formats"))?.name].filter(Boolean).join(" \xB7 "),
+      subtitle: [c.date ? fmtDay(c.date, { weekday: "long", day: "numeric", month: "long" }) : null, (_b = formatById(c.formatId, all("formats"))) == null ? void 0 : _b.name].filter(Boolean).join(" \xB7 "),
       actions: [
         btn("Todas as artes", () => go("conteudo/estudio"), { iconName: "back", kind: "ghost" }),
         btn("Abrir conte\xFAdo", () => openContent(get("contents", c.id)), { id: "open-content-from-studio" })
@@ -5789,7 +5940,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   }
   var statusSelect = (c) => h("select", {
     class: "filter-select status-select",
-    "aria-label": `Etapa de ${c.title}`,
+    "aria-label": "Etapa de ".concat(c.title),
     "data-id": "status-select",
     onchange: (e) => {
       const patch = { status: e.target.value };
@@ -5804,7 +5955,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       children: table({
         caption: "Conte\xFAdos",
         rows: list,
-        rowId: (c) => `row-${c.id}`,
+        rowId: (c) => "row-".concat(c.id),
         rowCls: (c) => c.date && c.date < today() && c.status !== "postado" ? "is-late" : "",
         onRowClick: (c) => openContent(c),
         empty: "Nenhum conte\xFAdo com esses filtros.",
@@ -5814,18 +5965,22 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             return h(
               "div",
               { class: "td-flex" },
-              c.igThumb ? postThumb(c, { cls: "td-thumb", emoji: f?.emoji || "\u{1F4DD}", color: f?.color || "gray" }) : badge(f?.emoji || "\u{1F4DD}", f?.color || "gray"),
-              h("div", {}, h("div", { class: "td-title" }, c.title || "Sem t\xEDtulo"), h("div", { class: "td-sub" }, [f?.name, c.theme && c.theme !== c.title ? c.theme : null].filter(Boolean).join(" \xB7 ")))
+              c.igThumb ? postThumb(c, { cls: "td-thumb", emoji: (f == null ? void 0 : f.emoji) || "\u{1F4DD}", color: (f == null ? void 0 : f.color) || "gray" }) : badge((f == null ? void 0 : f.emoji) || "\u{1F4DD}", (f == null ? void 0 : f.color) || "gray"),
+              h("div", {}, h("div", { class: "td-title" }, c.title || "Sem t\xEDtulo"), h("div", { class: "td-sub" }, [f == null ? void 0 : f.name, c.theme && c.theme !== c.title ? c.theme : null].filter(Boolean).join(" \xB7 ")))
             );
           } },
           { label: "Data", render: (c) => c.date ? fmtDay(c.date, { day: "numeric", month: "short", weekday: "short" }) : h("span", { class: "subtle" }, "ideia") },
-          { label: "Tipo", render: (c) => tag(TYPES[c.type || "video"]?.label, `type-${c.type || "video"}`) },
-          { label: "Foco", render: (c) => GOALS[c.goal] ? tag(GOALS[c.goal].label, `t-${GOALS[c.goal].color}`) : h("span", { class: "subtle" }, "\u2014") },
+          { label: "Tipo", render: (c) => {
+            var _a;
+            return tag((_a = TYPES[c.type || "video"]) == null ? void 0 : _a.label, "type-".concat(c.type || "video"));
+          } },
+          { label: "Foco", render: (c) => GOALS[c.goal] ? tag(GOALS[c.goal].label, "t-".concat(GOALS[c.goal].color)) : h("span", { class: "subtle" }, "\u2014") },
           { label: "Etapa", render: statusSelect },
           { label: "Resultado", cls: "right", render: (c) => {
+            var _a;
             const s = scores(c);
-            if (c.status !== "postado") return missingPhotos(c) ? tag(`\u{1F4F7} ${missingPhotos(c)}`, "warn") : h("span", { class: "subtle" }, "\u2014");
-            return s.views !== null ? h("span", { class: "num" }, `${fmtNum(s.views)} views${c.results?.follows != null ? ` \xB7 +${c.results.follows}` : ""}`) : h("span", { class: "subtle" }, "sem n\xFAmeros");
+            if (c.status !== "postado") return missingPhotos(c) ? tag("\u{1F4F7} ".concat(missingPhotos(c)), "warn") : h("span", { class: "subtle" }, "\u2014");
+            return s.views !== null ? h("span", { class: "num" }, "".concat(fmtNum(s.views), " views").concat(((_a = c.results) == null ? void 0 : _a.follows) != null ? " \xB7 +".concat(c.results.follows) : "")) : h("span", { class: "subtle" }, "sem n\xFAmeros");
           } }
         ]
       })
@@ -5854,11 +6009,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             const patch = { status: s.id };
             if (s.id === "postado" && !c.postedAt) patch.postedAt = c.date && c.date <= today() ? c.date : today();
             update("contents", id, patch);
-            toast(`Movido para ${s.label}`);
+            toast("Movido para ".concat(s.label));
           }
         },
         h("header", { class: "kanban-head" }, h("span", {}, s.label), h("span", { class: "tag" }, String(items.length))),
         h("div", { class: "kanban-body" }, items.map((c) => {
+          var _a;
           const f = formatById(c.formatId, all("formats"));
           return h(
             "button",
@@ -5866,11 +6022,11 @@ Meu jeito: ${r.adapt || ""}` }), 250);
               type: "button",
               class: "kanban-card",
               draggable: "true",
-              "data-id": `kcard-${c.id}`,
+              "data-id": "kcard-".concat(c.id),
               ondragstart: (e) => e.dataTransfer.setData("text/plain", c.id),
               onclick: () => openContent(c)
             },
-            h("span", { class: "tags" }, tag(TYPES[c.type || "video"]?.label, `type-${c.type || "video"}`), c.date ? tag(fmtDay(c.date, { day: "numeric", month: "short" })) : null),
+            h("span", { class: "tags" }, tag((_a = TYPES[c.type || "video"]) == null ? void 0 : _a.label, "type-".concat(c.type || "video")), c.date ? tag(fmtDay(c.date, { day: "numeric", month: "short" })) : null),
             h("strong", {}, c.title || "Sem t\xEDtulo"),
             f && h("span", { class: "subtle small" }, f.name)
           );
@@ -5890,7 +6046,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Conte\xFAdos",
-      subtitle: `${list.length} de ${total} conte\xFAdo(s): ideias, roteiros, produ\xE7\xF5es e publicados.`,
+      subtitle: "".concat(list.length, " de ").concat(total, " conte\xFAdo(s): ideias, roteiros, produ\xE7\xF5es e publicados."),
       actions: [
         btn("Exportar CSV", () => exportCsv(), { iconName: "download", kind: "ghost" })
       ],
@@ -5952,12 +6108,15 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           children: table({
             caption: "Refer\xEAncias",
             rows: list,
-            rowId: (r) => `ref-${r.id}`,
+            rowId: (r) => "ref-".concat(r.id),
             onRowClick: (r) => editReference(r),
             empty: "Nada com esses filtros.",
             columns: [
               { label: "Refer\xEAncia", main: true, render: (r) => h("div", {}, h("div", { class: "td-title" }, r.title || "Sem nome"), r.link && h("a", { href: r.link, target: "_blank", rel: "noopener noreferrer", class: "td-sub" }, r.link.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48))) },
-              { label: "Formato", render: (r) => tag(formats.find((f) => f.id === r.formatId)?.name) || h("span", { class: "subtle" }, "\u2014") },
+              { label: "Formato", render: (r) => {
+                var _a;
+                return tag((_a = formats.find((f) => f.id === r.formatId)) == null ? void 0 : _a.name) || h("span", { class: "subtle" }, "\u2014");
+              } },
               { label: "O que funcionou", render: (r) => h("span", { class: "clamp-2" }, r.worked || "\u2014") },
               { label: "Como adaptar", render: (r) => h("span", { class: "clamp-2" }, r.adapt || "\u2014") },
               { label: "Salva em", render: (r) => r.createdAt ? fmtDay(r.createdAt.slice(0, 10), { day: "numeric", month: "short" }) : "\u2014" }
@@ -6031,20 +6190,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         sec.label && h("p", { class: "nav-section" }, sec.label),
         h("ul", { class: "nav-list" }, sec.items.map((id) => {
           const r = ROUTES[id];
-          const on = current?.path === id;
+          const on = (current == null ? void 0 : current.path) === id;
           return h("li", {}, h(
             "a",
-            { href: `#/${id}`, class: `nav-link${on ? " on" : ""}`, "aria-current": on ? "page" : null, "data-nav": id, title: r.label },
+            { href: "#/".concat(id), class: "nav-link".concat(on ? " on" : ""), "aria-current": on ? "page" : null, "data-nav": id, title: r.label },
             icon(r.icon),
             h("span", { class: "nav-label" }, r.label),
-            counts2[id] ? h("span", { class: "nav-count", "aria-label": `${counts2[id]} atrasado(s)` }, String(counts2[id])) : null
+            counts2[id] ? h("span", { class: "nav-count", "aria-label": "".concat(counts2[id], " atrasado(s)") }, String(counts2[id])) : null
           ));
         }))
       ]).filter(Boolean),
       h(
         "div",
         { class: "sidebar-foot" },
-        h("a", { class: `nav-link${current?.path === "configuracoes" ? " on" : ""}`, href: "#/configuracoes", "data-nav": "configuracoes", title: "Configura\xE7\xF5es" }, icon("settings"), h("span", { class: "nav-label" }, "Configura\xE7\xF5es")),
+        h("a", { class: "nav-link".concat((current == null ? void 0 : current.path) === "configuracoes" ? " on" : ""), href: "#/configuracoes", "data-nav": "configuracoes", title: "Configura\xE7\xF5es" }, icon("settings"), h("span", { class: "nav-label" }, "Configura\xE7\xF5es")),
         h(
           "a",
           { class: "me", href: "#/configuracoes", "data-id": "open-profile" },
@@ -6056,8 +6215,8 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   }
   function igLine() {
     const cfg = igConfig();
-    if (!cfg?.token) return "Instagram n\xE3o conectado";
-    return cfg.lastError ? `@${cfg.username} \xB7 erro ao sincronizar` : `@${cfg.username}`;
+    if (!(cfg == null ? void 0 : cfg.token)) return "Instagram n\xE3o conectado";
+    return cfg.lastError ? "@".concat(cfg.username, " \xB7 erro ao sincronizar") : "@".concat(cfg.username);
   }
   function drawTopbar() {
     const r = current;
@@ -6079,8 +6238,9 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     document.body.append(scrim);
   }
   function closeMenu() {
+    var _a;
     sidebar.classList.remove("open");
-    document.querySelector(".scrim")?.remove();
+    (_a = document.querySelector(".scrim")) == null ? void 0 : _a.remove();
   }
   function draw() {
     if (!current) return;
@@ -6101,12 +6261,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     if (REDIRECTS[path] !== void 0) {
       const qs = location.hash.split("?")[1];
       path = REDIRECTS[path];
-      history.replaceState(null, "", `#/${path}${qs ? `?${qs}` : ""}`);
+      history.replaceState(null, "", "#/".concat(path).concat(qs ? "?".concat(qs) : ""));
     }
     if (!ROUTES[path]) path = "visao-geral";
-    const changed = current?.path !== path;
+    const changed = (current == null ? void 0 : current.path) !== path;
     current = { path, ...ROUTES[path] };
-    document.title = `${current.label} \xB7 Creator`;
+    document.title = "".concat(current.label, " \xB7 Creator");
     closeMenu();
     draw();
     if (changed) {
@@ -6115,6 +6275,8 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }
   }
   async function start() {
+    var _a;
+    window.__creatorStarted = true;
     try {
       await init();
     } catch (err) {
@@ -6126,8 +6288,8 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     document.addEventListener("pending-ai", () => current && drawTopbar());
     window.addEventListener("hashchange", route);
     route();
-    if (document.fonts?.load) {
-      Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 40px Montserrat`))).then(() => {
+    if ((_a = document.fonts) == null ? void 0 : _a.load) {
+      Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load("".concat(w, " 40px Montserrat")))).then(() => {
         if (main.querySelector("canvas")) draw();
       }).catch(() => {
       });

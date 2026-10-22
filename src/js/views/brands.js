@@ -1,6 +1,6 @@
 // Marcas: Campanhas (UGC, Publi, TikTok Shop), Financeiro e Contatos. Também exporta o editor de campanha.
 import * as data from '../data.js';
-import { h, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, badge, fmtDay, copyText, emptyNote, actionSheet, btn, card, kpi, table, tabs, tag, searchBox, filterSelect, barChart, norm } from '../ui.js';
+import { h, clone, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, badge, fmtDay, copyText, emptyNote, actionSheet, btn, card, kpi, table, tabs, tag, searchBox, filterSelect, barChart, norm } from '../ui.js';
 import { DEAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, deadlines, upcoming, nextDeadline, finance, fmtMoney } from '../lib/deals.js';
 import { openContent, today } from './content-sheet.js';
 
@@ -24,7 +24,7 @@ export function openDeal(d) {
   const isNew = !d.id;
   let type = d.type || 'ugc';
   let status = d.status || PIPELINES[type][0][0];
-  let deliverables = structuredClone(d.deliverables || []);
+  let deliverables = clone(d.deliverables || []);
 
   const typeSeg = h('div', { class: 'pad-x' });
   const stageBox = h('div', { class: 'stage-scroll', role: 'radiogroup', 'aria-label': 'Etapa' });

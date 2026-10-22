@@ -1,6 +1,6 @@
 // Estúdio: editor de design de carrossel/estático (prévia, edição de texto, foto e exportação).
 import * as data from '../data.js';
-import { h, group, cell, toast, actionSheet, toggle, go, card, icon, confirmDelete } from '../ui.js';
+import { h, clone, group, cell, toast, actionSheet, toggle, go, card, icon, confirmDelete } from '../ui.js';
 import { drawSlide } from '../lib/render.js';
 import { LAYOUTS, slidesFor, emptyFields, needsPhoto } from '../lib/designs.js';
 import { putPhoto, getPhoto, deletePhoto, shrink, loadImage, newPhotoId } from '../lib/media.js';
@@ -59,7 +59,7 @@ export function buildDesigner(contentId) {
     const slides = slidesFor(c.formatId, c.type === 'estatico' ? 'estatico' : 'carrossel', { title: c.title, goal: c.goal });
     c = data.update('contents', c.id, { slides, needsPhoto: needsPhoto(slides) }, { silent: true });
   }
-  let slides = structuredClone(c.slides);
+  let slides = clone(c.slides);
   let dark = c.designDark ?? data.profile().designDark ?? false;
   if (studio.id !== contentId) Object.assign(studio, { id: contentId, sel: 0 });
   let sel = Math.min(studio.sel, Math.max(0, (c.slides?.length || 1) - 1));
@@ -167,7 +167,7 @@ export function buildDesigner(contentId) {
         h('button', { type: 'button', class: 'tool', disabled: sel === 0, onclick: () => move(-1), 'aria-label': 'Mover para a esquerda' }, '‹'),
         h('button', { type: 'button', class: 'tool', disabled: sel === slides.length - 1, onclick: () => move(1), 'aria-label': 'Mover para a direita' }, '›'),
         h('button', { type: 'button', class: 'tool', 'data-id': 'add-slide', onclick: addSlide }, '+ Tela'),
-        h('button', { type: 'button', class: 'tool', onclick: () => { slides.splice(sel + 1, 0, structuredClone({ ...slides[sel], photoId: null })); sel++; persist(); drawStrip(); drawEditor(); } }, 'Duplicar'),
+        h('button', { type: 'button', class: 'tool', onclick: () => { slides.splice(sel + 1, 0, clone({ ...slides[sel], photoId: null })); sel++; persist(); drawStrip(); drawEditor(); } }, 'Duplicar'),
         h('button', { type: 'button', class: 'tool destructive', disabled: slides.length < 2, onclick: () => { slides.splice(sel, 1); sel = Math.max(0, sel - 1); persist(); drawStrip(); drawEditor(); } }, 'Apagar'),
       ),
     ] }));

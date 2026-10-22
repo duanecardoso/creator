@@ -8,7 +8,7 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = (p) => path.join(root, 'src', p);
 
-const js = await build({ entryPoints: [src('js/app.js')], bundle: true, format: 'iife', target: ['es2020', 'safari15'], legalComments: 'none', write: false });
+const js = await build({ entryPoints: [src('js/app.js')], bundle: true, format: 'iife', target: ['es2018', 'safari12'], legalComments: 'none', write: false });
 const script = js.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const css = readFileSync(src('css/platform.css'), 'utf8');
 const favicon = `data:image/svg+xml,${encodeURIComponent(readFileSync(src('favicon.svg'), 'utf8'))}`;

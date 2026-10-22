@@ -1,5 +1,18 @@
 // Componentes de interface da plataforma (menu lateral, cards, tabelas, painéis, gráficos).
 
+// Cópia profunda (structuredClone não existe em iPhones com iOS antes do 15.4).
+export const clone = (x) => (typeof structuredClone === 'function' ? structuredClone(x) : JSON.parse(JSON.stringify(x)));
+
+// <dialog> só existe no Safari a partir do iOS 15.4: sem ele, abre como camada fixa.
+export function openDialog(d) {
+  if (typeof d.showModal === 'function') d.showModal();
+  else { d.setAttribute('open', ''); d.classList.add('no-modal'); }
+}
+export function closeDialog(d) {
+  if (typeof d.close === 'function') d.close();
+  else d.removeAttribute('open');
+}
+
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) {
@@ -242,7 +255,7 @@ export function sheet({ title, body, onSave, saveLabel = 'Salvar', cancelLabel =
     closed = true;
     dialog.classList.add('closing');
     setTimeout(() => {
-      dialog.close();
+      closeDialog(dialog);
       dialog.remove();
     }, 170);
   };
@@ -272,7 +285,7 @@ export function sheet({ title, body, onSave, saveLabel = 'Salvar', cancelLabel =
     if (e.target === dialog) close();
   });
   document.body.append(dialog);
-  dialog.showModal();
+  openDialog(dialog);
   return close;
 }
 export const drawer = sheet;
@@ -282,7 +295,7 @@ export function actionSheet({ title, message, actions }) {
   return new Promise((resolve) => {
     const dialog = h('dialog', { class: 'action-sheet', 'aria-label': title || 'Escolha' });
     const done = (v) => {
-      dialog.close();
+      closeDialog(dialog);
       dialog.remove();
       resolve(v);
     };
@@ -298,7 +311,7 @@ export function actionSheet({ title, message, actions }) {
     });
     dialog.addEventListener('click', (e) => e.target === dialog && done(null));
     document.body.append(dialog);
-    dialog.showModal();
+    openDialog(dialog);
   });
 }
 export const choose = actionSheet;
