@@ -1066,7 +1066,9 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
         }
         importAll(data, mode = "merge") {
           const incoming = normalize(data);
-          if (mode === "replace") this.db = incoming;
+          const pack = data?.meta?.kind === "pacote";
+          if (pack && data.profile) this.db.profile = { ...this.db.profile, ...clean(data.profile) };
+          if (mode === "replace" && !pack) this.db = incoming;
           else {
             for (const col of COLLECTIONS) {
               const byId = new Map(this.db[col].map((r) => [r.id, r]));
@@ -5192,6 +5194,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
                   } }, "Agendar")
                 );
               }),
+              ideas.length > 12 && h("button", { type: "button", class: "cell tappable link-cell", "data-id": "all-ideas", onclick: () => go("conteudo/lista", { periodo: "sem-data" }) }, `Ver todas as ${ideas.length} ideias`),
               !ideas.length && emptyNote("Nenhuma ideia guardada", "Salve ideias de formatos, refer\xEAncias ou pe\xE7a ao Claude."),
               h("button", { type: "button", class: "cell tappable link-cell", onclick: () => newContent({ date: "" }) }, "+ Nova ideia")
             ] })
@@ -5554,6 +5557,22 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       } catch {
         return toast("Esse arquivo n\xE3o \xE9 um backup v\xE1lido.", "error");
       }
+      if (parsed?.meta?.kind === "pacote") {
+        const n2 = (k) => Array.isArray(parsed[k]) ? parsed[k].length : 0;
+        const ok = await actionSheet({
+          title: parsed.meta.title || "Importar pacote",
+          message: [n2("contents") && `${n2("contents")} ideia(s)`, n2("formats") && `${n2("formats")} formato(s)`, parsed.profile && "textos do seu perfil"].filter(Boolean).join(", ") + ". Junta com o que j\xE1 existe; nada \xE9 apagado.",
+          actions: [{ label: "Importar", value: true, id: "import-pack" }]
+        });
+        if (!ok) return;
+        try {
+          importBackup(parsed, "merge");
+          toast("Pacote importado");
+        } catch (e) {
+          toast(e.message, "error");
+        }
+        return;
+      }
       const mode = await actionSheet({ title: "Importar backup", message: "Juntar com o que j\xE1 existe ou substituir tudo?", actions: [{ label: "Juntar", value: "merge", id: "import-merge" }, { label: "Substituir tudo", value: "replace", destructive: true, id: "import-replace" }] });
       if (!mode) return;
       try {
@@ -5860,7 +5879,11 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       return col;
     }));
   }
-  function render8(root) {
+  function render8(root, params = {}) {
+    if (params.periodo && PERIODS2.some((p) => p.value === params.periodo)) {
+      Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: params.periodo });
+      history.replaceState(null, "", "#/conteudo/lista");
+    }
     const list = filtered();
     const total = all("contents").length;
     const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state6[k]);

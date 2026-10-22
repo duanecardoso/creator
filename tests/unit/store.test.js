@@ -52,3 +52,15 @@ test('CSV', () => {
   assert.ok(csv.startsWith('﻿Título;'));
   assert.ok(csv.includes('"a;b"') && csv.includes('instagram+tiktok'));
 });
+
+test('pacote: sempre junta e atualiza só os campos de perfil enviados', () => {
+  const s = fresh();
+  s.create('contents', { title: 'meu post' });
+  s.setProfile({ weeklyGoal: 6, name: 'Antes' });
+  const pack = { meta: { kind: 'pacote' }, profile: { name: 'Duane', about: 'novo' }, contents: [{ id: 'p1', title: 'ideia' }] };
+  assert.equal(s.importAll(pack, 'replace').contents, 2);
+  assert.equal(s.db.profile.name, 'Duane');
+  assert.equal(s.db.profile.about, 'novo');
+  assert.equal(s.db.profile.weeklyGoal, 6);
+  assert.equal(s.importAll(pack, 'merge').contents, 2);
+});

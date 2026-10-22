@@ -198,7 +198,10 @@ export class Store {
 
   importAll(data, mode = 'merge') {
     const incoming = normalize(data);
-    if (mode === 'replace') this.db = incoming;
+    // Pacote (ex.: perfil e ideias tirados das conversas do Claude): sempre junta e atualiza só os campos de perfil que vierem nele.
+    const pack = data?.meta?.kind === 'pacote';
+    if (pack && data.profile) this.db.profile = { ...this.db.profile, ...clean(data.profile) };
+    if (mode === 'replace' && !pack) this.db = incoming;
     else {
       for (const col of COLLECTIONS) {
         const byId = new Map(this.db[col].map((r) => [r.id, r]));

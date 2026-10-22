@@ -57,6 +57,7 @@ Funciona no plano gratuito do Claude, sem chave de API.
 - **Limpar os dados do navegador apaga tudo.** Use Configurações → Baixar backup toda semana.
 - Celular e computador têm dados separados. Use backup e importação para passar de um para o outro.
 - Uma cópia automática do início do dia permite desfazer um erro recente.
+- **Pacotes**: um arquivo .json com `"meta": {"kind": "pacote"}` (por exemplo, perfil e ideias tirados das suas conversas com o Claude) sempre junta com o que já existe. Ele atualiza só os campos de perfil que vierem nele e não apaga nada.
 
 ## Instagram (opcional)
 
@@ -80,8 +81,8 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 47 testes de lógica
-npm run test:e2e   # 27 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
+npm test           # 48 testes de lógica
+npm run test:e2e   # 28 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 
 ```

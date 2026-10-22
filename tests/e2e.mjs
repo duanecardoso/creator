@@ -285,6 +285,23 @@ try {
   await page.keyboard.press('Escape');
   ok('Token recusado mostra aviso claro');
 
+  // Pacote: junta ideias, formato e perfil sem apagar nada
+  const pack = { meta: { kind: 'pacote', title: 'Pacote de teste' }, profile: { about: 'Sobre vindo do pacote' }, formats: [{ id: 'serie-teste', name: 'Série de teste', why: 'w', structure: ['a'], hooks: ['h'], goals: ['marcas'] }], contents: Array.from({ length: 13 }, (_, i) => ({ id: `pk-${i}`, title: `Ideia do pacote ${i + 1}`, status: 'ideia', date: '' })) };
+  const totalBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('creator:db')).contents.length);
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-id="import"]')]);
+  await chooser.setFiles({ name: 'pacote.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pack)) });
+  await page.click('[data-id="import-pack"]');
+  await page.waitForSelector('.toast:has-text("Pacote importado")');
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('creator:db')));
+  if (after.contents.length !== totalBefore + 13) throw new Error('Pacote não juntou as ideias');
+  if (after.profile.about !== 'Sobre vindo do pacote' || after.profile.name !== 'Duda Gomes') throw new Error('Pacote não atualizou só o perfil enviado');
+  await nav('conteudo/planejamento');
+  await page.click('[data-id="all-ideas"]');
+  await page.waitForSelector('tbody tr:has-text("Ideia do pacote 13")');
+  await page.click('.filters .btn:has-text("Limpar filtros")');
+  ok('Pacote importado junta ideias, formato e perfil sem apagar nada; "Ver todas as ideias" abre a lista filtrada');
+  await nav('configuracoes');
+
   await nav('conteudo/lista');
   await page.locator('tbody tr:has-text("Testei o sérum")').click();
   await drawer().locator('[data-id="delete-content"]').click();

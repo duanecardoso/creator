@@ -166,6 +166,22 @@ async function importFile() {
     } catch {
       return toast('Esse arquivo não é um backup válido.', 'error');
     }
+    if (parsed?.meta?.kind === 'pacote') {
+      const n = (k) => (Array.isArray(parsed[k]) ? parsed[k].length : 0);
+      const ok = await actionSheet({
+        title: parsed.meta.title || 'Importar pacote',
+        message: [n('contents') && `${n('contents')} ideia(s)`, n('formats') && `${n('formats')} formato(s)`, parsed.profile && 'textos do seu perfil'].filter(Boolean).join(', ') + '. Junta com o que já existe; nada é apagado.',
+        actions: [{ label: 'Importar', value: true, id: 'import-pack' }],
+      });
+      if (!ok) return;
+      try {
+        data.importBackup(parsed, 'merge');
+        toast('Pacote importado');
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+      return;
+    }
     const mode = await actionSheet({ title: 'Importar backup', message: 'Juntar com o que já existe ou substituir tudo?', actions: [{ label: 'Juntar', value: 'merge', id: 'import-merge' }, { label: 'Substituir tudo', value: 'replace', destructive: true, id: 'import-replace' }] });
     if (!mode) return;
     try {

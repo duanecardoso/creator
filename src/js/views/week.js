@@ -1,6 +1,6 @@
 // Planejamento: quadro de segunda a sexta (gerado sozinho a partir de sábado), prazos de marcas e ideias.
 import * as data from '../data.js';
-import { h, page, group, cell, actionSheet, toast, fmtDay, badge, emptyNote, btn, card } from '../ui.js';
+import { h, page, group, cell, actionSheet, toast, fmtDay, badge, emptyNote, btn, card, go } from '../ui.js';
 import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
 import { addDays, weekStart, iso, statusIndex, STATUSES } from '../lib/insights.js';
 import { targetWeek, weekdays, generateWeek } from '../lib/planner.js';
@@ -175,6 +175,7 @@ export function render(root) {
                   if (day) { data.update('contents', c.id, { date: day, planWeek: monday }); toast(`Agendado: ${fmtDay(day)}`); }
                 } }, 'Agendar'));
             }),
+            ideas.length > 12 && h('button', { type: 'button', class: 'cell tappable link-cell', 'data-id': 'all-ideas', onclick: () => go('conteudo/lista', { periodo: 'sem-data' }) }, `Ver todas as ${ideas.length} ideias`),
             !ideas.length && emptyNote('Nenhuma ideia guardada', 'Salve ideias de formatos, referências ou peça ao Claude.'),
             h('button', { type: 'button', class: 'cell tappable link-cell', onclick: () => newContent({ date: '' }) }, '+ Nova ideia'),
           ] }),

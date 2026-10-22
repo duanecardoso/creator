@@ -111,7 +111,12 @@ function boardView(list) {
   }));
 }
 
-export function render(root) {
+export function render(root, params = {}) {
+  // Vindo de "Ver todas as ideias": abre já filtrado nas ideias sem data.
+  if (params.periodo && PERIODS.some((p) => p.value === params.periodo)) {
+    Object.assign(state, { q: '', status: '', type: '', formatId: '', goal: '', period: params.periodo });
+    history.replaceState(null, '', '#/conteudo/lista');
+  }
   const list = filtered();
   const total = data.all('contents').length;
   const active = ['status', 'type', 'formatId', 'goal', 'period', 'q'].some((k) => state[k]);
