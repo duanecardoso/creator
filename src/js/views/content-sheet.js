@@ -178,7 +178,7 @@ export function openContent(c) {
   typeSel.addEventListener('change', drawDesignBtn);
   drawDesignBtn();
 
-  const saveNow = () => (isNew ? data.create('contents', read()) : data.update('contents', c.id, read()));
+  const saveNow = () => (isNew ? data.create('contents', { ...(c.bankId ? { bankId: c.bankId } : {}), ...read() }) : data.update('contents', c.id, read()));
 
   sheet({
     title: isNew ? 'Novo conteúdo' : 'Conteúdo',
@@ -193,6 +193,13 @@ export function openContent(c) {
       main.el,
       stepper,
       designBtn,
+      h('details', { class: 'before-post', 'data-id': 'before-post' },
+        h('summary', {}, '✅ Antes de postar'),
+        h('ol', {},
+          h('li', {}, 'Eu teria vontade de falar disso com uma amiga?'),
+          h('li', {}, 'Isso revela alguma coisa sobre mim (opinião, história, jeito)?'),
+          h('li', {}, 'Se outra pessoa postasse, eu pararia para assistir?')),
+        h('p', { class: 'muted small' }, 'Três "sim": posta. Se a ideia é estratégica mas parece sem alma, troque.')),
       h('button', {
         type: 'button', class: 'btn-claude', 'data-id': 'content-claude',
         onclick: () => {

@@ -3,7 +3,7 @@ import * as data from '../data.js';
 import { h, page, group, cell, actionSheet, toast, fmtDay, badge, emptyNote, btn, card, go } from '../ui.js';
 import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
 import { addDays, weekStart, iso, statusIndex, STATUSES } from '../lib/insights.js';
-import { targetWeek, weekdays, generateWeek } from '../lib/planner.js';
+import { targetWeek, weekdays, generateWeek, planDays } from '../lib/planner.js';
 import { deadlines, DEAL_TYPES } from '../lib/deals.js';
 import { ideasPrompt, parseIdeas, weekPrompt, parseWeek, mergeSlides } from '../lib/prompts.js';
 import { newContent, openContent, today } from './content-sheet.js';
@@ -17,7 +17,7 @@ const rerender = () => document.dispatchEvent(new Event('rerender'));
 onClaudeResult('ideas', (text) => {
   const ideas = parseIdeas(text);
   if (!ideas.length) throw new Error('A resposta não trouxe ideias.');
-  for (const i of ideas) data.create('contents', { title: i.title, formatId: i.formatId, hook: i.hook, notes: i.why ? `Por quê: ${i.why}` : '', status: 'ideia', date: '', type: 'video', platforms: ['instagram', 'tiktok'], source: 'claude' });
+  for (const i of ideas) data.create('contents', { title: i.title, formatId: i.formatId, goal: i.goal || '', hook: i.hook, notes: i.why ? `Por quê: ${i.why}` : '', status: 'ideia', date: '', type: 'video', platforms: ['instagram', 'tiktok'], source: 'claude' });
   toast(`${ideas.length} ideias guardadas`);
   location.hash = '#/conteudo/planejamento';
 });
@@ -47,14 +47,17 @@ onClaudeResult('week', (text, ctx) => {
 });
 
 const planItems = (monday) => {
-  const days = weekdays(monday);
+  const days = weekdays(monday, planDays(data.profile()));
   return data.all('contents').filter((c) => days.includes(c.date) && c.planWeek === monday).sort((a, b) => a.date.localeCompare(b.date));
 };
 
 function reroll(c) {
-  const seed = `${Date.now()}`;
-  const [fresh] = generateWeek({ monday: weekStart(c.date), contents: data.all('contents').filter((x) => x.id !== c.id), deals: [], profile: data.profile(), customFormats: data.all('formats'), seed })
-    .filter((x) => x.date === c.date);
+  // Troca só o tema/formato do dia, mantendo o tipo (vídeo, carrossel, estático) para não bagunçar a mistura da semana.
+  let fresh = null;
+  for (let k = 0; k < 12 && !(fresh && (!c.type || fresh.type === c.type) && fresh.title !== c.title); k++) {
+    [fresh] = generateWeek({ monday: weekStart(c.date), contents: data.all('contents').filter((x) => x.id !== c.id), deals: [], profile: data.profile(), customFormats: data.all('formats'), bank: data.all('bank'), seed: `${Date.now()}-${k}` })
+      .filter((x) => x.date === c.date);
+  }
   if (!fresh) return;
   data.update('contents', c.id, { ...fresh, planWeek: c.planWeek, touched: false });
   toast('Trocado');
@@ -91,13 +94,14 @@ export function render(root) {
   const t = today();
   state.monday ||= targetWeek(t);
   const monday = state.monday;
-  const days = weekdays(monday);
-  const weekend = [addDays(monday, 5), addDays(monday, 6)];
+  const days = weekdays(monday, planDays(data.profile()));
+  // Com plano de 7 dias, sábado e domingo já estão no quadro.
+  const weekend = days.length === 7 ? [] : [addDays(monday, 5), addDays(monday, 6)];
   const plan = data.planFor(monday);
   const items = data.all('contents');
   const dls = deadlines(data.all('deals')).filter((d) => [...days, ...weekend].includes(d.date));
   const ideas = items.filter((c) => !c.date && c.status !== 'postado').sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-  const label = `${fmtDay(monday, { day: 'numeric', month: 'short' })} – ${fmtDay(days[4], { day: 'numeric', month: 'short' })}`;
+  const label = `${fmtDay(monday, { day: 'numeric', month: 'short' })} – ${fmtDay(days[days.length - 1], { day: 'numeric', month: 'short' })}`;
   const isNext = monday > weekStart(t);
   const isCurrent = monday === weekStart(t);
   const pItems = planItems(monday);
@@ -155,7 +159,7 @@ export function render(root) {
         : h('div', { class: 'toolbar' },
           h('p', { class: 'muted small' }, `Plano gerado em ${fmtDay(plan.generatedAt.slice(0, 10), { weekday: 'short', day: 'numeric', month: 'short' })} · ${Object.entries(mix).map(([k, v]) => `${v} ${(TYPES[k]?.label || k).toLowerCase()}`).join(' · ')}`),
           h('div', { class: 'page-actions' }, weekActions)),
-      h('div', { class: 'board' }, days.map(dayColumn)),
+      h('div', { class: `board${days.length === 7 ? ' seven' : ''}` }, days.map(dayColumn)),
       (weekendItems.length > 0 || weekendDls.length > 0) && card({ title: 'Fim de semana', flush: true, children: group({ children: [
         ...weekendItems.map(planCard),
         ...weekendDls.map((x) => cell({ emoji: DL_ICON[x.kind], color: DEAL_TYPES[x.deal.type]?.color || 'gray', title: `${x.name}: ${x.label}`, subtitle: fmtDay(x.date), chevron: true, onClick: () => openDeal(x.deal) })),

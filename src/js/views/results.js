@@ -14,6 +14,15 @@ const sum = (list, k) => {
   const vals = list.map((c) => num(c.results?.[k])).filter((v) => v !== null);
   return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 };
+// Seguidores ganhos a cada mil visualizações: mostra quais posts fazem alguém querer ficar, não só assistir.
+function followRate(list) {
+  const both = list.filter((c) => num(c.results?.follows) !== null && scores(c).views);
+  const views = both.reduce((a, c) => a + scores(c).views, 0);
+  if (!views) return 'soma dos posts com esse dado';
+  const f = both.reduce((a, c) => a + num(c.results.follows), 0);
+  return `${(f / views * 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} a cada mil views`;
+}
+
 const PERIODS = [{ value: '30', label: 'Últimos 30 dias' }, { value: '90', label: 'Últimos 90 dias' }, { value: '365', label: 'Último ano' }, { value: 'all', label: 'Tudo' }];
 
 function inPeriod(c, t) {
@@ -36,7 +45,8 @@ function postGrid(list) {
       h('span', { class: 'pg-body' },
         h('span', { class: 'pg-top' }, h('span', { class: 'subtle small' }, fmtDay(c.postedAt || c.date, { day: 'numeric', month: 'short' })), c.results?.source === 'instagram' ? tag('Instagram', 'info') : tag('Manual')),
         h('span', { class: 'pg-title' }, c.title),
-        h('span', { class: 'pg-stats' }, stat('views', s.views), stat('seguidores', num(c.results?.follows), '+'), stat('salvos', num(c.results?.saves)))),
+        h('span', { class: 'pg-stats' }, stat('views', s.views), stat('seguidores', num(c.results?.follows), '+'), stat('salvos', num(c.results?.saves)),
+          s.views && num(c.results?.follows) !== null ? h('span', { class: 'pg-stat' }, h('b', {}, (num(c.results.follows) / s.views * 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })), 'seg./mil views') : null)),
     );
   }));
 }
@@ -98,7 +108,7 @@ export function render(root, params = {}) {
       tabsEl,
       h('div', { class: 'grid cols-4 kpis' },
         kpi({ label: 'Posts publicados', value: fmtNum(posted.length), hint: `${measured.length} com números anotados` }),
-        kpi({ label: 'Novos seguidores', value: fmtNum(sum(posted, 'follows')), hint: 'soma dos posts com esse dado' }),
+        kpi({ label: 'Novos seguidores', value: fmtNum(sum(posted, 'follows')), hint: followRate(measured) }),
         kpi({ label: 'Views típicas por post', value: fmtNum(median(measured.map((c) => scores(c).views))), hint: 'mediana (não é afetada por um viral)' }),
         kpi({ label: 'Contatos de marcas', value: fmtNum(sum(posted, 'brandContacts')), hint: 'vindos de posts' }),
       ),

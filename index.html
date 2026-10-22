@@ -885,6 +885,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 .review-item b { color: var(--ink); }
 .grid.align-start { align-items: start; }
 .kpis + .grid, .kpis + .data-note + .grid { margin-top: 16px; }
+.board.seven { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.weight { display: inline-flex; align-items: center; gap: 4px; }
+.weight .input { width: 64px; min-height: 34px; padding: 4px 8px; text-align: right; }
+.before-post { margin: 0 0 16px; padding: 4px 14px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.before-post summary { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; cursor: pointer; }
+.before-post ol { margin: 4px 0 8px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
 
 </style>
 </head>
@@ -1002,7 +1008,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var COLLECTIONS, SCHEMA_VERSION, KEY, SNAP_KEY, PROTECTED, Store, counts, MemoryStorage, CSV_COLS;
   var init_store = __esm({
     "src/js/lib/store.js"() {
-      COLLECTIONS = ["contents", "references", "brands", "formats", "deals", "plans", "reviews"];
+      COLLECTIONS = ["contents", "references", "brands", "formats", "deals", "plans", "reviews", "bank"];
       SCHEMA_VERSION = 3;
       KEY = "creator:db";
       SNAP_KEY = "creator:snapshot";
@@ -1522,9 +1528,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var init_formats = __esm({
     "src/js/lib/formats.js"() {
       GOALS = {
-        seguidores: { label: "Seguidores", color: "pink" },
-        comunidade: { label: "Comunidade", color: "orange" },
-        marcas: { label: "Marcas", color: "indigo" }
+        seguidores: { label: "Topo \xB7 crescer", short: "Topo", color: "pink" },
+        comunidade: { label: "Meio \xB7 conectar", short: "Meio", color: "orange" },
+        marcas: { label: "Fundo \xB7 marcas", short: "Fundo", color: "indigo" }
       };
       FORMATS = [
         {
@@ -1788,6 +1794,19 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           tip: "Foto do produto em uso, na sua m\xE3o ou no seu espa\xE7o. Foto de cat\xE1logo n\xE3o gera conex\xE3o."
         },
         {
+          id: "carrossel-storytelling",
+          name: "Carrossel com hist\xF3ria",
+          emoji: "\u{1F4D6}",
+          color: "pink",
+          goals: ["comunidade", "seguidores"],
+          platforms: ["instagram"],
+          duration: "carrossel de 8 telas",
+          why: 'Uma hist\xF3ria espec\xEDfica e verdadeira, com conflito e virada, faz quem chegou agora pensar "gostei dela". Funciona melhor que lista de dicas porque ningu\xE9m mais tem a sua hist\xF3ria.',
+          structure: ["Gancho: uma frase que abre a hist\xF3ria", 'Contexto: "Durante muito tempo eu\u2026"', 'Conflito: "S\xF3 que tinha uma coisa acontecendo\u2026"', "A situa\xE7\xE3o espec\xEDfica, com detalhe real", "O momento em que voc\xEA percebeu", "O que mudou no que voc\xEA faz ou pensa", "Reflex\xE3o que serve para quem l\xEA", "Frase final forte + uma pergunta (sem pedir para seguir)"],
+          hooks: ["Eu passei muito tempo achando que ___", "Ningu\xE9m me contou que ___", "Eu queria muito ___. S\xF3 n\xE3o queria passar pela parte desconfort\xE1vel.", "O dia em que eu percebi que ___"],
+          tip: 'A hist\xF3ria vem antes da li\xE7\xE3o. Termine com uma pergunta ("voc\xEA tamb\xE9m est\xE1 nessa fase?") em vez de "me segue".'
+        },
+        {
           id: "lembretes-lista",
           name: "Lista de Lembretes",
           emoji: "\u2611\uFE0F",
@@ -1822,6 +1841,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         "notas-opiniao": { types: ["estatico"], kind: "tema", title: "O que eu penso sobre {s}", hook: "Coisas que eu penso sobre {s} e n\xE3o falo nos v\xEDdeos" },
         "conversa-imessage": { types: ["carrossel"], kind: "situacao", title: "A conversa: {s}", hook: "Print real: {s}" },
         "favoritos-mes": { types: ["carrossel"], kind: "categoria", title: "Favoritos do m\xEAs: {s}", hook: "Meus favoritos do m\xEAs: {s}" },
+        "carrossel-storytelling": { types: ["carrossel"], kind: "situacao", title: "{S}", hook: "{S}" },
         "lembretes-lista": { types: ["estatico"], kind: "lista", title: "Lembretes: {s}", hook: "Lembretes para mim mesma: {s}" }
       };
       TYPES = {
@@ -1987,6 +2007,19 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           { layout: "imessage", messages: [{ me: true, text: "" }, { me: false, text: "" }] },
           { layout: "notas", title: "Desfecho", body: "", hint: "O que aconteceu depois" }
         ];
+      case "carrossel-storytelling": {
+        const parte = (t, hint2) => ({ layout: "notas", title: t, body: "", hint: hint2 });
+        return [
+          capa({ kicker: "uma hist\xF3ria" }),
+          parte("", 'Contexto: "Durante muito tempo eu\u2026"'),
+          parte("", 'Conflito: "S\xF3 que tinha uma coisa acontecendo\u2026"'),
+          parte("", "A situa\xE7\xE3o espec\xEDfica, com um detalhe real"),
+          parte("Foi a\xED que eu percebi", "O momento da virada"),
+          parte("", "O que mudou no que voc\xEA faz ou pensa"),
+          parte("", "Reflex\xE3o que tamb\xE9m serve para quem est\xE1 lendo"),
+          { layout: "cta", title: "", body: "voc\xEA tamb\xE9m est\xE1 nessa fase?", hint: "Frase final forte; a pergunta convida para os coment\xE1rios" }
+        ];
+      }
       default:
         return [capa(), { layout: "notas", title: "", body: "", hint: "Primeira parte" }, { layout: "notas", title: "", body: "", hint: "Segunda parte" }, cta(goal)];
     }
@@ -2206,22 +2239,59 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function fill(tpl, subject) {
     return tpl.replace("{S}", subject.charAt(0).toUpperCase() + subject.slice(1)).replace("{s}", subject).replace(/^./, (c) => c.toUpperCase());
   }
-  function generateWeek({ monday, contents = [], deals = [], profile: profile2 = {}, customFormats = [], seed = "" }) {
+  function weightedPick(list, weightOf, r) {
+    const total = list.reduce((a, x2) => a + weightOf(x2), 0);
+    let x = r() * total;
+    for (const it of list) {
+      x -= weightOf(it);
+      if (x <= 0) return it;
+    }
+    return list[list.length - 1];
+  }
+  function generateWeek({ monday, contents = [], deals = [], profile: profile2 = {}, customFormats = [], bank = [], seed = "" }) {
     const r = rng("".concat(monday, ":").concat(seed));
-    const days = weekdays(monday);
-    const weekIndex = Math.round((parse(monday) - parse("2026-01-05")) / (7 * 864e5));
-    const focus = FOCUS.map((_, i) => FOCUS[(i + weekIndex) % FOCUS.length]);
+    const n2 = planDays(profile2);
+    const days = weekdays(monday, n2);
+    const focus = FUNNEL_WEEK.slice(0, n2);
     const mix = { ...DEFAULT_MIX, ...profile2.mix || {} };
     let types = [];
-    for (const [t, n2] of Object.entries(mix)) for (let i = 0; i < n2; i++) types.push(t);
-    types = shuffle(types, r).slice(0, 5);
-    while (types.length < 5) types.push("video");
-    const fitsGoal = (t, g) => [...FORMATS, ...customFormats].some((f) => (f.goals || []).includes(g) && (customFormats.includes(f) || metaOf(f.id).types.includes(t)));
-    for (let i = 0; i < 5; i++) {
+    for (const [t, k] of Object.entries(mix)) for (let i = 0; i < k; i++) types.push(t);
+    types = shuffle(types, r).slice(0, n2);
+    while (types.length < n2) types.push("video");
+    types = shuffle(types, r);
+    const fitsGoal = (t, g) => [...FORMATS, ...customFormats].some((f) => {
+      var _a;
+      return (f.goals || []).includes(g) && (customFormats.includes(f) ? !((_a = f.types) == null ? void 0 : _a.length) || f.types.includes(t) : metaOf(f.id).types.includes(t));
+    });
+    for (let i = 0; i < n2; i++) {
       if (fitsGoal(types[i], focus[i])) continue;
       const j = types.findIndex((t, k) => k !== i && fitsGoal(t, focus[i]) && fitsGoal(types[i], focus[k]));
       if (j >= 0) [types[i], types[j]] = [types[j], types[i]];
     }
+    const lineWeight = new Map((profile2.lines || []).map((l) => [l.name, Math.max(0, Number(l.weight) || 0)]));
+    const recentTitles = new Set(contents.filter((c) => (c.date || "") >= addDays(monday, -60)).flatMap((c) => [c.theme, c.title]).filter(Boolean));
+    const dealDay = (day) => deals.some((d) => d.postDate === day && (d.type === "publi" || d.type === "tts") && d.status !== "cancelado");
+    const picks = [];
+    const takenBank = /* @__PURE__ */ new Set();
+    days.forEach((day, i) => {
+      if (dealDay(day)) return;
+      const opts2 = bank.filter((b) => b && b.title && (b.goal || "seguidores") === focus[i] && !takenBank.has(b.id) && !recentTitles.has(b.title));
+      if (!opts2.length) return;
+      const pick = weightedPick(shuffle(opts2, r), (b) => {
+        var _a;
+        return (lineWeight.size ? (_a = lineWeight.get(b.line)) != null ? _a : 1 : 1) || 1e-4;
+      }, r);
+      takenBank.add(pick.id);
+      picks[i] = pick;
+    });
+    picks.forEach((pick, i) => {
+      if (!(pick == null ? void 0 : pick.type) || types[i] === pick.type) return;
+      const j = types.findIndex((t, k) => {
+        var _a;
+        return k !== i && t === pick.type && ((_a = picks[k]) == null ? void 0 : _a.type) !== t;
+      });
+      if (j >= 0) [types[i], types[j]] = [types[j], types[i]];
+    });
     const recentFrom = addDays(monday, -21);
     const recentFormats = new Set(contents.filter((c) => (c.date || "") >= recentFrom).map((c) => c.formatId));
     const recentThemes = new Set(contents.filter((c) => (c.date || "") >= addDays(monday, -60)).map((c) => c.theme));
@@ -2232,7 +2302,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const usedThemes = /* @__PURE__ */ new Set();
     const items = [];
     days.forEach((day, i) => {
-      var _a, _b, _c;
+      var _a, _b, _c, _d, _e, _f;
       const deal = deals.find((d) => d.postDate === day && (d.type === "publi" || d.type === "tts") && d.status !== "cancelado");
       if (deal) {
         items.push({
@@ -2251,7 +2321,50 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       }
       const goal = focus[i];
       let type = types[i];
-      const fits = (f, t) => (f.custom ? true : metaOf(f.id).types.includes(t)) && (f.goals || []).includes(goal);
+      const pick = picks[i];
+      if (pick) {
+        const fitsT = (f) => {
+          var _a2;
+          return f.custom ? !((_a2 = f.types) == null ? void 0 : _a2.length) || f.types.includes(type) : metaOf(f.id).types.includes(type);
+        };
+        let format2 = pool.find((f) => f.id === pick.formatId && fitsT(f));
+        if (!format2) {
+          const neutral = (((_a = NEUTRAL[type]) == null ? void 0 : _a[goal]) || []).map((id) => pool.find((f) => f.id === id)).filter((f) => f && fitsT(f));
+          format2 = neutral.find((f) => !usedFormats.has(f.id)) || neutral[0];
+        }
+        if (!format2) {
+          const cands = pool.filter((f) => fitsT(f) && (f.goals || []).includes(goal) && !usedFormats.has(f.id));
+          const scored2 = (cands.length ? cands : pool.filter(fitsT)).map((f) => ({ f, s: (recentFormats.has(f.id) ? -2 : 0) + (hitFormats.has(f.id) ? 1.5 : 0) + r() * 2 })).sort((a, b) => b.s - a.s);
+          format2 = (_b = scored2[0]) == null ? void 0 : _b.f;
+        }
+        if (format2) {
+          usedFormats.add(format2.id);
+          usedThemes.add(pick.title);
+          const slides2 = type === "carrossel" || type === "estatico" ? slidesFor(format2.id, type, { title: pick.title, goal }) : [];
+          items.push({
+            date: day,
+            title: pick.title,
+            theme: pick.title,
+            type,
+            goal,
+            formatId: format2.id,
+            hook: pick.hook || "",
+            altHooks: (format2.hooks || []).slice(),
+            steps: (format2.structure || []).slice(),
+            slides: slides2,
+            needsPhoto: needsPhoto(slides2),
+            status: "roteiro",
+            bankId: pick.id,
+            line: pick.line || "",
+            platforms: ((_c = format2.platforms) == null ? void 0 : _c.length) ? format2.platforms.slice() : ["instagram", "tiktok"]
+          });
+          return;
+        }
+      }
+      const fits = (f, t) => {
+        var _a2;
+        return (f.custom ? !((_a2 = f.types) == null ? void 0 : _a2.length) || f.types.includes(t) : metaOf(f.id).types.includes(t)) && (f.goals || []).includes(goal);
+      };
       let candidates = pool.filter((f) => fits(f, type) && !usedFormats.has(f.id));
       if (!candidates.length) {
         type = "video";
@@ -2265,7 +2378,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       let subject = "";
       for (let k = 0; k < niches.length && !subject; k++) {
         const niche = niches[(i + k) % niches.length];
-        const opts2 = shuffle(((_a = THEMES[niche]) == null ? void 0 : _a[meta2.kind]) || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
+        const opts2 = shuffle(((_d = THEMES[niche]) == null ? void 0 : _d[meta2.kind]) || [], r).filter((t) => !usedThemes.has(t) && !recentThemes.has(t));
         if (opts2.length) subject = opts2[0];
       }
       if (!subject) subject = "algo da sua rotina desta semana";
@@ -2279,18 +2392,18 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         type,
         goal,
         formatId: format.id,
-        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(((_b = format.hooks) == null ? void 0 : _b[0]) || "", subject),
+        hook: meta2.hook ? fill(meta2.hook, subject) : fillHook(((_e = format.hooks) == null ? void 0 : _e[0]) || "", subject),
         altHooks: (format.hooks || []).slice(),
         steps: (format.structure || []).slice(),
         slides,
         needsPhoto: needsPhoto(slides),
         status: "roteiro",
-        platforms: ((_c = format.platforms) == null ? void 0 : _c.length) ? format.platforms.slice() : ["instagram", "tiktok"]
+        platforms: ((_f = format.platforms) == null ? void 0 : _f.length) ? format.platforms.slice() : ["instagram", "tiktok"]
       });
     });
     return items;
   }
-  var DEFAULT_MIX, FOCUS, shuffle, weekdays, fillHook;
+  var DEFAULT_MIX, FUNNEL_WEEK, NEUTRAL, planDays, shuffle, weekdays, fillHook;
   var init_planner = __esm({
     "src/js/lib/planner.js"() {
       init_formats();
@@ -2298,7 +2411,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       init_designs();
       init_insights();
       DEFAULT_MIX = { video: 3, carrossel: 1, estatico: 1 };
-      FOCUS = ["seguidores", "marcas", "comunidade", "seguidores", "comunidade"];
+      FUNNEL_WEEK = ["seguidores", "seguidores", "comunidade", "comunidade", "marcas", "marcas", "seguidores"];
+      NEUTRAL = {
+        video: { seguidores: ["opiniao-impopular", "pov-identificacao", "nao-sei-se-faz-sentido"], comunidade: ["storytime", "isso-e-conteudo", "grwm-conversa"], marcas: ["bastidores-ugc", "ugc-reconstrucao"] },
+        carrossel: { seguidores: ["carrossel-storytelling", "expectativa-realidade"], comunidade: ["carrossel-storytelling", "conversa-imessage"], marcas: ["bastidores-ugc"] },
+        estatico: { seguidores: ["notas-opiniao", "opiniao-impopular"], comunidade: ["notas-opiniao", "lembretes-lista"], marcas: ["notas-opiniao"] }
+      };
+      planDays = (profile2 = {}) => Number(profile2.planDays) === 7 ? 7 : 5;
       shuffle = (arr2, r) => {
         const a = [...arr2];
         for (let i = a.length - 1; i > 0; i--) {
@@ -2307,7 +2426,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         }
         return a;
       };
-      weekdays = (monday) => [0, 1, 2, 3, 4].map((i) => addDays(monday, i));
+      weekdays = (monday, n2 = 5) => Array.from({ length: n2 === 7 ? 7 : 5 }, (_, i) => addDays(monday, i));
       fillHook = (h2, subject) => h2.replace(/_{2,}/g, subject);
     }
   });
@@ -2524,13 +2643,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function generatePlan(monday, { seed = "", replace = false } = {}) {
     const existing = planFor(monday);
-    const days = weekdays(monday);
+    const days = weekdays(monday, planDays(profile()));
     const inWeek = all("contents").filter((c) => days.includes(c.date));
     if (replace) {
       for (const c of inWeek) if (c.planWeek === monday && c.status === "roteiro" && !c.touched) store.remove("contents", c.id);
     }
     const keepDays = new Set(all("contents").filter((c) => days.includes(c.date) && c.planWeek === monday).map((c) => c.date));
-    const items = generateWeek({ monday, contents: all("contents"), deals: all("deals"), profile: profile(), customFormats: all("formats"), seed: seed || String(Date.now()) }).filter((it) => !keepDays.has(it.date));
+    const items = generateWeek({ monday, contents: all("contents"), deals: all("deals"), profile: profile(), customFormats: all("formats"), bank: all("bank"), seed: seed || String(Date.now()) }).filter((it) => !keepDays.has(it.date));
     for (const it of items) store.create("contents", { ...it, planWeek: monday, source: "plano" });
     const rec = { weekStart: monday, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), count: items.length };
     if (existing) store.update("plans", existing.id, rec);
@@ -3915,14 +4034,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 
   // src/js/lib/prompts.js
   function profileBlock(p) {
-    return "Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).\nSobre mim: ".concat(p.about || "\u2014", "\nNichos: ").concat(p.niches || "\u2014", "\nMeu jeito: ").concat(p.style || "\u2014", "\nEvitar: ").concat(p.avoid || "\u2014", "\n\nRegras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.");
+    var _a;
+    return "Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).\nSobre mim: ".concat(p.about || "\u2014", "\nNichos: ").concat(p.niches || "\u2014", "\nMeu jeito: ").concat(p.style || "\u2014", "\nEvitar: ").concat(p.avoid || "\u2014").concat(p.strategy ? "\nMinha estrat\xE9gia de conte\xFAdo (siga): ".concat(p.strategy) : "").concat(((_a = p.lines) == null ? void 0 : _a.length) ? "\nLinhas editoriais e peso: ".concat(p.lines.map((l) => "".concat(l.name, " ").concat(l.weight, "%")).join(", ")) : "", "\nFunil: topo = fazer gente nova me descobrir; meio = fazer quem chegou querer ficar (hist\xF3ria, personalidade, bastidor real); fundo = mostrar meu trabalho de UGC, publi e TikTok Shop para marcas, sem virar an\xFAncio.\n\nRegras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.");
   }
   function contentPrompt({ profile: profile2, format, topic, platform, hits: hits2 = [] }) {
     return "".concat(profileBlock(profile2), "\n\nQuero um conte\xFAdo pronto para gravar hoje.\n").concat(format ? formatBlock(format) : "", "\nTema: ").concat(topic || "(sugira um tema do meu nicho que combine com o formato)", "\nPlataforma: ").concat(platform || "Instagram e TikTok", "\n").concat(hits2.length ? "Conte\xFAdos meus que funcionaram (use como refer\xEAncia de tom): ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"title": "t\xEDtulo curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "caption": "legenda curta", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}');
   }
   function ideasPrompt({ profile: profile2, topic, goal, count = 5, hits: hits2 = [] }) {
     const list = FORMATS.map((f) => "".concat(f.id, ": ").concat(f.name)).join("\n");
-    return "".concat(profileBlock(profile2), "\n\nMe d\xEA ").concat(count, " ideias de conte\xFAdo ").concat(goal ? "com foco em ".concat(goal) : "variando entre ganhar seguidores, comunidade e atrair marcas").concat(topic ? " sobre: ".concat(topic) : "", ".\nUse formatos DIFERENTES entre si, escolhidos desta lista (use o id):\n").concat(list, "\n").concat(hits2.length ? "\nConte\xFAdos meus que funcionaram: ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"ideas": [{"title": "t\xEDtulo", "formatId": "id da lista", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}');
+    return "".concat(profileBlock(profile2), "\n\nMe d\xEA ").concat(count, " ideias de conte\xFAdo ").concat(goal ? "para a etapa ".concat(goal, " do funil") : "variando entre topo (crescer), meio (conectar) e fundo (marcas)").concat(topic ? " sobre: ".concat(topic) : "", ".\nIdeias espec\xEDficas, que s\xF3 fariam sentido vindo de mim (uma situa\xE7\xE3o, opini\xE3o ou hist\xF3ria minha), nada que qualquer criadora poderia postar.\nUse formatos DIFERENTES entre si, escolhidos desta lista (use o id):\n").concat(list, "\n").concat(hits2.length ? "\nConte\xFAdos meus que funcionaram: ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"ideas": [{"title": "t\xEDtulo", "formatId": "id da lista", "goal": "seguidores (topo), comunidade (meio) ou marcas (fundo)", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}');
   }
   function extractJson(text2) {
     const raw = String(text2 || "").trim();
@@ -3962,13 +4082,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const d = extractJson(raw);
     if (!d || !Array.isArray(d.ideas)) throw new Error("N\xE3o encontrei a lista de ideias na resposta. Copie a resposta inteira do Claude.");
     const ids = new Set(FORMATS.map((f) => f.id));
-    return d.ideas.filter((i) => i && typeof i === "object" && str(i.title)).map((i) => ({ title: str(i.title), formatId: ids.has(str(i.formatId)) ? str(i.formatId) : "", hook: str(i.hook), why: str(i.why) }));
+    return d.ideas.filter((i) => i && typeof i === "object" && str(i.title)).map((i) => ({ title: str(i.title), formatId: ids.has(str(i.formatId)) ? str(i.formatId) : "", goal: ["seguidores", "comunidade", "marcas"].find((g) => str(i.goal).toLowerCase().includes(g)) || "", hook: str(i.hook), why: str(i.why) }));
   }
   function weekPrompt({ profile: profile2, items, formats }) {
     const list = items.map((c, i) => {
       const f = formats.find((x) => x.id === c.formatId);
       const slides = (c.slides || []).map((s, k) => "   tela ".concat(k + 1, " (").concat(s.layout).concat(s.photo ? ", tem foto minha" : "", ")").concat(s.cells ? ": widgets ".concat(s.cells.map((x) => x.label).join(" / ")) : "")).join("\n");
-      return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 foco ").concat(c.goal || "\u2014", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
+      return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 funil ").concat(FUNNEL_LABEL[c.goal] || "\u2014", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
     }).join("\n");
     return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para listas; "cells" para widgets com label e value; "messages" para conversas com me=true quando sou eu). Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
   }
@@ -4044,13 +4164,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       loose: false
     };
   }
-  var formatBlock, str, arr, TYPE_LABEL, REVIEW_AREAS, pct;
+  var formatBlock, str, arr, FUNNEL_LABEL, TYPE_LABEL, REVIEW_AREAS, pct;
   var init_prompts = __esm({
     "src/js/lib/prompts.js"() {
       init_formats();
       formatBlock = (f) => "Formato: ".concat(f.name, "\nPor que funciona: ").concat(f.why, "\nEstrutura: ").concat(f.structure.map((s, i) => "".concat(i + 1, ") ").concat(s)).join(" "), "\nGanchos-modelo: ").concat(f.hooks.join(" | "));
       str = (v) => typeof v === "string" ? v.trim() : v == null ? "" : String(v);
       arr = (v) => Array.isArray(v) ? v.map(str).filter(Boolean) : v ? [str(v)] : [];
+      FUNNEL_LABEL = { seguidores: "topo (crescer)", comunidade: "meio (conectar)", marcas: "fundo (marcas)" };
       TYPE_LABEL = { video: "v\xEDdeo", carrossel: "carrossel", estatico: "post est\xE1tico", stories: "stories" };
       REVIEW_AREAS = [
         "Primeira impress\xE3o (5 segundos)",
@@ -4734,7 +4855,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     };
     typeSel.addEventListener("change", drawDesignBtn);
     drawDesignBtn();
-    const saveNow = () => isNew ? create("contents", read()) : update("contents", c.id, read());
+    const saveNow = () => isNew ? create("contents", { ...c.bankId ? { bankId: c.bankId } : {}, ...read() }) : update("contents", c.id, read());
     sheet({
       title: isNew ? "Novo conte\xFAdo" : "Conte\xFAdo",
       tall: true,
@@ -4750,6 +4871,19 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         main2.el,
         stepper2,
         designBtn,
+        h(
+          "details",
+          { class: "before-post", "data-id": "before-post" },
+          h("summary", {}, "\u2705 Antes de postar"),
+          h(
+            "ol",
+            {},
+            h("li", {}, "Eu teria vontade de falar disso com uma amiga?"),
+            h("li", {}, "Isso revela alguma coisa sobre mim (opini\xE3o, hist\xF3ria, jeito)?"),
+            h("li", {}, "Se outra pessoa postasse, eu pararia para assistir?")
+          ),
+          h("p", { class: "muted small" }, 'Tr\xEAs "sim": posta. Se a ideia \xE9 estrat\xE9gica mas parece sem alma, troque.')
+        ),
         h("button", {
           type: "button",
           class: "btn-claude",
@@ -4858,13 +4992,198 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   });
   init_data();
   init_ui();
+
+  // src/js/views/bank.js
+  init_data();
+  init_ui();
+  init_formats();
+  init_content_sheet();
+  init_insights();
+  var state2 = { q: "", line: "", goal: "", used: "" };
+  var rerender2 = () => document.dispatchEvent(new Event("rerender"));
+  var goalOptions = Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label }));
+  var typeOptions = Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label }));
+  function lineNames() {
+    const names = new Set((profile().lines || []).map((l) => l.name));
+    for (const b of all("bank")) if (b.line) names.add(b.line);
+    return [...names];
+  }
+  function usedMap() {
+    const m = /* @__PURE__ */ new Map();
+    for (const c of all("contents")) {
+      const key = c.bankId || c.theme;
+      if (key && c.date && (!m.has(key) || m.get(key) < c.date)) m.set(key, c.date);
+    }
+    return m;
+  }
+  function editTheme(t = {}) {
+    const f = formGroups([
+      { fields: [
+        { name: "title", label: "Tema", placeholder: "Ex.: O erro de transformar descanso em mais uma tarefa", full: true },
+        { name: "line", label: "Linha editorial", placeholder: "Ex.: Vida Real & Lifestyle" },
+        { name: "goal", label: "Etapa do funil", type: "select", options: goalOptions },
+        { name: "type", label: "Tipo (opcional)", type: "select", options: typeOptions, placeholder: "Qualquer" },
+        { name: "formatId", label: "Formato (opcional)", type: "select", options: formatOptions, placeholder: "O plano escolhe" },
+        { name: "hook", label: "Gancho (opcional)", full: true }
+      ] }
+    ], { goal: "seguidores", ...t });
+    let close;
+    close = sheet({
+      title: t.id ? "Tema" : "Novo tema",
+      body: h(
+        "div",
+        { class: "sheet-stack" },
+        f.el,
+        t.id && group({ children: [
+          h("button", { type: "button", class: "cell tappable tint", "data-id": "bank-use", onclick: () => {
+            close();
+            setTimeout(() => newContent({ title: t.title, theme: t.title, goal: t.goal, type: t.type || "video", formatId: t.formatId || "", hook: t.hook || "", bankId: t.id, date: iso(/* @__PURE__ */ new Date()) }), 250);
+          } }, "Fazer hoje"),
+          h("button", { type: "button", class: "cell tappable destructive", onclick: async () => {
+            if (await confirmDelete("este tema do banco")) {
+              remove("bank", t.id);
+              close();
+            }
+          } }, "Apagar tema")
+        ] })
+      ),
+      onSave: () => {
+        const v = f.read();
+        if (!String(v.title || "").trim()) throw new Error("Escreva o tema.");
+        const rec = { title: v.title.trim(), line: (v.line || "").trim(), goal: v.goal || "seguidores", type: v.type || "", formatId: v.formatId || "", hook: (v.hook || "").trim() };
+        t.id ? update("bank", t.id, rec) : create("bank", rec);
+        toast("Tema salvo");
+      }
+    });
+  }
+  function pasteThemes() {
+    const ta = h("textarea", { rows: 10, class: "input", placeholder: "Um tema por linha", "aria-label": "Temas, um por linha", name: "bank-paste" });
+    const f = formGroups([{ fields: [
+      { name: "line", label: "Linha editorial", placeholder: "Ex.: Cultura Pop & Repert\xF3rio" },
+      { name: "goal", label: "Etapa do funil", type: "select", options: goalOptions },
+      { name: "type", label: "Tipo (opcional)", type: "select", options: typeOptions, placeholder: "Qualquer" }
+    ] }], { goal: "seguidores" });
+    sheet({
+      title: "Adicionar v\xE1rios temas",
+      body: h("div", { class: "sheet-stack" }, h("p", { class: "muted small" }, "Cole a lista. N\xFAmeros, marcadores e linhas vazias s\xE3o ignorados; temas repetidos n\xE3o entram de novo."), ta, f.el),
+      onSave: () => {
+        const v = f.read();
+        const have = new Set(all("bank").map((b) => norm(b.title)));
+        const lines = ta.value.split("\n").map((l) => l.replace(/^\s*([-*•·]|\d+[.)])\s*/, "").replace(/^["“]|["”]$/g, "").trim()).filter((l) => l.length > 3);
+        let n2 = 0;
+        for (const title of lines) {
+          if (have.has(norm(title))) continue;
+          have.add(norm(title));
+          create("bank", { title, line: (v.line || "").trim(), goal: v.goal || "seguidores", type: v.type || "" });
+          n2++;
+        }
+        if (!n2) throw new Error("Nenhum tema novo para adicionar.");
+        toast("".concat(n2, " tema(s) adicionados"));
+      }
+    });
+  }
+  function linesCard(names) {
+    const lines = profile().lines || [];
+    const weight = (n2) => {
+      var _a, _b;
+      return (_b = (_a = lines.find((l) => l.name === n2)) == null ? void 0 : _a.weight) != null ? _b : "";
+    };
+    const save = (name, w) => {
+      const next = names.map((n2) => ({ name: n2, weight: n2 === name ? w : Number(weight(n2)) || 0 }));
+      saveProfile({ lines: next });
+    };
+    const count = (n2) => all("bank").filter((b) => b.line === n2).length;
+    return card({
+      title: "Linhas editoriais",
+      subtitle: "O peso decide quanto cada linha aparece no plano da semana",
+      flush: true,
+      children: names.length ? group({ children: names.map((n2) => cell({
+        title: n2 || "Sem linha",
+        subtitle: "".concat(count(n2), " tema(s)"),
+        accessory: h("label", { class: "weight" }, h("input", { type: "number", min: "0", max: "100", step: "5", value: weight(n2), placeholder: "\u2014", "aria-label": "Peso de ".concat(n2), class: "input", onchange: (e) => save(n2, Math.max(0, Number(e.target.value) || 0)) }), h("span", {}, "%"))
+      })) }) : emptyNote("Nenhuma linha ainda", "D\xEA uma linha aos temas para equilibrar o plano.")
+    });
+  }
+  function bankTab() {
+    const all2 = all("bank");
+    const used = usedMap();
+    const names = lineNames();
+    const list = all2.filter((b) => !state2.line || b.line === state2.line).filter((b) => !state2.goal || (b.goal || "seguidores") === state2.goal).filter((b) => !state2.used || (state2.used === "novo" ? !used.has(b.id) && !used.has(b.title) : used.has(b.id) || used.has(b.title))).filter((b) => !state2.q || norm(b.title).includes(norm(state2.q))).sort((a, b) => (a.line || "").localeCompare(b.line || "") || a.title.localeCompare(b.title));
+    const byGoal = Object.keys(GOALS).map((g) => all2.filter((b) => (b.goal || "seguidores") === g).length);
+    return [
+      h(
+        "div",
+        { class: "toolbar" },
+        h("p", { class: "muted small" }, all2.length ? "".concat(all2.length, " temas \xB7 topo ").concat(byGoal[0], " \xB7 meio ").concat(byGoal[1], " \xB7 fundo ").concat(byGoal[2], ". O plano usa estes temas primeiro.") : "Guarde aqui os temas que t\xEAm a sua cara. O plano semanal usa estes temas antes dos modelos gen\xE9ricos."),
+        h(
+          "div",
+          { class: "page-actions" },
+          btn("Adicionar v\xE1rios", pasteThemes, { small: true, id: "bank-paste" }),
+          btn("Novo tema", () => editTheme(), { small: true, kind: "primary", iconName: "plus", id: "bank-new" })
+        )
+      ),
+      h(
+        "div",
+        { class: "grid cols-main align-start" },
+        h(
+          "div",
+          { class: "stack" },
+          h(
+            "div",
+            { class: "filters" },
+            searchBox(state2.q, (v) => {
+              state2.q = v;
+              rerender2();
+            }, "Buscar tema"),
+            filterSelect("Linha", names.map((n2) => ({ value: n2, label: n2 })), state2.line, (v) => {
+              state2.line = v;
+              rerender2();
+            }),
+            filterSelect("Funil", goalOptions, state2.goal, (v) => {
+              state2.goal = v;
+              rerender2();
+            }),
+            filterSelect("Uso", [{ value: "novo", label: "Ainda n\xE3o usados" }, { value: "usado", label: "J\xE1 usados" }], state2.used, (v) => {
+              state2.used = v;
+              rerender2();
+            })
+          ),
+          card({ flush: true, children: table({
+            caption: "Banco de temas",
+            rows: list,
+            rowId: (b) => "bank-".concat(b.id),
+            onRowClick: (b) => editTheme(b),
+            empty: all2.length ? "Nenhum tema com esses filtros." : "Seu banco est\xE1 vazio.",
+            columns: [
+              { label: "Tema", main: true, render: (b) => h("div", {}, h("div", { class: "td-title" }, b.title), b.line && h("div", { class: "td-sub" }, b.line)) },
+              { label: "Funil", render: (b) => {
+                var _a, _b;
+                return tag((_a = GOALS[b.goal || "seguidores"]) == null ? void 0 : _a.short, "t-".concat((_b = GOALS[b.goal || "seguidores"]) == null ? void 0 : _b.color));
+              } },
+              { label: "Tipo", render: (b) => {
+                var _a;
+                return b.type ? tag((_a = TYPES[b.type]) == null ? void 0 : _a.label, "type-".concat(b.type)) : h("span", { class: "subtle" }, "qualquer");
+              } },
+              { label: "Usado", render: (b) => {
+                const d = used.get(b.id) || used.get(b.title);
+                return d ? h("span", { class: "subtle" }, fmtDay(d, { day: "numeric", month: "short" })) : tag("novo", "ok");
+              } }
+            ]
+          }) })
+        ),
+        linesCard(names)
+      )
+    ];
+  }
+
+  // src/js/views/formats.js
   init_formats();
   init_insights();
   init_prompts();
   init_content_sheet();
   init_claude();
-  var state2 = { goal: "", q: "", type: "" };
-  var rerender2 = () => document.dispatchEvent(new Event("rerender"));
+  var state3 = { goal: "", q: "", type: "", tab: "formatos" };
+  var rerender3 = () => document.dispatchEvent(new Event("rerender"));
   var today2 = () => iso(/* @__PURE__ */ new Date());
   function openFormat(f) {
     const topic = h("input", { type: "text", placeholder: "Tema (opcional): ex. meu s\xE9rum novo", "aria-label": "Tema" });
@@ -4922,24 +5241,24 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const used = all("contents").reduce((m, c) => c.formatId ? m.set(c.formatId, (m.get(c.formatId) || 0) + 1) : m, /* @__PURE__ */ new Map());
     const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => {
       var _a;
-      return !state2.goal || ((_a = f.goals) == null ? void 0 : _a.includes(state2.goal));
-    }).filter((f) => !state2.type || (f.custom ? true : metaOf(f.id).types.includes(state2.type))).filter((f) => !state2.q || norm("".concat(f.name, " ").concat(f.why)).includes(norm(state2.q)));
+      return !state3.goal || ((_a = f.goals) == null ? void 0 : _a.includes(state3.goal));
+    }).filter((f) => !state3.type || (f.custom ? true : metaOf(f.id).types.includes(state3.type))).filter((f) => !state3.q || norm("".concat(f.name, " ").concat(f.why)).includes(norm(state3.q)));
     return [
       h(
         "div",
         { class: "filters" },
-        searchBox(state2.q, (v) => {
-          state2.q = v;
-          rerender2();
+        searchBox(state3.q, (v) => {
+          state3.q = v;
+          rerender3();
         }, "Buscar formato"),
-        filterSelect("Tipo de post", Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label })), state2.type, (v) => {
-          state2.type = v;
-          rerender2();
+        filterSelect("Tipo de post", Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label })), state3.type, (v) => {
+          state3.type = v;
+          rerender3();
         })
       ),
-      chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state2.goal, (v) => {
-        state2.goal = v;
-        rerender2();
+      chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state3.goal, (v) => {
+        state3.goal = v;
+        rerender3();
       }),
       h("div", { class: "format-grid" }, list.map((f) => h(
         "button",
@@ -4966,7 +5285,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       { header: "Por que funciona", fields: [{ name: "why", label: "Por que", type: "textarea", rows: 2, showLabel: false }] },
       { header: "Estrutura", footer: "Um passo por linha.", fields: [{ name: "structure", label: "Estrutura", type: "list", rows: 4, showLabel: false }] },
       { header: "Ganchos-modelo", footer: "Um por linha.", fields: [{ name: "hooks", label: "Ganchos", type: "list", rows: 3, showLabel: false }] },
-      { header: "Serve para", fields: [{ name: "g_seguidores", label: "Seguidores", type: "toggle" }, { name: "g_comunidade", label: "Comunidade", type: "toggle" }, { name: "g_marcas", label: "Marcas", type: "toggle" }] }
+      { header: "Serve para", fields: [{ name: "g_seguidores", label: "Topo \xB7 crescer", type: "toggle" }, { name: "g_comunidade", label: "Meio \xB7 conectar", type: "toggle" }, { name: "g_marcas", label: "Fundo \xB7 marcas", type: "toggle" }] }
     ]);
     sheet({
       title: "Novo formato",
@@ -5052,13 +5371,23 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       }
     });
   }
-  function render2(root) {
+  var TABS = [{ value: "formatos", label: "Formatos" }, { value: "banco", label: "Banco de temas" }];
+  function render2(root, params = {}) {
+    if (params.aba && TABS.some((t) => t.value === params.aba)) {
+      state3.tab = params.aba;
+      history.replaceState(null, "", "#/conteudo/formatos");
+    }
+    const tab = state3.tab || "formatos";
+    const tabsEl = tabs(TABS, tab, (v) => {
+      state3.tab = v;
+      rerender3();
+    }, "\xC1rea");
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Formatos",
-      subtitle: "Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.",
-      actions: btn("Criar formato", newFormat, { iconName: "plus", id: "new-format" }),
-      children: library()
+      subtitle: tab === "banco" ? "Seus temas prontos, por linha editorial e etapa do funil. O plano da semana usa estes primeiro." : "Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.",
+      actions: tab === "formatos" ? btn("Criar formato", newFormat, { iconName: "plus", id: "new-format" }) : null,
+      children: [tabsEl, ...tab === "banco" ? bankTab() : library()]
     }));
   }
 
@@ -5133,7 +5462,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const monday = targetWeek(t);
     const plan = planFor(monday);
     if (!plan || monday <= t) return null;
-    const days = weekdays(monday);
+    const days = weekdays(monday, planDays(profile()));
     return h(
       "div",
       { class: "card accent plan-banner", "data-id": "plan-banner" },
@@ -5255,12 +5584,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_claude();
   init_designer();
   init_brands();
-  var state3 = { monday: null };
-  var rerender3 = () => document.dispatchEvent(new Event("rerender"));
+  var state4 = { monday: null };
+  var rerender4 = () => document.dispatchEvent(new Event("rerender"));
   onClaudeResult("ideas", (text2) => {
     const ideas = parseIdeas(text2);
     if (!ideas.length) throw new Error("A resposta n\xE3o trouxe ideias.");
-    for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, hook: i.hook, notes: i.why ? "Por qu\xEA: ".concat(i.why) : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
+    for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, goal: i.goal || "", hook: i.hook, notes: i.why ? "Por qu\xEA: ".concat(i.why) : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
     toast("".concat(ideas.length, " ideias guardadas"));
     location.hash = "#/conteudo/planejamento";
   });
@@ -5288,12 +5617,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     location.hash = "#/conteudo/planejamento";
   });
   var planItems = (monday) => {
-    const days = weekdays(monday);
+    const days = weekdays(monday, planDays(profile()));
     return all("contents").filter((c) => days.includes(c.date) && c.planWeek === monday).sort((a, b) => a.date.localeCompare(b.date));
   };
   function reroll(c) {
-    const seed = "".concat(Date.now());
-    const [fresh] = generateWeek({ monday: weekStart(c.date), contents: all("contents").filter((x) => x.id !== c.id), deals: [], profile: profile(), customFormats: all("formats"), seed }).filter((x) => x.date === c.date);
+    let fresh = null;
+    for (let k = 0; k < 12 && !(fresh && (!c.type || fresh.type === c.type) && fresh.title !== c.title); k++) {
+      [fresh] = generateWeek({ monday: weekStart(c.date), contents: all("contents").filter((x) => x.id !== c.id), deals: [], profile: profile(), customFormats: all("formats"), bank: all("bank"), seed: "".concat(Date.now(), "-").concat(k) }).filter((x) => x.date === c.date);
+    }
     if (!fresh) return;
     update("contents", c.id, { ...fresh, planWeek: c.planWeek, touched: false });
     toast("Trocado");
@@ -5333,15 +5664,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var DL_ICON2 = { entrega: "\u{1F4E6}", roteiro: "\u{1F4DD}", post: "\u{1F4E3}", pagamento: "\u{1F4B0}" };
   function render4(root) {
     const t = today();
-    state3.monday || (state3.monday = targetWeek(t));
-    const monday = state3.monday;
-    const days = weekdays(monday);
-    const weekend = [addDays(monday, 5), addDays(monday, 6)];
+    state4.monday || (state4.monday = targetWeek(t));
+    const monday = state4.monday;
+    const days = weekdays(monday, planDays(profile()));
+    const weekend = days.length === 7 ? [] : [addDays(monday, 5), addDays(monday, 6)];
     const plan = planFor(monday);
     const items = all("contents");
     const dls = deadlines(all("deals")).filter((d) => [...days, ...weekend].includes(d.date));
     const ideas = items.filter((c) => !c.date && c.status !== "postado").sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-    const label2 = "".concat(fmtDay(monday, { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[4], { day: "numeric", month: "short" }));
+    const label2 = "".concat(fmtDay(monday, { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[days.length - 1], { day: "numeric", month: "short" }));
     const isNext = monday > weekStart(t);
     const isCurrent = monday === weekStart(t);
     const pItems = planItems(monday);
@@ -5404,16 +5735,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           "div",
           { class: "btn-group" },
           btn("", () => {
-            state3.monday = addDays(monday, -7);
-            rerender3();
+            state4.monday = addDays(monday, -7);
+            rerender4();
           }, { iconName: "back", title: "Semana anterior" }),
           btn(isCurrent ? "Esta semana" : "Ir para esta semana", () => {
-            state3.monday = weekStart(t);
-            rerender3();
+            state4.monday = weekStart(t);
+            rerender4();
           }),
           btn("", () => {
-            state3.monday = addDays(monday, 7);
-            rerender3();
+            state4.monday = addDays(monday, 7);
+            rerender4();
           }, { iconName: "chevron", title: "Pr\xF3xima semana" })
         )
       ],
@@ -5436,7 +5767,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           }).join(" \xB7 "))),
           h("div", { class: "page-actions" }, weekActions)
         ),
-        h("div", { class: "board" }, days.map(dayColumn)),
+        h("div", { class: "board".concat(days.length === 7 ? " seven" : "") }, days.map(dayColumn)),
         (weekendItems.length > 0 || weekendDls.length > 0) && card({ title: "Fim de semana", flush: true, children: group({ children: [
           ...weekendItems.map(planCard),
           ...weekendDls.map((x) => {
@@ -5516,7 +5847,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_prompts();
   init_claude();
   init_insights();
-  var rerender4 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
   var today3 = () => iso(/* @__PURE__ */ new Date());
   var pct2 = (a, b) => b ? "".concat(Math.round(a / b * 100), "%") : "\u2014";
   var cache = /* @__PURE__ */ new Map();
@@ -5527,7 +5858,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     if (hit && !force && (hit.status === "loading" || Date.now() - hit.at < 10 * 6e4)) return hit;
     const entry = { status: "loading", at: Date.now() };
     cache.set(days, entry);
-    fetchPortfolioStats(cfg, days).then((raw) => cache.set(days, { status: "ok", summary: summarize(raw), at: Date.now() })).catch((err) => cache.set(days, { status: "error", error: err, at: Date.now() })).finally(rerender4);
+    fetchPortfolioStats(cfg, days).then((raw) => cache.set(days, { status: "ok", summary: summarize(raw), at: Date.now() })).catch((err) => cache.set(days, { status: "error", error: err, at: Date.now() })).finally(rerender5);
     return entry;
   }
   var clearPortfolioCache = () => cache.clear();
@@ -5673,10 +6004,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  function portfolioTab(state8) {
+  function portfolioTab(state9) {
     var _a;
     const cfg = gcConfig();
-    const days = Number(state8.portfolioDays || 30);
+    const days = Number(state9.portfolioDays || 30);
     if (!cfg.token) {
       return [
         card({ cls: "accent", id: "gc-connect", children: h(
@@ -5699,7 +6030,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         { class: "page-actions" },
         btn("Atualizar", () => {
           load(days, { force: true });
-          rerender4();
+          rerender5();
         }, { iconName: "refresh", small: true, kind: "ghost", id: "gc-refresh" }),
         btn("Configurar", openGcSheet, { small: true, kind: "ghost", id: "gc-settings" }),
         h("a", { class: "btn btn-sm btn-ghost", href: dashboardUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "GoatCounter")
@@ -5795,8 +6126,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
 
   // src/js/views/results.js
-  var state4 = { period: "90", platform: "", view: "grade", tab: "redes", portfolioDays: "30" };
-  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
+  var state5 = { period: "90", platform: "", view: "grade", tab: "redes", portfolioDays: "30" };
+  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
   var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
   var sum = (list, k) => {
     const vals = list.map((c) => {
@@ -5805,16 +6136,26 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }).filter((v) => v !== null);
     return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
   };
+  function followRate(list) {
+    const both = list.filter((c) => {
+      var _a;
+      return num2((_a = c.results) == null ? void 0 : _a.follows) !== null && scores(c).views;
+    });
+    const views = both.reduce((a, c) => a + scores(c).views, 0);
+    if (!views) return "soma dos posts com esse dado";
+    const f = both.reduce((a, c) => a + num2(c.results.follows), 0);
+    return "".concat((f / views * 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " a cada mil views");
+  }
   var PERIODS = [{ value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }, { value: "365", label: "\xDAltimo ano" }, { value: "all", label: "Tudo" }];
   function inPeriod(c, t) {
     const d = c.postedAt || c.date || "";
-    if (state4.period === "all") return Boolean(d);
-    return d >= addDays(t, -Number(state4.period)) && d <= t;
+    if (state5.period === "all") return Boolean(d);
+    return d >= addDays(t, -Number(state5.period)) && d <= t;
   }
   function postGrid(list) {
     if (!list.length) return emptyNote("Nenhum post com n\xFAmeros neste per\xEDodo.");
     return h("div", { class: "post-grid" }, list.map((c) => {
-      var _a, _b, _c;
+      var _a, _b, _c, _d;
       const f = formatById(c.formatId, all("formats"));
       const s = scores(c);
       const stat = (label2, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, "".concat(prefix).concat(fmtNum(v))), label2);
@@ -5832,38 +6173,45 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           { class: "pg-body" },
           h("span", { class: "pg-top" }, h("span", { class: "subtle small" }, fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" })), ((_a = c.results) == null ? void 0 : _a.source) === "instagram" ? tag("Instagram", "info") : tag("Manual")),
           h("span", { class: "pg-title" }, c.title),
-          h("span", { class: "pg-stats" }, stat("views", s.views), stat("seguidores", num2((_b = c.results) == null ? void 0 : _b.follows), "+"), stat("salvos", num2((_c = c.results) == null ? void 0 : _c.saves)))
+          h(
+            "span",
+            { class: "pg-stats" },
+            stat("views", s.views),
+            stat("seguidores", num2((_b = c.results) == null ? void 0 : _b.follows), "+"),
+            stat("salvos", num2((_c = c.results) == null ? void 0 : _c.saves)),
+            s.views && num2((_d = c.results) == null ? void 0 : _d.follows) !== null ? h("span", { class: "pg-stat" }, h("b", {}, (num2(c.results.follows) / s.views * 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })), "seg./mil views") : null
+          )
         )
       );
     }));
   }
-  var TABS = [{ value: "redes", label: "Instagram e TikTok" }, { value: "portfolio", label: "Portf\xF3lio" }];
+  var TABS2 = [{ value: "redes", label: "Instagram e TikTok" }, { value: "portfolio", label: "Portf\xF3lio" }];
   function render5(root, params = {}) {
     var _a, _b;
-    if (params.aba && TABS.some((t2) => t2.value === params.aba)) {
-      state4.tab = params.aba;
+    if (params.aba && TABS2.some((t2) => t2.value === params.aba)) {
+      state5.tab = params.aba;
       history.replaceState(null, "", "#/analise/desempenho");
     }
-    const tabsEl = tabs(TABS, state4.tab, (v) => {
-      state4.tab = v;
-      rerender5();
+    const tabsEl = tabs(TABS2, state5.tab, (v) => {
+      state5.tab = v;
+      rerender6();
     }, "\xC1rea");
-    if (state4.tab === "portfolio") {
+    if (state5.tab === "portfolio") {
       root.append(page({
         kicker: "An\xE1lise",
         title: "Desempenho",
         subtitle: "Quem abre seu portf\xF3lio, de onde vem, o que assiste e se chama voc\xEA. E o que uma marca acharia dele.",
-        actions: filterSelect("Per\xEDodo", [{ value: "7", label: "\xDAltimos 7 dias" }, { value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }], state4.portfolioDays, (v) => {
-          state4.portfolioDays = v || "30";
-          rerender5();
+        actions: filterSelect("Per\xEDodo", [{ value: "7", label: "\xDAltimos 7 dias" }, { value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }], state5.portfolioDays, (v) => {
+          state5.portfolioDays = v || "30";
+          rerender6();
         }),
-        children: [tabsEl, ...portfolioTab(state4)]
+        children: [tabsEl, ...portfolioTab(state5)]
       }));
       return;
     }
     const t = today();
     const contents = all("contents");
-    const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state4.platform || (c.platforms || []).includes(state4.platform)));
+    const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state5.platform || (c.platforms || []).includes(state5.platform)));
     const measured = posted.filter(hasResults).sort((a, b) => (a.postedAt || a.date).localeCompare(b.postedAt || b.date));
     const conf = confidence(measured.length);
     const formats = byFormat(measured, all("formats"));
@@ -5885,13 +6233,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       title: "Desempenho",
       subtitle: "Seguidores, salvamentos e contatos de marcas, al\xE9m das views. Comparado sempre com a sua pr\xF3pria m\xE9dia.",
       actions: [
-        filterSelect("Per\xEDodo", PERIODS, state4.period, (v) => {
-          state4.period = v || "90";
-          rerender5();
+        filterSelect("Per\xEDodo", PERIODS, state5.period, (v) => {
+          state5.period = v || "90";
+          rerender6();
         }),
-        filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state4.platform, (v) => {
-          state4.platform = v;
-          rerender5();
+        filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state5.platform, (v) => {
+          state5.platform = v;
+          rerender6();
         })
       ],
       children: [
@@ -5900,7 +6248,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           "div",
           { class: "grid cols-4 kpis" },
           kpi({ label: "Posts publicados", value: fmtNum(posted.length), hint: "".concat(measured.length, " com n\xFAmeros anotados") }),
-          kpi({ label: "Novos seguidores", value: fmtNum(sum(posted, "follows")), hint: "soma dos posts com esse dado" }),
+          kpi({ label: "Novos seguidores", value: fmtNum(sum(posted, "follows")), hint: followRate(measured) }),
           kpi({ label: "Views t\xEDpicas por post", value: fmtNum(median(measured.map((c) => scores(c).views))), hint: "mediana (n\xE3o \xE9 afetada por um viral)" }),
           kpi({ label: "Contatos de marcas", value: fmtNum(sum(posted, "brandContacts")), hint: "vindos de posts" })
         ),
@@ -5943,12 +6291,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           card({
             title: "Posts com resultado",
             subtitle: ((_a = igConfig()) == null ? void 0 : _a.token) ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
-            actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state4.view, (v) => {
-              state4.view = v;
-              rerender5();
+            actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state5.view, (v) => {
+              state5.view = v;
+              rerender6();
             }, "Visualiza\xE7\xE3o dos posts"),
-            flush: state4.view === "tabela",
-            children: state4.view === "grade" ? postGrid(measured.slice().reverse()) : table({
+            flush: state5.view === "tabela",
+            children: state5.view === "grade" ? postGrid(measured.slice().reverse()) : table({
               caption: "Posts com resultado",
               rows: measured.slice().reverse(),
               onRowClick: (c) => openContent(c),
@@ -6049,23 +6397,31 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function planGroup(p) {
     const mix = { video: 3, carrossel: 1, estatico: 1, ...p.mix || {} };
-    const step = (k) => stepper(mix[k], (n2) => {
-      mix[k] = n2;
+    const step = (k) => stepper(mix[k], (n3) => {
+      mix[k] = n3;
       saveProfile({ mix: { ...mix } });
-    }, 0, 5);
+    }, 0, 7);
     const total = mix.video + mix.carrossel + mix.estatico;
+    const n2 = Number(p.planDays) === 7 ? 7 : 5;
+    const daysSel = h(
+      "select",
+      { class: "inline-select", "aria-label": "Dias do plano", "data-id": "plan-days", onchange: (e) => saveProfile({ planDays: Number(e.target.value) }) },
+      h("option", { value: "5", selected: n2 === 5 }, "Segunda a sexta"),
+      h("option", { value: "7", selected: n2 === 7 }, "Todos os dias")
+    );
     return group({
-      header: "Plano semanal (seg a sex)",
-      footer: "".concat(total, " conte\xFAdos por semana. ").concat(total !== 5 ? "O plano tem 5 dias: o que passar de 5 \xE9 ignorado e o que faltar vira v\xEDdeo." : "", " A partir de s\xE1bado, o plano da pr\xF3xima semana \xE9 gerado quando voc\xEA abre o app."),
+      header: "Plano semanal",
+      footer: "".concat(total, " conte\xFAdos na mistura, ").concat(n2, " dias no plano. ").concat(total > n2 ? "O que passar de ".concat(n2, " \xE9 ignorado.") : total < n2 ? "O que faltar vira v\xEDdeo." : "", " O funil segue a semana: come\xE7a no topo (crescer), passa pelo meio (conectar) e fecha no fundo (marcas). A partir de s\xE1bado, o plano da pr\xF3xima semana \xE9 gerado quando voc\xEA abre o app."),
       children: [
         cell({ emoji: "\u2728", color: "orange", title: "Gerar sozinho aos s\xE1bados", accessory: toggle(p.autoPlan !== false, (v) => saveProfile({ autoPlan: v }), "Gerar sozinho") }),
+        cell({ emoji: "\u{1F4C5}", color: "yellow", title: "Dias do plano", accessory: daysSel }),
         cell({ emoji: "\u{1F3AC}", color: "red", title: "V\xEDdeos", accessory: step("video") }),
         cell({ emoji: "\u{1F5BC}\uFE0F", color: "blue", title: "Carross\xE9is", accessory: step("carrossel") }),
         cell({ emoji: "\u{1F532}", color: "gray", title: "Est\xE1ticos", accessory: step("estatico") })
       ]
     });
   }
-  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
   var when = (s) => s ? new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "nunca";
   function stepper(value, onChange2, min = 1, max = 14) {
     const out = h("span", { class: "step-val", "aria-live": "polite" }, String(value));
@@ -6183,7 +6539,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         const n2 = (k) => Array.isArray(parsed[k]) ? parsed[k].length : 0;
         const ok = await actionSheet({
           title: parsed.meta.title || "Importar pacote",
-          message: [n2("contents") && "".concat(n2("contents"), " ideia(s)"), n2("formats") && "".concat(n2("formats"), " formato(s)"), parsed.profile && "textos do seu perfil"].filter(Boolean).join(", ") + ". Junta com o que j\xE1 existe; nada \xE9 apagado.",
+          message: [n2("contents") && "".concat(n2("contents"), " ideia(s)"), n2("bank") && "".concat(n2("bank"), " tema(s) para o banco"), n2("formats") && "".concat(n2("formats"), " formato(s)"), parsed.profile && "textos do seu perfil"].filter(Boolean).join(", ") + ". Junta com o que j\xE1 existe; nada \xE9 apagado.",
           actions: [{ label: "Importar", value: true, id: "import-pack" }]
         });
         if (!ok) return;
@@ -6212,7 +6568,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       { fields: [
         { name: "about", label: "Sobre voc\xEA (s\xF3 fatos reais; o Claude usa isso)", type: "textarea", rows: 3 },
         { name: "style", label: "Seu jeito de criar", type: "textarea", rows: 3 },
-        { name: "avoid", label: "O que evitar", type: "textarea", rows: 3 }
+        { name: "avoid", label: "O que evitar", type: "textarea", rows: 3 },
+        { name: "strategy", label: "Estrat\xE9gia de conte\xFAdo (funil, linhas e regras; o Claude segue isso)", type: "textarea", rows: 6 }
       ] }
     ], p);
     return card({
@@ -6275,7 +6632,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
               cell({ emoji: "\u2B07\uFE0F", color: "blue", title: "Baixar backup", subtitle: "Arquivo JSON com tudo (sem o token e sem fotos)", onClick: () => {
                 exportBackup();
                 toast("Backup baixado");
-                rerender6();
+                rerender7();
               }, id: "backup" }),
               cell({ emoji: "\u2B06\uFE0F", color: "blue", title: "Importar backup", onClick: importFile, id: "import" }),
               cell({ emoji: "\u{1F4C4}", color: "green", title: "Exportar conte\xFAdos (CSV)", onClick: () => exportCsv() }),
@@ -6304,8 +6661,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_render();
   init_designer();
   init_content_sheet();
-  var state5 = { filter: "" };
-  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
+  var state6 = { filter: "" };
+  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
   function thumb(c) {
     var _a;
     const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
@@ -6321,15 +6678,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       var _a;
       return (c.type === "carrossel" || c.type === "estatico") && !c.noDesign && (((_a = c.slides) == null ? void 0 : _a.length) || c.status !== "postado");
     }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    const list = all2.filter((c) => state5.filter === "fotos" ? missingPhotos(c) > 0 : state5.filter ? c.type === state5.filter : true);
+    const list = all2.filter((c) => state6.filter === "fotos" ? missingPhotos(c) > 0 : state6.filter ? c.type === state6.filter : true);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Est\xFAdio",
       subtitle: "Artes de carrossel e est\xE1tico no seu estilo, prontas para salvar e postar.",
       children: [
-        chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state5.filter, (v) => {
-          state5.filter = v;
-          rerender7();
+        chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state6.filter, (v) => {
+          state6.filter = v;
+          rerender8();
         }),
         list.length ? h("div", { class: "gallery" }, list.map((c) => {
           var _a, _b, _c;
@@ -6389,11 +6746,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_insights();
   init_content_sheet();
   init_designer();
-  var state6 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
-  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
+  var state7 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
+  var rerender9 = () => document.dispatchEvent(new Event("rerender"));
   var set = (k) => (v) => {
-    state6[k] = v;
-    rerender8();
+    state7[k] = v;
+    rerender9();
   };
   var PERIODS2 = [
     { value: "semana", label: "Pr\xF3ximos 7 dias" },
@@ -6404,17 +6761,17 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function filtered() {
     const t = today();
     return all("contents").filter((c) => {
-      if (state6.status && c.status !== state6.status) return false;
-      if (state6.type && (c.type || "video") !== state6.type) return false;
-      if (state6.formatId && c.formatId !== state6.formatId) return false;
-      if (state6.goal && c.goal !== state6.goal) return false;
-      if (state6.period === "semana" && !(c.date >= t && c.date <= addDays(t, 7))) return false;
-      if (state6.period === "mes" && !(c.date || "").startsWith(t.slice(0, 7))) return false;
-      if (state6.period === "passado" && !(c.date && c.date < t)) return false;
-      if (state6.period === "sem-data" && c.date) return false;
-      if (state6.q) {
+      if (state7.status && c.status !== state7.status) return false;
+      if (state7.type && (c.type || "video") !== state7.type) return false;
+      if (state7.formatId && c.formatId !== state7.formatId) return false;
+      if (state7.goal && c.goal !== state7.goal) return false;
+      if (state7.period === "semana" && !(c.date >= t && c.date <= addDays(t, 7))) return false;
+      if (state7.period === "mes" && !(c.date || "").startsWith(t.slice(0, 7))) return false;
+      if (state7.period === "passado" && !(c.date && c.date < t)) return false;
+      if (state7.period === "sem-data" && c.date) return false;
+      if (state7.q) {
         const hay = norm([c.title, c.theme, c.hook, c.notes, c.caption].join(" "));
-        if (!norm(state6.q).split(/\s+/).every((w) => hay.includes(w))) return false;
+        if (!norm(state7.q).split(/\s+/).every((w) => hay.includes(w))) return false;
       }
       return true;
     }).sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
@@ -6518,12 +6875,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function render8(root, params = {}) {
     if (params.periodo && PERIODS2.some((p) => p.value === params.periodo)) {
-      Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: params.periodo });
+      Object.assign(state7, { q: "", status: "", type: "", formatId: "", goal: "", period: params.periodo });
       history.replaceState(null, "", "#/conteudo/lista");
     }
     const list = filtered();
     const total = all("contents").length;
-    const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state6[k]);
+    const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state7[k]);
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Conte\xFAdos",
@@ -6532,22 +6889,22 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         btn("Exportar CSV", () => exportCsv(), { iconName: "download", kind: "ghost" })
       ],
       children: [
-        tabs([{ value: "tabela", label: "Tabela" }, { value: "quadro", label: "Quadro por etapa" }], state6.view, set("view"), "Visualiza\xE7\xE3o"),
+        tabs([{ value: "tabela", label: "Tabela" }, { value: "quadro", label: "Quadro por etapa" }], state7.view, set("view"), "Visualiza\xE7\xE3o"),
         h(
           "div",
           { class: "filters" },
-          searchBox(state6.q, set("q"), "Buscar por t\xEDtulo, tema, gancho\u2026"),
-          state6.view === "tabela" && filterSelect("Etapa", STATUSES.map((s) => ({ value: s.id, label: s.label })), state6.status, set("status")),
-          filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state6.type, set("type")),
-          filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state6.goal, set("goal")),
-          filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state6.formatId, set("formatId")),
-          filterSelect("Per\xEDodo", PERIODS2, state6.period, set("period")),
+          searchBox(state7.q, set("q"), "Buscar por t\xEDtulo, tema, gancho\u2026"),
+          state7.view === "tabela" && filterSelect("Etapa", STATUSES.map((s) => ({ value: s.id, label: s.label })), state7.status, set("status")),
+          filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state7.type, set("type")),
+          filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state7.goal, set("goal")),
+          filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state7.formatId, set("formatId")),
+          filterSelect("Per\xEDodo", PERIODS2, state7.period, set("period")),
           active && btn("Limpar filtros", () => {
-            Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
-            rerender8();
+            Object.assign(state7, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
+            rerender9();
           }, { kind: "ghost", small: true })
         ),
-        !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state6.view === "tabela" ? tableView(list) : boardView(list)
+        !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state7.view === "tabela" ? tableView(list) : boardView(list)
       ]
     }));
   }
@@ -6560,12 +6917,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_data();
   init_ui();
   init_formats();
-  var state7 = { q: "", formatId: "" };
-  var rerender9 = () => document.dispatchEvent(new Event("rerender"));
+  var state8 = { q: "", formatId: "" };
+  var rerender10 = () => document.dispatchEvent(new Event("rerender"));
   function render9(root) {
     const all2 = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
     const formats = [...FORMATS, ...all("formats")];
-    const list = all2.filter((r) => !state7.formatId || r.formatId === state7.formatId).filter((r) => !state7.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state7.q)));
+    const list = all2.filter((r) => !state8.formatId || r.formatId === state8.formatId).filter((r) => !state8.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state8.q)));
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Refer\xEAncias",
@@ -6575,13 +6932,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         all2.length > 0 && h(
           "div",
           { class: "filters" },
-          searchBox(state7.q, (v) => {
-            state7.q = v;
-            rerender9();
+          searchBox(state8.q, (v) => {
+            state8.q = v;
+            rerender10();
           }, "Buscar refer\xEAncia"),
-          filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state7.formatId, (v) => {
-            state7.formatId = v;
-            rerender9();
+          filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state8.formatId, (v) => {
+            state8.formatId = v;
+            rerender10();
           })
         ),
         !all2.length ? emptyNote("Nenhuma refer\xEAncia ainda", "Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conte\xFAdo seu.", btn("Nova refer\xEAncia", () => editReference(), { kind: "primary" })) : card({

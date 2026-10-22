@@ -39,13 +39,17 @@ function planGroup(p) {
   const step = (k) => stepper(mix[k], (n) => {
     mix[k] = n;
     data.saveProfile({ mix: { ...mix } });
-  }, 0, 5);
+  }, 0, 7);
   const total = mix.video + mix.carrossel + mix.estatico;
+  const n = Number(p.planDays) === 7 ? 7 : 5;
+  const daysSel = h('select', { class: 'inline-select', 'aria-label': 'Dias do plano', 'data-id': 'plan-days', onchange: (e) => data.saveProfile({ planDays: Number(e.target.value) }) },
+    h('option', { value: '5', selected: n === 5 }, 'Segunda a sexta'), h('option', { value: '7', selected: n === 7 }, 'Todos os dias'));
   return group({
-    header: 'Plano semanal (seg a sex)',
-    footer: `${total} conteúdos por semana. ${total !== 5 ? 'O plano tem 5 dias: o que passar de 5 é ignorado e o que faltar vira vídeo.' : ''} A partir de sábado, o plano da próxima semana é gerado quando você abre o app.`,
+    header: 'Plano semanal',
+    footer: `${total} conteúdos na mistura, ${n} dias no plano. ${total > n ? `O que passar de ${n} é ignorado.` : total < n ? 'O que faltar vira vídeo.' : ''} O funil segue a semana: começa no topo (crescer), passa pelo meio (conectar) e fecha no fundo (marcas). A partir de sábado, o plano da próxima semana é gerado quando você abre o app.`,
     children: [
       cell({ emoji: '✨', color: 'orange', title: 'Gerar sozinho aos sábados', accessory: toggle(p.autoPlan !== false, (v) => data.saveProfile({ autoPlan: v }), 'Gerar sozinho') }),
+      cell({ emoji: '📅', color: 'yellow', title: 'Dias do plano', accessory: daysSel }),
       cell({ emoji: '🎬', color: 'red', title: 'Vídeos', accessory: step('video') }),
       cell({ emoji: '🖼️', color: 'blue', title: 'Carrosséis', accessory: step('carrossel') }),
       cell({ emoji: '🔲', color: 'gray', title: 'Estáticos', accessory: step('estatico') }),
@@ -171,7 +175,7 @@ async function importFile() {
       const n = (k) => (Array.isArray(parsed[k]) ? parsed[k].length : 0);
       const ok = await actionSheet({
         title: parsed.meta.title || 'Importar pacote',
-        message: [n('contents') && `${n('contents')} ideia(s)`, n('formats') && `${n('formats')} formato(s)`, parsed.profile && 'textos do seu perfil'].filter(Boolean).join(', ') + '. Junta com o que já existe; nada é apagado.',
+        message: [n('contents') && `${n('contents')} ideia(s)`, n('bank') && `${n('bank')} tema(s) para o banco`, n('formats') && `${n('formats')} formato(s)`, parsed.profile && 'textos do seu perfil'].filter(Boolean).join(', ') + '. Junta com o que já existe; nada é apagado.',
         actions: [{ label: 'Importar', value: true, id: 'import-pack' }],
       });
       if (!ok) return;
@@ -202,6 +206,7 @@ function profileForm(p) {
       { name: 'about', label: 'Sobre você (só fatos reais; o Claude usa isso)', type: 'textarea', rows: 3 },
       { name: 'style', label: 'Seu jeito de criar', type: 'textarea', rows: 3 },
       { name: 'avoid', label: 'O que evitar', type: 'textarea', rows: 3 },
+      { name: 'strategy', label: 'Estratégia de conteúdo (funil, linhas e regras; o Claude segue isso)', type: 'textarea', rows: 6 },
     ] },
   ], p);
   return card({

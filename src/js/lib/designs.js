@@ -57,6 +57,17 @@ export function slidesFor(formatId, type, { title = '', goal = '' } = {}) {
         { layout: 'imessage', messages: [{ me: false, text: '' }, { me: true, text: '' }, { me: false, text: '' }], hint: 'Mensagens reais ou recriadas, sem expor ninguém' },
         { layout: 'imessage', messages: [{ me: true, text: '' }, { me: false, text: '' }] },
         { layout: 'notas', title: 'Desfecho', body: '', hint: 'O que aconteceu depois' }];
+    case 'carrossel-storytelling': {
+      const parte = (t, hint) => ({ layout: 'notas', title: t, body: '', hint });
+      return [capa({ kicker: 'uma história' }),
+        parte('', 'Contexto: "Durante muito tempo eu…"'),
+        parte('', 'Conflito: "Só que tinha uma coisa acontecendo…"'),
+        parte('', 'A situação específica, com um detalhe real'),
+        parte('Foi aí que eu percebi', 'O momento da virada'),
+        parte('', 'O que mudou no que você faz ou pensa'),
+        parte('', 'Reflexão que também serve para quem está lendo'),
+        { layout: 'cta', title: '', body: 'você também está nessa fase?', hint: 'Frase final forte; a pergunta convida para os comentários' }];
+    }
     default:
       return [capa(), { layout: 'notas', title: '', body: '', hint: 'Primeira parte' }, { layout: 'notas', title: '', body: '', hint: 'Segunda parte' }, cta(goal)];
   }

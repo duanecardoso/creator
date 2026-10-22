@@ -6,7 +6,7 @@ import { GOALS } from '../lib/formats.js';
 import { weekProgress, streak, suggestions, needsResults, STATUSES, statusIndex, iso, addDays, weekStart } from '../lib/insights.js';
 import { openContent, newContent, today } from './content-sheet.js';
 import { upcoming, DEAL_TYPES, finance, fmtMoney } from '../lib/deals.js';
-import { targetWeek, weekdays } from '../lib/planner.js';
+import { targetWeek, weekdays, planDays } from '../lib/planner.js';
 import { openDesigner, missingPhotos } from './designer.js';
 import { openDeal } from './brands.js';
 import { openFormat } from './formats.js';
@@ -74,7 +74,7 @@ function planBanner(t) {
   const monday = targetWeek(t);
   const plan = data.planFor(monday);
   if (!plan || monday <= t) return null;
-  const days = weekdays(monday);
+  const days = weekdays(monday, planDays(data.profile()));
   return h('div', { class: 'card accent plan-banner', 'data-id': 'plan-banner' },
     h('span', { class: 'badge c-yellow' }, '🗓️'),
     h('div', { class: 'cell-text' }, h('strong', {}, 'Plano da próxima semana pronto'), h('span', { class: 'muted small' }, `${fmtDay(days[0], { day: 'numeric', month: 'short' })} – ${fmtDay(days[4], { day: 'numeric', month: 'short' })}: tema, formato e estrutura de cada dia.`)),

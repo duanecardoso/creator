@@ -1,7 +1,7 @@
 // Banco de dados no navegador (localStorage). Tudo fica só neste aparelho/navegador.
 // O "storage" é injetável para os testes rodarem fora do navegador.
 
-export const COLLECTIONS = ['contents', 'references', 'brands', 'formats', 'deals', 'plans', 'reviews'];
+export const COLLECTIONS = ['contents', 'references', 'brands', 'formats', 'deals', 'plans', 'reviews', 'bank'];
 export const SCHEMA_VERSION = 3;
 const KEY = 'creator:db';
 const SNAP_KEY = 'creator:snapshot'; // cópia do dia anterior, para desfazer acidentes

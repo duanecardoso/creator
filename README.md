@@ -24,6 +24,21 @@ Endereços das páginas: `#/visao-geral`, `#/conteudo/planejamento`, `#/conteudo
 
 O visual segue a mesma identidade do portfólio: fonte Montserrat, fundo claro pontilhado, títulos pesados com o ponto rosa, botões em pílula e a paleta branco, manteiga (#F8E7A2), rosa (#D74F73) e marrom (#6B4537). Tema claro. As **artes** dos posts usam a mesma fonte e paleta, para manter a identidade visual igual em tudo.
 
+## Funil, linhas e banco de temas
+
+- **Foco = etapa do funil:**
+  - **Topo · crescer:** gente nova te descobre.
+  - **Meio · conectar:** quem chegou quer ficar.
+  - **Fundo · marcas:** seu trabalho de UGC, publi e TikTok Shop por dentro, sem virar anúncio.
+- **A semana segue o funil:** seg e ter topo, qua e qui meio, sex e sáb fundo, dom topo. Com 5 dias: topo, topo, meio, meio, fundo. Escolha 5 ou 7 dias em Configurações → Plano semanal.
+- **Banco de temas** (Formatos → Banco de temas): seus temas prontos, por linha editorial e etapa do funil.
+  - O plano usa estes temas antes dos modelos genéricos, respeitando o peso de cada linha, e não repete tema usado nos últimos 60 dias.
+  - Dá para colar uma lista inteira de temas de uma vez.
+- **Estratégia de conteúdo** (Configurações → Perfil): o eixo, o funil e as suas regras. Vai em todos os pedidos para o Claude.
+- **Carrossel com história:** formato de 8 telas (gancho, contexto, conflito, situação, virada, mudança, reflexão, frase final com pergunta).
+- **Antes de postar:** as 3 perguntas aparecem dentro de cada conteúdo.
+- **Desempenho:** mostra seguidores ganhos a cada mil visualizações.
+
 ## Plano automático de sábado
 
 A partir de sábado, **na primeira vez que você abrir o site**, ele monta o plano de segunda a sexta da semana seguinte. Um site no GitHub Pages não roda com a página fechada, então ele gera quando você abre, e só uma vez por semana. Para desligar, vá em Configurações.
@@ -102,7 +117,7 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 52 testes de lógica
+npm test           # 55 testes de lógica
 npm run test:e2e   # 29 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 

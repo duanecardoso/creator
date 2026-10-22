@@ -304,7 +304,7 @@ try {
   ok('Token recusado mostra aviso claro');
 
   // Pacote: junta ideias, formato e perfil sem apagar nada
-  const pack = { meta: { kind: 'pacote', title: 'Pacote de teste' }, profile: { about: 'Sobre vindo do pacote' }, formats: [{ id: 'serie-teste', name: 'Série de teste', why: 'w', structure: ['a'], hooks: ['h'], goals: ['marcas'] }], contents: Array.from({ length: 13 }, (_, i) => ({ id: `pk-${i}`, title: `Ideia do pacote ${i + 1}`, status: 'ideia', date: '' })) };
+  const pack = { meta: { kind: 'pacote', title: 'Pacote de teste' }, profile: { about: 'Sobre vindo do pacote' }, formats: [{ id: 'serie-teste', name: 'Série de teste', why: 'w', structure: ['a'], hooks: ['h'], goals: ['marcas'] }], contents: Array.from({ length: 13 }, (_, i) => ({ id: `pk-${i}`, title: `Ideia do pacote ${i + 1}`, status: 'ideia', date: '' })), bank: [{ id: 'bk-1', title: 'Tema do banco de teste', line: 'Linha teste', goal: 'comunidade' }] };
   const totalBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('creator:db')).contents.length);
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-id="import"]')]);
   await chooser.setFiles({ name: 'pacote.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pack)) });
@@ -317,7 +317,17 @@ try {
   await page.click('[data-id="all-ideas"]');
   await page.waitForSelector('tbody tr:has-text("Ideia do pacote 13")');
   await page.click('.filters .btn:has-text("Limpar filtros")');
-  ok('Pacote importado junta ideias, formato e perfil sem apagar nada; "Ver todas as ideias" abre a lista filtrada');
+  await nav('conteudo/formatos');
+  await page.click('.segmented button:has-text("Banco de temas")');
+  await page.waitForSelector('tr[data-id="bank-bk-1"]:has-text("Tema do banco de teste") .tag:has-text("Meio")');
+  await page.click('[data-id="bank-paste"]');
+  await drawer().locator('textarea[name="bank-paste"]').fill('1. Primeiro tema colado\n- Segundo tema colado\n\nTema do banco de teste');
+  await drawer().locator('input[name="line"]').fill('Linha teste');
+  await save();
+  await page.waitForSelector('.toast:has-text("2 tema(s) adicionados")');
+  await page.waitForSelector('tr[data-id^="bank-"]:has-text("Segundo tema colado")');
+  await page.click('.segmented button:has-text("Formatos")');
+  ok('Pacote importado junta ideias, formato e perfil sem apagar nada; "Ver todas as ideias" abre a lista filtrada; banco de temas aceita lista colada sem repetir');
 
   // ---- Portfólio (GoatCounter) ----
   await nav('analise/desempenho');

@@ -2,7 +2,7 @@
 import { Store, MemoryStorage, counts, contentsToCsv } from './lib/store.js';
 import * as ig from './lib/instagram.js';
 import * as gc from './lib/goatcounter.js';
-import { generateWeek, shouldAutoGenerate, targetWeek, weekdays } from './lib/planner.js';
+import { generateWeek, shouldAutoGenerate, targetWeek, weekdays, planDays } from './lib/planner.js';
 import { toIcs, dealsToCsv } from './lib/deals.js';
 
 const listeners = new Set();
@@ -117,13 +117,13 @@ export const planFor = (monday) => all('plans').find((p) => p.weekStart === mond
 // Gera (ou refaz) o plano de segunda a sexta. Ao refazer, mantém o que você já começou a produzir.
 export function generatePlan(monday, { seed = '', replace = false } = {}) {
   const existing = planFor(monday);
-  const days = weekdays(monday);
+  const days = weekdays(monday, planDays(profile()));
   const inWeek = all('contents').filter((c) => days.includes(c.date));
   if (replace) {
     for (const c of inWeek) if (c.planWeek === monday && c.status === 'roteiro' && !c.touched) store.remove('contents', c.id);
   }
   const keepDays = new Set(all('contents').filter((c) => days.includes(c.date) && c.planWeek === monday).map((c) => c.date));
-  const items = generateWeek({ monday, contents: all('contents'), deals: all('deals'), profile: profile(), customFormats: all('formats'), seed: seed || String(Date.now()) })
+  const items = generateWeek({ monday, contents: all('contents'), deals: all('deals'), profile: profile(), customFormats: all('formats'), bank: all('bank'), seed: seed || String(Date.now()) })
     .filter((it) => !keepDays.has(it.date));
   for (const it of items) store.create('contents', { ...it, planWeek: monday, source: 'plano' });
   const rec = { weekStart: monday, generatedAt: new Date().toISOString(), count: items.length };

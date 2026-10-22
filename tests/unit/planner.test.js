@@ -67,3 +67,46 @@ test('fotos: carrossel com foto pede foto', () => {
   const items = generateWeek({ monday: MON, profile, seed: 'p' });
   for (const it of items) assert.equal(it.needsPhoto, (it.slides || []).some((s) => s.photo));
 });
+
+test('funil ao longo da semana e opção de 7 dias', () => {
+  const five = generateWeek({ monday: MON, profile, seed: 'f' });
+  assert.deepEqual(five.map((i) => i.goal), ['seguidores', 'seguidores', 'comunidade', 'comunidade', 'marcas']);
+  const seven = generateWeek({ monday: MON, profile: { ...profile, planDays: 7 }, seed: 'f' });
+  assert.equal(seven.length, 7);
+  assert.deepEqual(seven.map((i) => i.date), weekdays(MON, 7));
+  assert.deepEqual(seven.map((i) => i.goal), ['seguidores', 'seguidores', 'comunidade', 'comunidade', 'marcas', 'marcas', 'seguidores']);
+});
+
+test('banco de temas tem prioridade, respeita o funil e não repete', () => {
+  const bank = [
+    { id: 'b1', title: 'O erro de transformar descanso em tarefa', goal: 'seguidores', line: 'Vida real' },
+    { id: 'b2', title: 'O dia em que percebi que trabalhava demais', goal: 'comunidade', type: 'carrossel', formatId: 'carrossel-storytelling', line: 'Vida real' },
+    { id: 'b3', title: 'O que uma marca recebe quando me contrata', goal: 'marcas', line: 'Criadora' },
+  ];
+  const items = generateWeek({ monday: MON, profile, bank, seed: 'k' });
+  const byTitle = (t) => items.find((i) => i.title === t);
+  assert.equal(byTitle(bank[0].title).goal, 'seguidores');
+  const story = byTitle(bank[1].title);
+  assert.equal(story.goal, 'comunidade');
+  assert.equal(story.type, 'carrossel');
+  assert.equal(story.formatId, 'carrossel-storytelling');
+  assert.equal(story.slides.length, 8, 'carrossel com história tem 8 telas');
+  assert.equal(byTitle(bank[2].title).goal, 'marcas');
+  assert.equal(items.filter((i) => i.bankId).length, 3);
+  // Na semana seguinte, os temas do banco já usados não voltam.
+  const next = generateWeek({ monday: '2026-11-02', profile, bank, contents: items, seed: 'k' });
+  assert.equal(next.filter((i) => i.bankId).length, 0);
+});
+
+test('peso das linhas editoriais', () => {
+  const bank = Array.from({ length: 40 }, (_, i) => ({ id: `x${i}`, title: `Tema ${i}`, goal: 'seguidores', line: i % 2 ? 'Leve' : 'Pesada' }));
+  const lines = [{ name: 'Pesada', weight: 95 }, { name: 'Leve', weight: 5 }];
+  let pesada = 0;
+  let total = 0;
+  for (let k = 0; k < 30; k++) {
+    const items = generateWeek({ monday: MON, profile: { ...profile, lines }, bank, seed: `w${k}` }).filter((i) => i.bankId);
+    total += items.length;
+    pesada += items.filter((i) => i.line === 'Pesada').length;
+  }
+  assert.ok(pesada / total > 0.75, `linha com mais peso aparece mais (${pesada}/${total})`);
+});

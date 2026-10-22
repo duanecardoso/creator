@@ -6,7 +6,8 @@ function profileBlock(p) {
 Sobre mim: ${p.about || '—'}
 Nichos: ${p.niches || '—'}
 Meu jeito: ${p.style || '—'}
-Evitar: ${p.avoid || '—'}
+Evitar: ${p.avoid || '—'}${p.strategy ? `\nMinha estratégia de conteúdo (siga): ${p.strategy}` : ''}${p.lines?.length ? `\nLinhas editoriais e peso: ${p.lines.map((l) => `${l.name} ${l.weight}%`).join(', ')}` : ''}
+Funil: topo = fazer gente nova me descobrir; meio = fazer quem chegou querer ficar (história, personalidade, bastidor real); fundo = mostrar meu trabalho de UGC, publi e TikTok Shop para marcas, sem virar anúncio.
 
 Regras: escreva em português do Brasil, como eu falaria. Não invente números, tendências, preços ou benefícios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por quê e sugira algo melhor.`;
 }
@@ -35,13 +36,14 @@ export function ideasPrompt({ profile, topic, goal, count = 5, hits = [] }) {
   const list = FORMATS.map((f) => `${f.id}: ${f.name}`).join('\n');
   return `${profileBlock(profile)}
 
-Me dê ${count} ideias de conteúdo ${goal ? `com foco em ${goal}` : 'variando entre ganhar seguidores, comunidade e atrair marcas'}${topic ? ` sobre: ${topic}` : ''}.
+Me dê ${count} ideias de conteúdo ${goal ? `para a etapa ${goal} do funil` : 'variando entre topo (crescer), meio (conectar) e fundo (marcas)'}${topic ? ` sobre: ${topic}` : ''}.
+Ideias específicas, que só fariam sentido vindo de mim (uma situação, opinião ou história minha), nada que qualquer criadora poderia postar.
 Use formatos DIFERENTES entre si, escolhidos desta lista (use o id):
 ${list}
 ${hits.length ? `\nConteúdos meus que funcionaram: ${hits.slice(0, 5).join('; ')}` : ''}
 
 Responda SOMENTE com este JSON:
-{"ideas": [{"title": "título", "formatId": "id da lista", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}`;
+{"ideas": [{"title": "título", "formatId": "id da lista", "goal": "seguidores (topo), comunidade (meio) ou marcas (fundo)", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}`;
 }
 
 // ---------- Leitura da resposta ----------
@@ -91,17 +93,18 @@ export function parseIdeas(text) {
   const ids = new Set(FORMATS.map((f) => f.id));
   return d.ideas
     .filter((i) => i && typeof i === 'object' && str(i.title))
-    .map((i) => ({ title: str(i.title), formatId: ids.has(str(i.formatId)) ? str(i.formatId) : '', hook: str(i.hook), why: str(i.why) }));
+    .map((i) => ({ title: str(i.title), formatId: ids.has(str(i.formatId)) ? str(i.formatId) : '', goal: ['seguidores', 'comunidade', 'marcas'].find((g) => str(i.goal).toLowerCase().includes(g)) || '', hook: str(i.hook), why: str(i.why) }));
 }
 
 // ---------- Semana inteira ----------
+const FUNNEL_LABEL = { seguidores: 'topo (crescer)', comunidade: 'meio (conectar)', marcas: 'fundo (marcas)' };
 const TYPE_LABEL = { video: 'vídeo', carrossel: 'carrossel', estatico: 'post estático', stories: 'stories' };
 
 export function weekPrompt({ profile, items, formats }) {
   const list = items.map((c, i) => {
     const f = formats.find((x) => x.id === c.formatId);
     const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${s.layout}${s.photo ? ', tem foto minha' : ''})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(' / ')}` : ''}`).join('\n');
-    return `${i + 1}. ${c.date} · ${TYPE_LABEL[c.type] || c.type} · foco ${c.goal || '—'} · formato ${f?.name || 'livre'}
+    return `${i + 1}. ${c.date} · ${TYPE_LABEL[c.type] || c.type} · funil ${FUNNEL_LABEL[c.goal] || '—'} · formato ${f?.name || 'livre'}
    Tema: ${c.theme || c.title}
    Estrutura do formato: ${(f?.structure || c.steps || []).join(' → ')}${slides ? `\n${slides}` : ''}`;
   }).join('\n');

@@ -2,10 +2,12 @@
 // Não são "tendências do momento" e não trazem números inventados: cada uma explica
 // o mecanismo pelo qual costuma funcionar. Os seus resultados dizem o que funciona PARA VOCÊ.
 
+// Foco = etapa do funil. Topo faz gente nova te descobrir, meio faz quem chegou querer ficar,
+// fundo mostra seu trabalho para marcas (UGC, publi, TikTok Shop) sem virar anúncio.
 export const GOALS = {
-  seguidores: { label: 'Seguidores', color: 'pink' },
-  comunidade: { label: 'Comunidade', color: 'orange' },
-  marcas: { label: 'Marcas', color: 'indigo' },
+  seguidores: { label: 'Topo · crescer', short: 'Topo', color: 'pink' },
+  comunidade: { label: 'Meio · conectar', short: 'Meio', color: 'orange' },
+  marcas: { label: 'Fundo · marcas', short: 'Fundo', color: 'indigo' },
 };
 
 export const FORMATS = [
@@ -271,6 +273,19 @@ export const FORMATS = [
     tip: 'Foto do produto em uso, na sua mão ou no seu espaço. Foto de catálogo não gera conexão.',
   },
   {
+    id: 'carrossel-storytelling',
+    name: 'Carrossel com história',
+    emoji: '📖',
+    color: 'pink',
+    goals: ['comunidade', 'seguidores'],
+    platforms: ['instagram'],
+    duration: 'carrossel de 8 telas',
+    why: 'Uma história específica e verdadeira, com conflito e virada, faz quem chegou agora pensar "gostei dela". Funciona melhor que lista de dicas porque ninguém mais tem a sua história.',
+    structure: ['Gancho: uma frase que abre a história', 'Contexto: "Durante muito tempo eu…"', 'Conflito: "Só que tinha uma coisa acontecendo…"', 'A situação específica, com detalhe real', 'O momento em que você percebeu', 'O que mudou no que você faz ou pensa', 'Reflexão que serve para quem lê', 'Frase final forte + uma pergunta (sem pedir para seguir)'],
+    hooks: ['Eu passei muito tempo achando que ___', 'Ninguém me contou que ___', 'Eu queria muito ___. Só não queria passar pela parte desconfortável.', 'O dia em que eu percebi que ___'],
+    tip: 'A história vem antes da lição. Termine com uma pergunta ("você também está nessa fase?") em vez de "me segue".',
+  },
+  {
     id: 'lembretes-lista',
     name: 'Lista de Lembretes',
     emoji: '☑️',
@@ -308,6 +323,7 @@ export const FORMAT_META = {
   'notas-opiniao': { types: ['estatico'], kind: 'tema', title: 'O que eu penso sobre {s}', hook: 'Coisas que eu penso sobre {s} e não falo nos vídeos' },
   'conversa-imessage': { types: ['carrossel'], kind: 'situacao', title: 'A conversa: {s}', hook: 'Print real: {s}' },
   'favoritos-mes': { types: ['carrossel'], kind: 'categoria', title: 'Favoritos do mês: {s}', hook: 'Meus favoritos do mês: {s}' },
+  'carrossel-storytelling': { types: ['carrossel'], kind: 'situacao', title: '{S}', hook: '{S}' },
   'lembretes-lista': { types: ['estatico'], kind: 'lista', title: 'Lembretes: {s}', hook: 'Lembretes para mim mesma: {s}' },
 };
 

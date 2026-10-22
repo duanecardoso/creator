@@ -1,13 +1,14 @@
 // Formatos: biblioteca de formatos validados (e os seus). Também exporta o editor de referências e a lista de hits.
 import * as data from '../data.js';
-import { h, page, group, cell, chips, sheet, badge, formGroups, toast, confirmDelete, norm, emptyNote, btn, tag, searchBox, filterSelect } from '../ui.js';
+import { h, page, group, cell, chips, sheet, badge, formGroups, toast, confirmDelete, norm, emptyNote, btn, tag, searchBox, filterSelect, tabs } from '../ui.js';
+import { bankTab } from './bank.js';
 import { FORMATS, GOALS, TYPES, metaOf } from '../lib/formats.js';
 import { hits, iso } from '../lib/insights.js';
 import { contentPrompt } from '../lib/prompts.js';
 import { newContent, formatOptions } from './content-sheet.js';
 import { askClaude } from './claude.js';
 
-const state = { goal: '', q: '', type: '' };
+const state = { goal: '', q: '', type: '', tab: 'formatos' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const today = () => iso(new Date());
 
@@ -71,7 +72,7 @@ function newFormat() {
     { header: 'Por que funciona', fields: [{ name: 'why', label: 'Por que', type: 'textarea', rows: 2, showLabel: false }] },
     { header: 'Estrutura', footer: 'Um passo por linha.', fields: [{ name: 'structure', label: 'Estrutura', type: 'list', rows: 4, showLabel: false }] },
     { header: 'Ganchos-modelo', footer: 'Um por linha.', fields: [{ name: 'hooks', label: 'Ganchos', type: 'list', rows: 3, showLabel: false }] },
-    { header: 'Serve para', fields: [{ name: 'g_seguidores', label: 'Seguidores', type: 'toggle' }, { name: 'g_comunidade', label: 'Comunidade', type: 'toggle' }, { name: 'g_marcas', label: 'Marcas', type: 'toggle' }] },
+    { header: 'Serve para', fields: [{ name: 'g_seguidores', label: 'Topo · crescer', type: 'toggle' }, { name: 'g_comunidade', label: 'Meio · conectar', type: 'toggle' }, { name: 'g_marcas', label: 'Fundo · marcas', type: 'toggle' }] },
   ]);
   sheet({
     title: 'Novo formato',
@@ -139,12 +140,20 @@ export function editReference(r = {}) {
   });
 }
 
-export function render(root) {
+const TABS = [{ value: 'formatos', label: 'Formatos' }, { value: 'banco', label: 'Banco de temas' }];
+
+export function render(root, params = {}) {
+  if (params.aba && TABS.some((t) => t.value === params.aba)) {
+    state.tab = params.aba;
+    history.replaceState(null, '', '#/conteudo/formatos');
+  }
+  const tab = state.tab || 'formatos';
+  const tabsEl = tabs(TABS, tab, (v) => { state.tab = v; rerender(); }, 'Área');
   root.append(page({
     kicker: 'Conteúdo',
     title: 'Formatos',
-    subtitle: 'Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.',
-    actions: btn('Criar formato', newFormat, { iconName: 'plus', id: 'new-format' }),
-    children: library(),
+    subtitle: tab === 'banco' ? 'Seus temas prontos, por linha editorial e etapa do funil. O plano da semana usa estes primeiro.' : 'Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.',
+    actions: tab === 'formatos' ? btn('Criar formato', newFormat, { iconName: 'plus', id: 'new-format' }) : null,
+    children: [tabsEl, ...(tab === 'banco' ? bankTab() : library())],
   }));
 }
