@@ -216,6 +216,9 @@ p { margin: 0; }
 .group-body { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
 .group-footer { font-size: 13px; color: var(--ink-3); margin: 8px 2px 0; }
 .card .group, .drawer .group { margin-bottom: 16px; }
+.card-body.flush > .group { margin: 0; }
+.card-body.flush > .group > .group-body { border: 0; border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.card-body.flush > .empty { padding: 22px 18px; }
 .cell { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 10px 16px; border: 0; background: var(--surface); text-align: left; color: var(--ink); }
 .group-body > * + * { border-top: 1px solid var(--line-2); }
 .tappable { cursor: pointer; }
@@ -530,6 +533,72 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
   .deliv-fields { grid-template-columns: minmax(0, 1fr); }
   .slide-thumb { width: 62vw; }
 }
+
+/* ================= Planejamento (quadro) ================= */
+.btn-group { display: inline-flex; }
+.btn-group .btn { border-radius: 0; margin-left: -1px; }
+.btn-group .btn:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-left: 0; }
+.btn-group .btn:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-items: start; margin-bottom: 16px; }
+.day-col { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-lg); min-width: 0; }
+.day-col.is-today { border-color: #e6cd73; box-shadow: 0 0 0 3px var(--butter-soft); }
+.day-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.day-name { font: 600 15px var(--display); }
+.day-name::first-letter { text-transform: uppercase; }
+.day-date { font-size: 12px; color: var(--ink-3); }
+.day-body { display: grid; gap: 8px; padding: 10px; }
+.board .plan-card { flex-direction: column; align-items: stretch; gap: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.board .plan-main { padding: 10px 12px; gap: 6px; }
+.board .plan-title { font-size: 14px; }
+.board .plan-hook { font-size: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.board .plan-actions { flex-direction: row; justify-content: space-between; align-items: center; padding: 6px 8px 8px 12px; border-top: 1px solid var(--line-2); }
+.board .plan-actions:empty { display: none; }
+.tag.type-video { background: var(--brown-100); color: var(--brown); }
+.tag.type-carrossel { background: var(--pink-soft); color: var(--pink-deep); }
+.tag.type-estatico { background: var(--butter-soft); color: #7d5a00; }
+.deadline-chip { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 8px 10px; border: 1px dashed #dccbb6; border-radius: var(--r-sm); background: var(--surface); text-align: left; font-size: 12px; color: var(--ink-2); }
+.deadline-chip strong { color: var(--ink); font-size: 13px; }
+.deadline-chip .cell-text { gap: 0; }
+.deadline-chip:hover { border-style: solid; }
+.add-slot { border: 1px dashed transparent; background: none; color: var(--ink-3); font-size: 13px; padding: 6px; border-radius: var(--r-sm); text-align: left; }
+.add-slot:hover { border-color: var(--line); color: var(--pink-deep); background: var(--surface); }
+.plain-list { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 6px; }
+@media (max-width: 1180px) { .board { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .board { grid-template-columns: minmax(0, 1fr); } }
+
+/* ================= Estúdio ================= */
+.studio { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; }
+.studio-stage { display: grid; gap: 10px; min-width: 0; }
+.big-wrap { background: repeating-linear-gradient(45deg, var(--surface-2) 0 12px, var(--bg) 12px 24px); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; display: grid; place-items: center; }
+.big-canvas { width: min(100%, 440px); aspect-ratio: 4 / 5; border-radius: var(--r-sm); box-shadow: var(--shadow-lg); background: var(--surface); }
+.studio .slide-thumb { width: 116px; }
+.studio-panel { display: grid; gap: 16px; position: sticky; top: 72px; }
+.studio-panel .card-body { display: grid; gap: 8px; }
+.studio .design-actions { margin: 0; }
+.studio .slide-editor .group-body { padding: 0; }
+.studio .slide-editor .field, .studio .slide-editor .field-area { padding: 10px 14px; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.gallery-item { display: grid; gap: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); text-align: left; color: var(--ink); overflow: hidden; box-shadow: var(--shadow); }
+.gallery-item:hover { border-color: #e2cf9a; }
+.gallery-thumb { display: block; aspect-ratio: 4 / 5; background: var(--line-2); }
+.thumb-canvas { width: 100%; height: 100%; display: block; }
+.gallery-empty { display: grid; place-items: center; height: 100%; color: var(--ink-3); font-size: 13px; }
+.gallery-meta { display: grid; gap: 4px; padding: 10px 12px 12px; }
+@media (max-width: 1100px) { .studio { grid-template-columns: minmax(0, 1fr); } .studio-panel { position: static; } }
+
+/* ================= Conteúdos ================= */
+.td-flex { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.status-select { min-height: 30px; font-size: 13px; padding-left: 8px; }
+.kanban { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.kanban-col { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-lg); min-height: 200px; transition: background 0.15s; }
+.kanban-col.drop { background: var(--butter-soft); border-color: var(--butter-strong); }
+.kanban-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); font-weight: 600; }
+.kanban-body { display: grid; gap: 8px; padding: 10px; }
+.kanban-card { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); text-align: left; color: var(--ink); box-shadow: var(--shadow); cursor: grab; }
+.kanban-card:hover { border-color: #e2cf9a; }
+.kanban-card strong { font-size: 14px; line-height: 1.3; }
+.kanban-empty { text-align: center; padding: 16px 0; }
 
 </style>
 </head>
@@ -1959,9 +2028,9 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
     emit(col);
     return r;
   }
-  function update(col, id, patch) {
+  function update(col, id, patch, { silent = false } = {}) {
     const r = store.update(col, id, patch);
-    emit(col);
+    if (!silent) emit(col);
     return r;
   }
   function remove(col, id) {
@@ -2128,8 +2197,8 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
   });
 
   // src/js/ui.js
-  function h(tag, props = {}, ...children) {
-    const el = document.createElement(tag);
+  function h(tag2, props = {}, ...children) {
+    const el = document.createElement(tag2);
     for (const [k, v] of Object.entries(props || {})) {
       if (v === null || v === void 0 || v === false) continue;
       if (k === "class") el.className = v;
@@ -2211,6 +2280,28 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
     ];
     return onClick ? h("button", { type: "button", class: `cell tappable ${cls}`, onclick: onClick, "data-id": id }, content) : h("div", { class: `cell ${cls}`, "data-id": id }, content);
   }
+  function table({ columns, rows, onRowClick, rowId, rowCls, empty: empty2 = "Nada por aqui.", caption }) {
+    if (!rows.length) return emptyNote(empty2);
+    return h(
+      "div",
+      { class: "table-wrap" },
+      h(
+        "table",
+        { class: "table stackable" },
+        caption && h("caption", { class: "sr-only" }, caption),
+        h("thead", {}, h("tr", {}, columns.map((c) => h("th", { scope: "col", class: c.cls }, c.label)))),
+        h("tbody", {}, rows.map((r) => h("tr", {
+          class: [onRowClick ? "clickable" : "", rowCls?.(r) || ""].join(" ").trim() || null,
+          "data-id": rowId?.(r),
+          tabindex: onRowClick ? "0" : null,
+          onclick: onRowClick ? (e) => {
+            if (!e.target.closest("button, a, input, select")) onRowClick(r);
+          } : null,
+          onkeydown: onRowClick ? (e) => e.key === "Enter" && e.target === e.currentTarget && onRowClick(r) : null
+        }, columns.map((c) => h("td", { class: [c.cls, c.main ? "td-main" : ""].join(" ").trim() || null, "data-label": c.label }, c.render(r))))))
+      )
+    );
+  }
   function toggle(checked, onChange2, label) {
     const input = h("input", { type: "checkbox", role: "switch", class: "switch", checked: Boolean(checked), "aria-label": label });
     input.addEventListener("change", () => onChange2(input.checked));
@@ -2235,6 +2326,26 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       { class: "chips", role: "group" },
       options.map((o) => h("button", { type: "button", class: `chip${o.value === value ? " on" : ""}`, "aria-pressed": String(o.value === value), onclick: () => onChange2(o.value === value ? "" : o.value) }, o.label))
     );
+  }
+  function filterSelect(label, options, value, onChange2) {
+    const sel = h(
+      "select",
+      { class: `filter-select${value ? " active" : ""}`, "aria-label": label, onchange: (e) => onChange2(e.target.value) },
+      h("option", { value: "" }, label),
+      options.map((o) => h("option", { value: o.value, selected: o.value === value }, o.label))
+    );
+    return sel;
+  }
+  function searchBox(value, onInput, placeholder = "Buscar\u2026") {
+    const s = h("input", { type: "search", class: "search", placeholder, value: value || "", "aria-label": placeholder });
+    s.addEventListener("input", () => {
+      const pos = s.selectionStart;
+      onInput(s.value);
+      const again = document.querySelector(".search");
+      again?.focus();
+      again?.setSelectionRange?.(pos, pos);
+    });
+    return s;
   }
   function toast(message, kind = "ok") {
     let box = document.getElementById("toasts");
@@ -2427,7 +2538,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       return false;
     }
   }
-  var clear, norm, fmtNum, fmtDec, ICONS, icon, badge, btn, navButton, confirmDelete, emptyNote;
+  var clear, norm, fmtNum, fmtDec, ICONS, icon, badge, tag, btn, navButton, tabs, confirmDelete, emptyNote;
   var init_ui = __esm({
     "src/js/ui.js"() {
       clear = (el) => {
@@ -2452,6 +2563,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
         menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
         close: '<path d="M6 6l12 12M18 6L6 18"/>',
         chevron: '<path d="M9 5l7 7-7 7"/>',
+        back: '<path d="M15 5l-7 7 7 7"/>',
         plus: '<path d="M12 5v14M5 12h14"/>',
         check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
         sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
@@ -2463,8 +2575,10 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       };
       icon = (name, cls = "ic") => h("span", { class: cls, "aria-hidden": "true", html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ICONS.plus}</svg>` });
       badge = (emoji, color = "gray") => h("span", { class: `badge c-${color}`, "aria-hidden": "true" }, emoji);
+      tag = (text2, tone = "") => text2 ? h("span", { class: `tag ${tone}` }, text2) : null;
       btn = (label, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: `btn${kind ? ` btn-${kind}` : ""}${small ? " btn-sm" : ""}`, onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label && h("span", { class: "btn-label" }, label));
       navButton = (label, onClick, { iconName, id, kind = "primary" } = {}) => btn(label || (iconName === "plus" ? "Novo" : ""), onClick, { kind, iconName, id });
+      tabs = segmented;
       confirmDelete = (what) => actionSheet({ title: "Apagar", message: `Apagar ${what}? N\xE3o d\xE1 para desfazer.`, actions: [{ label: "Apagar", destructive: true, value: true, id: "confirm-delete" }] }).then((v) => v === true);
       emptyNote = (title, text2, action) => h("div", { class: "empty" }, h("p", { class: "empty-title" }, title), text2 && h("p", {}, text2), action && h("p", { style: { marginTop: "12px" } }, action));
     }
@@ -2954,19 +3068,27 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
     return img;
   }
   function openDesigner(contentId) {
+    document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')?.click();
+    go("conteudo/estudio", { id: contentId });
+  }
+  function buildDesigner(contentId) {
     let c = get("contents", contentId);
-    if (!c) return;
+    if (!c) return null;
     if (!c.slides?.length) {
       const slides2 = slidesFor(c.formatId, c.type === "estatico" ? "estatico" : "carrossel", { title: c.title, goal: c.goal });
-      c = update("contents", c.id, { slides: slides2, needsPhoto: needsPhoto(slides2) });
+      c = update("contents", c.id, { slides: slides2, needsPhoto: needsPhoto(slides2) }, { silent: true });
     }
     let slides = structuredClone(c.slides);
     let dark = c.designDark ?? profile().designDark ?? false;
-    let sel = 0;
+    if (studio.id !== contentId) Object.assign(studio, { id: contentId, sel: 0 });
+    let sel = Math.min(studio.sel, Math.max(0, (c.slides?.length || 1) - 1));
+    const big = h("canvas", { class: "big-canvas", "aria-label": "Pr\xE9via da tela selecionada" });
+    const drawBig = () => imageFor(slides[sel]).then((img) => drawSlide(big, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
     const strip = h("div", { class: "slide-strip", role: "listbox", "aria-label": "Telas" });
     const editor = h("div", { class: "slide-editor" });
     const persist = () => {
-      c = update("contents", c.id, { slides, needsPhoto: needsPhoto(slides), designDark: dark, touched: true });
+      c = update("contents", c.id, { slides, needsPhoto: needsPhoto(slides), designDark: dark, touched: true }, { silent: true });
+      studio.sel = sel;
     };
     async function drawStrip() {
       strip.replaceChildren(...slides.map((s, i) => {
@@ -2975,6 +3097,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
           "button",
           { type: "button", class: `slide-thumb${i === sel ? " sel" : ""}`, role: "option", "aria-selected": String(i === sel), "data-slide": i, onclick: () => {
             sel = i;
+            studio.sel = i;
             drawStrip();
             drawEditor();
           } },
@@ -2985,9 +3108,10 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
         imageFor(s).then((img) => drawSlide(cv, s, { ...opts({ ...c, designDark: dark }, i, slides.length, true), image: img }));
         return b;
       }));
-      strip.querySelector(".sel")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      drawBig();
     }
     const redrawCurrent = () => {
+      drawBig();
       const cv = strip.querySelector(`[data-slide="${sel}"] canvas`);
       if (cv) imageFor(slides[sel]).then((img) => drawSlide(cv, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
     };
@@ -3148,28 +3272,38 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
     }
     drawStrip();
     drawEditor();
-    sheet({
-      title: c.type === "estatico" ? "Design do post" : "Design do carrossel",
-      tall: true,
-      body: h(
+    const miss = slides.filter((x) => x.photo && !x.photoId).length;
+    return h(
+      "div",
+      { class: "studio" },
+      h(
         "div",
-        { class: "sheet-stack designer" },
-        strip,
-        h(
-          "div",
-          { class: "design-actions" },
-          h("label", { class: "mini-toggle" }, "Escuro", toggle(dark, (v) => {
-            dark = v;
-            persist();
-            drawStrip();
-          }, "Tema escuro")),
-          h("button", { type: "button", class: "btn-filled small", "data-id": "export-design", onclick: exportAll }, "Salvar imagens")
-        ),
+        { class: "studio-stage" },
+        h("div", { class: "big-wrap" }, big),
+        h("p", { class: "subtle small" }, "Pr\xE9via 1080\xD71350 (4:5 do feed). As dicas \u270F\uFE0E e os espa\xE7os de foto n\xE3o aparecem na imagem exportada."),
+        strip
+      ),
+      h(
+        "aside",
+        { class: "studio-panel" },
+        card({ children: [
+          h(
+            "div",
+            { class: "design-actions" },
+            h("label", { class: "mini-toggle" }, toggle(dark, (v) => {
+              dark = v;
+              persist();
+              drawStrip();
+            }, "Tema escuro"), "Tema escuro"),
+            h("button", { type: "button", class: "btn btn-primary", "data-id": "export-design", onclick: exportAll }, icon("download"), "Salvar imagens")
+          ),
+          miss > 0 && h("p", { class: "hint-line" }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.`)
+        ] }),
         editor
       )
-    });
+    );
   }
-  var imgCache, opts, missingPhotos;
+  var imgCache, opts, missingPhotos, studio;
   var init_designer = __esm({
     "src/js/views/designer.js"() {
       init_data();
@@ -3183,6 +3317,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
         return { palette: p.palette, dark: c.designDark ?? p.designDark, handle: p.instagram ? `@${p.instagram.replace(/^@/, "")}` : "", index: i, total, preview };
       };
       missingPhotos = (c) => (c.slides || []).filter((s) => s.photo && !s.photoId).length;
+      studio = { id: null, sel: 0 };
     }
   });
 
@@ -3705,7 +3840,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     ];
   }
   function render(root) {
-    const tabs = [{ value: "entregas", label: "Entregas" }, { value: "financeiro", label: "Financeiro" }, { value: "marcas", label: "Contatos" }];
+    const tabs2 = [{ value: "entregas", label: "Entregas" }, { value: "financeiro", label: "Financeiro" }, { value: "marcas", label: "Contatos" }];
     root.append(page({
       title: "Marcas",
       subtitle: "UGC, publis e TikTok Shop",
@@ -3714,7 +3849,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
         if (t) newDeal(t);
       }, { iconName: "plus", id: "new-deal" }),
       children: [
-        h("div", { class: "pad-x" }, segmented(tabs, state.tab, (v) => {
+        h("div", { class: "pad-x" }, segmented(tabs2, state.tab, (v) => {
           state.tab = v;
           rerender();
         }, "Se\xE7\xF5es")),
@@ -4185,13 +4320,13 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     });
   }
   function render2(root) {
-    const tabs = [{ value: "biblioteca", label: "Biblioteca" }, { value: "hits", label: "Meus hits" }, { value: "referencias", label: "Refer\xEAncias" }];
+    const tabs2 = [{ value: "biblioteca", label: "Biblioteca" }, { value: "hits", label: "Meus hits" }, { value: "referencias", label: "Refer\xEAncias" }];
     root.append(page({
       title: "Formatos",
       subtitle: "O que j\xE1 funciona, para voc\xEA usar com o seu jeito",
       right: state2.tab === "referencias" ? navButton("", () => editReference(), { iconName: "plus", id: "new-reference" }) : null,
       children: [
-        h("div", { class: "pad-x" }, segmented(tabs, state2.tab, (v) => {
+        h("div", { class: "pad-x" }, segmented(tabs2, state2.tab, (v) => {
           state2.tab = v;
           rerender2();
         }, "Se\xE7\xF5es")),
@@ -4391,7 +4526,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     if (!ideas.length) throw new Error("A resposta n\xE3o trouxe ideias.");
     for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, hook: i.hook, notes: i.why ? `Por qu\xEA: ${i.why}` : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
     toast(`${ideas.length} ideias guardadas`);
-    location.hash = "#/semana";
+    location.hash = "#/conteudo/planejamento";
   });
   onClaudeResult("week", (text2, ctx) => {
     const days = parseWeek(text2);
@@ -4414,7 +4549,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       n2++;
     });
     toast(`${n2} conte\xFAdos preenchidos pelo Claude`);
-    location.hash = "#/semana";
+    location.hash = "#/conteudo/planejamento";
   });
   var planItems = (monday) => {
     const days = weekdays(monday);
@@ -4442,7 +4577,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
         h(
           "div",
           { class: "plan-tags" },
-          h("span", { class: "tag" }, `${t.emoji} ${t.label}`),
+          h("span", { class: `tag type-${c.type || "video"}` }, t.label),
           g && h("span", { class: `tag t-${g.color}` }, g.label),
           f && h("span", { class: "tag" }, f.name),
           c.dealId && h("span", { class: "tag t-indigo" }, "Marca")
@@ -4454,8 +4589,8 @@ Meu jeito: ${r.adapt || ""}` }), 250);
       h(
         "div",
         { class: "plan-actions" },
-        hasDesign && h("button", { type: "button", class: "next-btn", "data-id": "open-design", onclick: () => openDesigner(c.id) }, miss ? `\u{1F4F7} ${miss} foto${miss > 1 ? "s" : ""}` : "\u{1F3A8} Design"),
-        !c.dealId && c.status !== "postado" && h("button", { type: "button", class: "next-btn ghost", "data-id": "reroll", onclick: () => reroll(c), "aria-label": "Trocar sugest\xE3o" }, "\u21BB")
+        hasDesign && h("button", { type: "button", class: `btn btn-sm${miss ? " btn-accent" : ""}`, "data-id": "open-design", onclick: () => openDesigner(c.id) }, miss ? `\u{1F4F7} ${miss} foto${miss > 1 ? "s" : ""}` : "Design"),
+        !c.dealId && c.status !== "postado" && h("button", { type: "button", class: "icon-btn", "data-id": "reroll", onclick: () => reroll(c), "aria-label": "Trocar sugest\xE3o", title: "Trocar sugest\xE3o" }, "\u21BB")
       )
     );
   }
@@ -4465,111 +4600,151 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     state3.monday || (state3.monday = targetWeek(t));
     const monday = state3.monday;
     const days = weekdays(monday);
-    const allDays = [...days, addDays(monday, 5), addDays(monday, 6)];
+    const weekend = [addDays(monday, 5), addDays(monday, 6)];
     const plan = planFor(monday);
     const items = all("contents");
-    const dls = deadlines(all("deals")).filter((d) => allDays.includes(d.date));
+    const dls = deadlines(all("deals")).filter((d) => [...days, ...weekend].includes(d.date));
     const ideas = items.filter((c) => !c.date && c.status !== "postado").sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
     const label = `${fmtDay(monday, { day: "numeric", month: "short" })} \u2013 ${fmtDay(days[4], { day: "numeric", month: "short" })}`;
     const isNext = monday > weekStart(t);
+    const isCurrent = monday === weekStart(t);
     const pItems = planItems(monday);
     const mix = pItems.reduce((a, c) => (a[c.type] = (a[c.type] || 0) + 1, a), {});
-    const dayGroups = allDays.map((d, i) => {
+    const dayColumn = (d) => {
       const list = items.filter((c) => c.date === d).sort((a, b) => statusIndex(a.status) - statusIndex(b.status));
       const dl = dls.filter((x) => x.date === d);
-      if (i >= 5 && !list.length && !dl.length) return null;
-      return group({
-        header: `${fmtDay(d, { weekday: "long", day: "numeric", month: "short" })}${d === t ? " \xB7 hoje" : ""}`,
-        children: [
-          ...list.map(planCard),
-          ...dl.map((x) => cell({ emoji: DL_ICON2[x.kind], color: DEAL_TYPES[x.deal.type]?.color || "gray", title: `${x.name}: ${x.label}`, subtitle: DEAL_TYPES[x.deal.type]?.label, chevron: true, onClick: () => openDeal(x.deal) })),
-          !list.length && i < 5 && h("button", { type: "button", class: "cell tappable link-cell", onclick: () => newContent({ date: d }) }, "+ Adicionar")
-        ]
-      });
-    });
-    root.append(page({
-      title: "Semana",
-      subtitle: `${label}${isNext ? " \xB7 pr\xF3xima semana" : ""}`,
-      right: navButton("", () => newContent({ date: days[0] }), { iconName: "plus", id: "new-content-week" }),
-      children: [
+      return h(
+        "section",
+        { class: `day-col${d === t ? " is-today" : ""}`, "aria-label": fmtDay(d, { weekday: "long", day: "numeric", month: "long" }) },
+        h(
+          "header",
+          { class: "day-head" },
+          h("span", { class: "day-name" }, fmtDay(d, { weekday: "long" })),
+          h("span", { class: "day-date" }, fmtDay(d, { day: "numeric", month: "short" })),
+          d === t && h("span", { class: "tag t-butter" }, "hoje")
+        ),
         h(
           "div",
-          { class: "week-switch" },
-          h("button", { type: "button", class: "nav-btn", "aria-label": "Semana anterior", onclick: () => {
+          { class: "day-body" },
+          ...list.map(planCard),
+          ...dl.map((x) => h(
+            "button",
+            { type: "button", class: `deadline-chip k-${x.kind}`, onclick: () => openDeal(x.deal) },
+            h("span", {}, DL_ICON2[x.kind]),
+            h("span", { class: "cell-text" }, h("strong", {}, x.name), h("span", {}, x.label))
+          )),
+          h("button", { type: "button", class: "add-slot", onclick: () => newContent({ date: d }) }, "+ Adicionar")
+        )
+      );
+    };
+    const weekendItems = weekend.flatMap((d) => items.filter((c) => c.date === d));
+    const weekendDls = dls.filter((x) => weekend.includes(x.date));
+    const weekActions = [
+      btn("Escrever a semana com o Claude", () => {
+        if (!pItems.length) return toast("Nada no plano para refinar.", "error");
+        askClaude({ kind: "week", context: { monday }, prompt: weekPrompt({ profile: profile(), items: pItems, formats: [...FORMATS, ...all("formats")] }) });
+      }, { iconName: "sparkle", id: "claude-week" }),
+      btn("Calend\xE1rio", () => {
+        const evs = [...pItems.map((c) => ({ date: c.date, label: c.title, name: TYPES[c.type]?.label || "Post" })), ...dls];
+        downloadIcs(evs, `semana-${monday}`);
+      }, { iconName: "calendar", id: "week-ics", title: "Adicionar a semana ao Calend\xE1rio (.ics)" }),
+      btn("Refazer sugest\xF5es", async () => {
+        const ok = await actionSheet({ title: "Refazer o plano", message: "Troca as sugest\xF5es que voc\xEA ainda n\xE3o editou. O que voc\xEA j\xE1 mexeu fica.", actions: [{ label: "Refazer", value: true, id: "confirm-regenerate" }] });
+        if (ok) {
+          generatePlan(monday, { replace: true });
+          toast("Plano refeito");
+        }
+      }, { iconName: "refresh", id: "regenerate", kind: "ghost" })
+    ];
+    root.append(page({
+      kicker: "Conte\xFAdo",
+      title: "Planejamento",
+      subtitle: `Semana de ${label}${isNext ? " \xB7 pr\xF3xima semana" : isCurrent ? " \xB7 esta semana" : ""}`,
+      actions: [
+        h(
+          "div",
+          { class: "btn-group" },
+          btn("", () => {
             state3.monday = addDays(monday, -7);
             rerender3();
-          } }, "\u2039 Anterior"),
-          h("button", { type: "button", class: "nav-btn", onclick: () => {
-            state3.monday = targetWeek(t);
+          }, { iconName: "back", title: "Semana anterior" }),
+          btn(isCurrent ? "Esta semana" : "Ir para esta semana", () => {
+            state3.monday = weekStart(t);
             rerender3();
-          } }, isNext || monday === weekStart(t) ? "" : "Atual"),
-          h("button", { type: "button", class: "nav-btn", "aria-label": "Pr\xF3xima semana", onclick: () => {
+          }),
+          btn("", () => {
             state3.monday = addDays(monday, 7);
             rerender3();
-          } }, "Pr\xF3xima \u203A")
-        ),
+          }, { iconName: "chevron", title: "Pr\xF3xima semana" })
+        )
+      ],
+      children: [
         !plan ? h(
           "div",
           { class: "plan-hero" },
-          h("p", { class: "plan-hero-title" }, "\u2728 Plano da semana"),
-          h("p", { class: "muted" }, "Gera segunda a sexta com tema, foco, formato, tipo (v\xEDdeo, carrossel ou est\xE1tico) e estrutura. Publis e TikTok Shop com data entram sozinhos."),
-          h("button", { type: "button", class: "btn-filled", "data-id": "generate-plan", onclick: () => {
+          h("p", { class: "plan-hero-title" }, "Plano desta semana"),
+          h("p", { class: "muted" }, "Gera de segunda a sexta com tema, foco, formato, tipo (v\xEDdeo, carrossel ou est\xE1tico) e estrutura. Publis e TikTok Shop com data entram sozinhos. A partir de s\xE1bado, a pr\xF3xima semana \xE9 gerada quando voc\xEA abre a plataforma."),
+          btn("Gerar plano desta semana", () => {
             const n2 = generatePlan(monday, { seed: monday });
             toast(`${n2} conte\xFAdos planejados`);
-          } }, "Gerar plano desta semana"),
-          h("p", { class: "small muted" }, "A partir de s\xE1bado, o plano da semana seguinte \xE9 gerado sozinho quando voc\xEA abre o app.")
+          }, { kind: "primary", id: "generate-plan", iconName: "sparkle" })
         ) : h(
           "div",
-          { class: "plan-summary" },
-          h("span", {}, `Gerado ${fmtDay(plan.generatedAt.slice(0, 10), { weekday: "short", day: "numeric", month: "short" })}`),
-          h("span", {}, Object.entries(mix).map(([k, v]) => `${v} ${TYPES[k]?.label.toLowerCase() || k}`).join(" \xB7 "))
+          { class: "toolbar" },
+          h("p", { class: "muted small" }, `Plano gerado em ${fmtDay(plan.generatedAt.slice(0, 10), { weekday: "short", day: "numeric", month: "short" })} \xB7 ${Object.entries(mix).map(([k, v]) => `${v} ${(TYPES[k]?.label || k).toLowerCase()}`).join(" \xB7 ")}`),
+          h("div", { class: "page-actions" }, weekActions)
         ),
-        ...dayGroups,
-        plan && group({ header: "A\xE7\xF5es da semana", children: [
-          h("button", { type: "button", class: "cell tappable tint", "data-id": "claude-week", onclick: () => {
-            if (!pItems.length) return toast("Nada no plano para refinar.", "error");
-            askClaude({ kind: "week", context: { monday }, prompt: weekPrompt({ profile: profile(), items: pItems, formats: [...FORMATS, ...all("formats")] }) });
-          } }, "\u2728 Escrever a semana com o Claude"),
-          h("button", { type: "button", class: "cell tappable tint", "data-id": "week-ics", onclick: () => {
-            const evs = [...pItems.map((c) => ({ date: c.date, label: c.title, name: TYPES[c.type]?.label || "Post" })), ...dls];
-            downloadIcs(evs, `semana-${monday}`);
-          } }, "\u{1F4C5} Adicionar a semana ao Calend\xE1rio"),
-          h("button", { type: "button", class: "cell tappable tint", "data-id": "regenerate", onclick: async () => {
-            const ok = await actionSheet({ title: "Refazer o plano", message: "Troca as sugest\xF5es que voc\xEA ainda n\xE3o editou. O que voc\xEA j\xE1 mexeu fica.", actions: [{ label: "Refazer", value: true, id: "confirm-regenerate" }] });
-            if (ok) {
-              generatePlan(monday, { replace: true });
-              toast("Plano refeito");
-            }
-          } }, "\u21BB Refazer sugest\xF5es")
-        ], footer: "O Claude devolve ganchos, roteiros, legendas e os textos das artes; ao voltar, cole a resposta e tudo \xE9 preenchido." }),
-        group({
-          header: `Ideias guardadas (${ideas.length})`,
-          children: [
-            ...ideas.slice(0, 12).map((c) => {
-              const f = formatById(c.formatId, all("formats"));
-              return h(
-                "div",
-                { class: "sugg", "data-id": `idea-${c.id}` },
-                h(
-                  "button",
-                  { type: "button", class: "content-main", onclick: () => openContent(c) },
-                  badge(f?.emoji || "\u{1F4A1}", f?.color || "yellow"),
-                  h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, f?.name || c.hook || ""))
-                ),
-                h("button", { type: "button", class: "next-btn", "data-id": "schedule", onclick: async () => {
-                  const day = await actionSheet({ title: "Agendar para", actions: days.map((d) => ({ label: fmtDay(d, { weekday: "long", day: "numeric" }), value: d })) });
-                  if (day) {
-                    update("contents", c.id, { date: day, planWeek: monday });
-                    toast(`Agendado: ${fmtDay(day)}`);
-                  }
-                } }, "Agendar")
-              );
-            }),
-            h("button", { type: "button", class: "cell tappable link-cell", onclick: () => newContent({ date: "" }) }, "+ Nova ideia"),
-            h("button", { type: "button", class: "cell tappable tint", "data-id": "claude-ideas", onclick: () => askClaude({ kind: "ideas", prompt: ideasPrompt({ profile: profile(), count: 5, hits: items.filter((c) => c.status === "postado").map((c) => c.title).slice(-5) }) }) }, "\u2728 Pedir 5 ideias ao Claude")
-          ]
-        }),
-        !items.length && !plan && emptyNote("Comece gerando o plano", "Voc\xEA pode trocar qualquer sugest\xE3o com \u21BB ou editar tocando nela.")
+        h("div", { class: "board" }, days.map(dayColumn)),
+        (weekendItems.length > 0 || weekendDls.length > 0) && card({ title: "Fim de semana", flush: true, children: group({ children: [
+          ...weekendItems.map(planCard),
+          ...weekendDls.map((x) => cell({ emoji: DL_ICON2[x.kind], color: DEAL_TYPES[x.deal.type]?.color || "gray", title: `${x.name}: ${x.label}`, subtitle: fmtDay(x.date), chevron: true, onClick: () => openDeal(x.deal) }))
+        ] }) }),
+        h(
+          "div",
+          { class: "grid cols-2 section" },
+          card({
+            title: `Ideias guardadas (${ideas.length})`,
+            subtitle: "Agende num dia da semana exibida",
+            flush: true,
+            actions: btn("Pedir 5 ideias ao Claude", () => askClaude({ kind: "ideas", prompt: ideasPrompt({ profile: profile(), count: 5, hits: items.filter((c) => c.status === "postado").map((c) => c.title).slice(-5) }) }), { iconName: "sparkle", small: true, id: "claude-ideas" }),
+            children: group({ children: [
+              ...ideas.slice(0, 12).map((c) => {
+                const f = formatById(c.formatId, all("formats"));
+                return h(
+                  "div",
+                  { class: "sugg", "data-id": `idea-${c.id}` },
+                  h(
+                    "button",
+                    { type: "button", class: "content-main", onclick: () => openContent(c) },
+                    badge(f?.emoji || "\u{1F4A1}", f?.color || "yellow"),
+                    h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, f?.name || c.hook || ""))
+                  ),
+                  h("button", { type: "button", class: "btn btn-sm", "data-id": "schedule", onclick: async () => {
+                    const day = await actionSheet({ title: "Agendar para", actions: days.map((d) => ({ label: fmtDay(d, { weekday: "long", day: "numeric", month: "short" }), value: d })) });
+                    if (day) {
+                      update("contents", c.id, { date: day, planWeek: monday });
+                      toast(`Agendado: ${fmtDay(day)}`);
+                    }
+                  } }, "Agendar")
+                );
+              }),
+              !ideas.length && emptyNote("Nenhuma ideia guardada", "Salve ideias de formatos, refer\xEAncias ou pe\xE7a ao Claude."),
+              h("button", { type: "button", class: "cell tappable link-cell", onclick: () => newContent({ date: "" }) }, "+ Nova ideia")
+            ] })
+          }),
+          card({
+            title: "Como o plano \xE9 montado",
+            flush: false,
+            children: h(
+              "ul",
+              { class: "plain-list" },
+              h("li", {}, "O foco alterna entre seguidores, comunidade e marcas ao longo da semana."),
+              h("li", {}, "A mistura de v\xEDdeo, carrossel e est\xE1tico segue o que voc\xEA definiu em Configura\xE7\xF5es."),
+              h("li", {}, "Formatos e temas usados recentemente s\xE3o evitados; os que j\xE1 deram certo para voc\xEA ganham prioridade."),
+              h("li", {}, "Use \u21BB num card para trocar s\xF3 aquele dia.")
+            )
+          })
+        )
       ]
     }));
   }
@@ -4652,12 +4827,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     })];
   }
   function render5(root) {
-    const tabs = [{ value: "resumo", label: "Resumo" }, { value: "formatos", label: "Por formato" }];
+    const tabs2 = [{ value: "resumo", label: "Resumo" }, { value: "formatos", label: "Por formato" }];
     root.append(page({
       title: "Resultados",
       subtitle: "Seguidores, comunidade e marcas \u2014 n\xE3o s\xF3 views",
       children: [
-        h("div", { class: "pad-x" }, segmented(tabs, state4.tab, (v) => {
+        h("div", { class: "pad-x" }, segmented(tabs2, state4.tab, (v) => {
           state4.tab = v;
           rerender4();
         }, "Se\xE7\xF5es")),
@@ -4737,7 +4912,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   var when = (s) => s ? new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "nunca";
   function stepper(value, onChange2, min = 1, max = 14) {
     const out = h("span", { class: "step-val", "aria-live": "polite" }, String(value));
-    const set = (v) => {
+    const set2 = (v) => {
       const n2 = Math.min(max, Math.max(min, v));
       out.textContent = String(n2);
       onChange2(n2);
@@ -4745,9 +4920,9 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     return h(
       "span",
       { class: "stepper" },
-      h("button", { type: "button", "aria-label": "Diminuir", onclick: () => set(Number(out.textContent) - 1) }, "\u2212"),
+      h("button", { type: "button", "aria-label": "Diminuir", onclick: () => set2(Number(out.textContent) - 1) }, "\u2212"),
       out,
-      h("button", { type: "button", "aria-label": "Aumentar", onclick: () => set(Number(out.textContent) + 1) }, "+")
+      h("button", { type: "button", "aria-label": "Aumentar", onclick: () => set2(Number(out.textContent) + 1) }, "+")
     );
   }
   function instagramSheet() {
@@ -4943,10 +5118,247 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }));
   }
 
+  // src/js/views/studio.js
+  var studio_exports = {};
+  __export(studio_exports, {
+    render: () => render7
+  });
+  init_data();
+  init_ui();
+  init_formats();
+  init_render();
+  init_designer();
+  init_content_sheet();
+  var state5 = { filter: "" };
+  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
+  function thumb(c) {
+    const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
+    const p = profile();
+    if (c.slides?.length) queueMicrotask(() => drawSlide(cv, c.slides[0], { palette: p.palette, dark: c.designDark ?? p.designDark, handle: "", index: 0, total: c.slides.length, preview: true }));
+    return cv;
+  }
+  function gallery(root) {
+    const all2 = all("contents").filter((c) => c.type === "carrossel" || c.type === "estatico").sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const list = all2.filter((c) => state5.filter === "fotos" ? missingPhotos(c) > 0 : state5.filter ? c.type === state5.filter : true);
+    root.append(page({
+      kicker: "Conte\xFAdo",
+      title: "Est\xFAdio",
+      subtitle: "Artes de carrossel e est\xE1tico no seu estilo, prontas para salvar e postar.",
+      children: [
+        chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state5.filter, (v) => {
+          state5.filter = v;
+          rerender6();
+        }),
+        list.length ? h("div", { class: "gallery" }, list.map((c) => {
+          const miss = missingPhotos(c);
+          const f = formatById(c.formatId, all("formats"));
+          return h(
+            "button",
+            { type: "button", class: "gallery-item", "data-id": `studio-${c.id}`, onclick: () => go("conteudo/estudio", { id: c.id }) },
+            h("span", { class: "gallery-thumb" }, c.slides?.length ? thumb(c) : h("span", { class: "gallery-empty" }, "Sem telas ainda")),
+            h(
+              "span",
+              { class: "gallery-meta" },
+              h("span", { class: "tags" }, tag(TYPES[c.type]?.label, `type-${c.type}`), miss ? tag(`\u{1F4F7} ${miss} foto(s)`, "warn") : null),
+              h("strong", {}, c.title),
+              h("span", { class: "subtle small" }, [c.date ? fmtDay(c.date) : "sem data", f?.name, c.slides?.length ? `${c.slides.length} tela(s)` : null].filter(Boolean).join(" \xB7 "))
+            )
+          );
+        })) : emptyNote("Nenhuma arte por aqui", "Carross\xE9is e est\xE1ticos do Planejamento aparecem aqui. Mude o tipo de um conte\xFAdo para carrossel ou est\xE1tico para criar a arte.")
+      ]
+    }));
+  }
+  function render7(root, params = {}) {
+    if (!params.id) return gallery(root);
+    const c = get("contents", params.id);
+    if (!c) {
+      root.append(page({ title: "Est\xFAdio", children: emptyNote("Conte\xFAdo n\xE3o encontrado", "Ele pode ter sido apagado.", btn("Ver todas as artes", () => go("conteudo/estudio"))) }));
+      return;
+    }
+    const designer = buildDesigner(c.id);
+    root.append(page({
+      kicker: `Est\xFAdio \xB7 ${TYPES[c.type]?.label || "Arte"}`,
+      title: c.title || "Sem t\xEDtulo",
+      subtitle: [c.date ? fmtDay(c.date, { weekday: "long", day: "numeric", month: "long" }) : null, formatById(c.formatId, all("formats"))?.name].filter(Boolean).join(" \xB7 "),
+      actions: [
+        btn("Todas as artes", () => go("conteudo/estudio"), { iconName: "back", kind: "ghost" }),
+        btn("Abrir conte\xFAdo", () => openContent(get("contents", c.id)), { id: "open-content-from-studio" })
+      ],
+      children: designer
+    }));
+  }
+
+  // src/js/views/contents.js
+  var contents_exports = {};
+  __export(contents_exports, {
+    render: () => render8
+  });
+  init_data();
+  init_ui();
+  init_formats();
+  init_insights();
+  init_content_sheet();
+  init_designer();
+  var state6 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
+  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
+  var set = (k) => (v) => {
+    state6[k] = v;
+    rerender7();
+  };
+  var PERIODS = [
+    { value: "semana", label: "Pr\xF3ximos 7 dias" },
+    { value: "mes", label: "Este m\xEAs" },
+    { value: "passado", label: "J\xE1 passaram" },
+    { value: "sem-data", label: "Sem data (ideias)" }
+  ];
+  function filtered() {
+    const t = today();
+    return all("contents").filter((c) => {
+      if (state6.status && c.status !== state6.status) return false;
+      if (state6.type && (c.type || "video") !== state6.type) return false;
+      if (state6.formatId && c.formatId !== state6.formatId) return false;
+      if (state6.goal && c.goal !== state6.goal) return false;
+      if (state6.period === "semana" && !(c.date >= t && c.date <= addDays(t, 7))) return false;
+      if (state6.period === "mes" && !(c.date || "").startsWith(t.slice(0, 7))) return false;
+      if (state6.period === "passado" && !(c.date && c.date < t)) return false;
+      if (state6.period === "sem-data" && c.date) return false;
+      if (state6.q) {
+        const hay = norm([c.title, c.theme, c.hook, c.notes, c.caption].join(" "));
+        if (!norm(state6.q).split(/\s+/).every((w) => hay.includes(w))) return false;
+      }
+      return true;
+    }).sort((a, b) => (a.date || "9999").localeCompare(b.date || "9999"));
+  }
+  var statusSelect = (c) => h("select", {
+    class: "filter-select status-select",
+    "aria-label": `Etapa de ${c.title}`,
+    "data-id": "status-select",
+    onchange: (e) => {
+      const patch = { status: e.target.value };
+      if (e.target.value === "postado" && !c.postedAt) patch.postedAt = c.date && c.date <= today() ? c.date : today();
+      update("contents", c.id, patch);
+      toast("Etapa atualizada");
+    }
+  }, STATUSES.map((s) => h("option", { value: s.id, selected: s.id === c.status }, s.label)));
+  function tableView(list) {
+    return card({
+      flush: true,
+      children: table({
+        caption: "Conte\xFAdos",
+        rows: list,
+        rowId: (c) => `row-${c.id}`,
+        rowCls: (c) => c.date && c.date < today() && c.status !== "postado" ? "is-late" : "",
+        onRowClick: (c) => openContent(c),
+        empty: "Nenhum conte\xFAdo com esses filtros.",
+        columns: [
+          { label: "Conte\xFAdo", main: true, render: (c) => {
+            const f = formatById(c.formatId, all("formats"));
+            return h(
+              "div",
+              { class: "td-flex" },
+              badge(f?.emoji || "\u{1F4DD}", f?.color || "gray"),
+              h("div", {}, h("div", { class: "td-title" }, c.title || "Sem t\xEDtulo"), h("div", { class: "td-sub" }, [f?.name, c.theme && c.theme !== c.title ? c.theme : null].filter(Boolean).join(" \xB7 ")))
+            );
+          } },
+          { label: "Data", render: (c) => c.date ? fmtDay(c.date, { day: "numeric", month: "short", weekday: "short" }) : h("span", { class: "subtle" }, "ideia") },
+          { label: "Tipo", render: (c) => tag(TYPES[c.type || "video"]?.label, `type-${c.type || "video"}`) },
+          { label: "Foco", render: (c) => GOALS[c.goal] ? tag(GOALS[c.goal].label, `t-${GOALS[c.goal].color}`) : h("span", { class: "subtle" }, "\u2014") },
+          { label: "Etapa", render: statusSelect },
+          { label: "Resultado", cls: "right", render: (c) => {
+            const s = scores(c);
+            if (c.status !== "postado") return missingPhotos(c) ? tag(`\u{1F4F7} ${missingPhotos(c)}`, "warn") : h("span", { class: "subtle" }, "\u2014");
+            return s.views !== null ? h("span", { class: "num" }, `${fmtNum(s.views)} views${c.results?.follows != null ? ` \xB7 +${c.results.follows}` : ""}`) : h("span", { class: "subtle" }, "sem n\xFAmeros");
+          } }
+        ]
+      })
+    });
+  }
+  function boardView(list) {
+    return h("div", { class: "kanban" }, STATUSES.map((s) => {
+      const items = list.filter((c) => (c.status || "ideia") === s.id);
+      const col = h(
+        "section",
+        {
+          class: "kanban-col",
+          "data-status": s.id,
+          "aria-label": s.label,
+          ondragover: (e) => {
+            e.preventDefault();
+            col.classList.add("drop");
+          },
+          ondragleave: () => col.classList.remove("drop"),
+          ondrop: (e) => {
+            e.preventDefault();
+            col.classList.remove("drop");
+            const id = e.dataTransfer.getData("text/plain");
+            const c = get("contents", id);
+            if (!c || c.status === s.id) return;
+            const patch = { status: s.id };
+            if (s.id === "postado" && !c.postedAt) patch.postedAt = c.date && c.date <= today() ? c.date : today();
+            update("contents", id, patch);
+            toast(`Movido para ${s.label}`);
+          }
+        },
+        h("header", { class: "kanban-head" }, h("span", {}, s.label), h("span", { class: "tag" }, String(items.length))),
+        h("div", { class: "kanban-body" }, items.map((c) => {
+          const f = formatById(c.formatId, all("formats"));
+          return h(
+            "button",
+            {
+              type: "button",
+              class: "kanban-card",
+              draggable: "true",
+              "data-id": `kcard-${c.id}`,
+              ondragstart: (e) => e.dataTransfer.setData("text/plain", c.id),
+              onclick: () => openContent(c)
+            },
+            h("span", { class: "tags" }, tag(TYPES[c.type || "video"]?.label, `type-${c.type || "video"}`), c.date ? tag(fmtDay(c.date, { day: "numeric", month: "short" })) : null),
+            h("strong", {}, c.title || "Sem t\xEDtulo"),
+            f && h("span", { class: "subtle small" }, f.name)
+          );
+        }), !items.length && h("p", { class: "subtle small kanban-empty" }, "Arraste para c\xE1"))
+      );
+      return col;
+    }));
+  }
+  function render8(root) {
+    const list = filtered();
+    const total = all("contents").length;
+    const active = ["status", "type", "formatId", "goal", "period", "q"].some((k) => state6[k]);
+    root.append(page({
+      kicker: "Conte\xFAdo",
+      title: "Conte\xFAdos",
+      subtitle: `${list.length} de ${total} conte\xFAdo(s): ideias, roteiros, produ\xE7\xF5es e publicados.`,
+      actions: [
+        btn("Exportar CSV", () => exportCsv(), { iconName: "download", kind: "ghost" })
+      ],
+      children: [
+        tabs([{ value: "tabela", label: "Tabela" }, { value: "quadro", label: "Quadro por etapa" }], state6.view, set("view"), "Visualiza\xE7\xE3o"),
+        h(
+          "div",
+          { class: "filters" },
+          searchBox(state6.q, set("q"), "Buscar por t\xEDtulo, tema, gancho\u2026"),
+          state6.view === "tabela" && filterSelect("Etapa", STATUSES.map((s) => ({ value: s.id, label: s.label })), state6.status, set("status")),
+          filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state6.type, set("type")),
+          filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state6.goal, set("goal")),
+          filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state6.formatId, set("formatId")),
+          filterSelect("Per\xEDodo", PERIODS, state6.period, set("period")),
+          active && btn("Limpar filtros", () => {
+            Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
+            rerender7();
+          }, { kind: "ghost", small: true })
+        ),
+        !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state6.view === "tabela" ? tableView(list) : boardView(list)
+      ]
+    }));
+  }
+
   // src/js/routes.js
   var ROUTES = {
     "visao-geral": { label: "Vis\xE3o geral", icon: "overview", view: overview_exports },
     "conteudo/planejamento": { module: "Conte\xFAdo", label: "Planejamento", icon: "plan", view: week_exports },
+    "conteudo/lista": { module: "Conte\xFAdo", label: "Conte\xFAdos", icon: "list", view: contents_exports },
+    "conteudo/estudio": { module: "Conte\xFAdo", label: "Est\xFAdio", icon: "studio", view: studio_exports },
     "conteudo/formatos": { module: "Conte\xFAdo", label: "Formatos", icon: "formats", view: formats_exports },
     "marcas/campanhas": { module: "Marcas", label: "Campanhas", icon: "campaigns", view: brands_exports },
     "analise/desempenho": { module: "An\xE1lise", label: "Desempenho", icon: "performance", view: results_exports },
@@ -4954,7 +5366,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   };
   var NAV = [
     { items: ["visao-geral"] },
-    { label: "Conte\xFAdo", items: ["conteudo/planejamento", "conteudo/formatos"] },
+    { label: "Conte\xFAdo", items: ["conteudo/planejamento", "conteudo/lista", "conteudo/estudio", "conteudo/formatos"] },
     { label: "Marcas", items: ["marcas/campanhas"] },
     { label: "An\xE1lise", items: ["analise/desempenho"] }
   ];

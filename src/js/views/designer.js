@@ -1,6 +1,6 @@
-// Editor de design de carrossel/estático: prévia das telas, edição de texto, foto e exportação.
+// Estúdio: editor de design de carrossel/estático (prévia, edição de texto, foto e exportação).
 import * as data from '../data.js';
-import { h, sheet, group, cell, toast, actionSheet, toggle } from '../ui.js';
+import { h, group, cell, toast, actionSheet, toggle, go, card, icon } from '../ui.js';
 import { drawSlide } from '../lib/render.js';
 import { LAYOUTS, slidesFor, emptyFields, needsPhoto } from '../lib/designs.js';
 import { putPhoto, getPhoto, shrink, loadImage, newPhotoId } from '../lib/media.js';
@@ -24,36 +24,51 @@ const opts = (c, i, total, preview) => {
 // Quantas fotos ainda faltam num conteúdo.
 export const missingPhotos = (c) => (c.slides || []).filter((s) => s.photo && !s.photoId).length;
 
+// Abre o Estúdio (página) para um conteúdo.
 export function openDesigner(contentId) {
+  document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')?.click();
+  go('conteudo/estudio', { id: contentId });
+}
+
+const studio = { id: null, sel: 0 };
+
+// Monta o editor de design (prévia grande, telas e painel de edição) para a página do Estúdio.
+export function buildDesigner(contentId) {
   let c = data.get('contents', contentId);
-  if (!c) return;
+  if (!c) return null;
   if (!c.slides?.length) {
     const slides = slidesFor(c.formatId, c.type === 'estatico' ? 'estatico' : 'carrossel', { title: c.title, goal: c.goal });
-    c = data.update('contents', c.id, { slides, needsPhoto: needsPhoto(slides) });
+    c = data.update('contents', c.id, { slides, needsPhoto: needsPhoto(slides) }, { silent: true });
   }
   let slides = structuredClone(c.slides);
   let dark = c.designDark ?? data.profile().designDark ?? false;
-  let sel = 0;
+  if (studio.id !== contentId) Object.assign(studio, { id: contentId, sel: 0 });
+  let sel = Math.min(studio.sel, Math.max(0, (c.slides?.length || 1) - 1));
+  const big = h('canvas', { class: 'big-canvas', 'aria-label': 'Prévia da tela selecionada' });
+  const drawBig = () => imageFor(slides[sel]).then((img) => drawSlide(big, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
 
   const strip = h('div', { class: 'slide-strip', role: 'listbox', 'aria-label': 'Telas' });
   const editor = h('div', { class: 'slide-editor' });
 
   const persist = () => {
-    c = data.update('contents', c.id, { slides, needsPhoto: needsPhoto(slides), designDark: dark, touched: true });
+    // Salva sem redesenhar a página, para não perder o que está sendo digitado.
+    c = data.update('contents', c.id, { slides, needsPhoto: needsPhoto(slides), designDark: dark, touched: true }, { silent: true });
+    studio.sel = sel;
   };
 
   async function drawStrip() {
     strip.replaceChildren(...slides.map((s, i) => {
       const cv = h('canvas', { class: 'slide-canvas', 'aria-label': `Tela ${i + 1}: ${LAYOUTS[s.layout]}` });
-      const b = h('button', { type: 'button', class: `slide-thumb${i === sel ? ' sel' : ''}`, role: 'option', 'aria-selected': String(i === sel), 'data-slide': i, onclick: () => { sel = i; drawStrip(); drawEditor(); } },
+      const b = h('button', { type: 'button', class: `slide-thumb${i === sel ? ' sel' : ''}`, role: 'option', 'aria-selected': String(i === sel), 'data-slide': i, onclick: () => { sel = i; studio.sel = i; drawStrip(); drawEditor(); } },
         cv, h('span', { class: 'slide-n' }, `${i + 1}`), s.photo && !s.photoId ? h('span', { class: 'need-photo' }, '📷') : null);
       imageFor(s).then((img) => drawSlide(cv, s, { ...opts({ ...c, designDark: dark }, i, slides.length, true), image: img }));
       return b;
     }));
-    strip.querySelector('.sel')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    drawBig();
   }
 
   const redrawCurrent = () => {
+    drawBig();
     const cv = strip.querySelector(`[data-slide="${sel}"] canvas`);
     if (cv) imageFor(slides[sel]).then((img) => drawSlide(cv, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
   };
@@ -202,18 +217,21 @@ export function openDesigner(contentId) {
 
   drawStrip();
   drawEditor();
-  sheet({
-    title: c.type === 'estatico' ? 'Design do post' : 'Design do carrossel',
-    tall: true,
-    body: h('div', { class: 'sheet-stack designer' },
-      strip,
-      h('div', { class: 'design-actions' },
-        h('label', { class: 'mini-toggle' }, 'Escuro', toggle(dark, (v) => { dark = v; persist(); drawStrip(); }, 'Tema escuro')),
-        h('button', { type: 'button', class: 'btn-filled small', 'data-id': 'export-design', onclick: exportAll }, 'Salvar imagens'),
-      ),
-      editor,
-    ),
-  });
+  const miss = slides.filter((x) => x.photo && !x.photoId).length;
+  return h('div', { class: 'studio' },
+    h('div', { class: 'studio-stage' },
+      h('div', { class: 'big-wrap' }, big),
+      h('p', { class: 'subtle small' }, 'Prévia 1080×1350 (4:5 do feed). As dicas ✏︎ e os espaços de foto não aparecem na imagem exportada.'),
+      strip),
+    h('aside', { class: 'studio-panel' },
+      card({ children: [
+        h('div', { class: 'design-actions' },
+          h('label', { class: 'mini-toggle' }, toggle(dark, (v) => { dark = v; persist(); drawStrip(); }, 'Tema escuro'), 'Tema escuro'),
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-id': 'export-design', onclick: exportAll }, icon('download'), 'Salvar imagens')),
+        miss > 0 && h('p', { class: 'hint-line' }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com 📷.`),
+      ] }),
+      editor),
+  );
 }
 
 export { missingPhotos as photosMissing };

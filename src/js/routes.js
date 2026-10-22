@@ -5,10 +5,14 @@ import * as formats from './views/formats.js';
 import * as brands from './views/brands.js';
 import * as results from './views/results.js';
 import * as settings from './views/settings.js';
+import * as studio from './views/studio.js';
+import * as contents from './views/contents.js';
 
 export const ROUTES = {
   'visao-geral': { label: 'Visão geral', icon: 'overview', view: overview },
   'conteudo/planejamento': { module: 'Conteúdo', label: 'Planejamento', icon: 'plan', view: week },
+  'conteudo/lista': { module: 'Conteúdo', label: 'Conteúdos', icon: 'list', view: contents },
+  'conteudo/estudio': { module: 'Conteúdo', label: 'Estúdio', icon: 'studio', view: studio },
   'conteudo/formatos': { module: 'Conteúdo', label: 'Formatos', icon: 'formats', view: formats },
   'marcas/campanhas': { module: 'Marcas', label: 'Campanhas', icon: 'campaigns', view: brands },
   'analise/desempenho': { module: 'Análise', label: 'Desempenho', icon: 'performance', view: results },
@@ -17,7 +21,7 @@ export const ROUTES = {
 
 export const NAV = [
   { items: ['visao-geral'] },
-  { label: 'Conteúdo', items: ['conteudo/planejamento', 'conteudo/formatos'] },
+  { label: 'Conteúdo', items: ['conteudo/planejamento', 'conteudo/lista', 'conteudo/estudio', 'conteudo/formatos'] },
   { label: 'Marcas', items: ['marcas/campanhas'] },
   { label: 'Análise', items: ['analise/desempenho'] },
 ];

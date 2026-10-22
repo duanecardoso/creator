@@ -46,9 +46,10 @@ export function create(col, rec) {
   emit(col);
   return r;
 }
-export function update(col, id, patch) {
+// silent: salva sem redesenhar a página (usado enquanto você digita no Estúdio).
+export function update(col, id, patch, { silent = false } = {}) {
   const r = store.update(col, id, patch);
-  emit(col);
+  if (!silent) emit(col);
   return r;
 }
 export function remove(col, id) {
