@@ -1,6 +1,6 @@
-// Aba Perfil: você, meta semanal, Instagram, backup.
+// Configurações: perfil criativo, meta e plano semanal, estilo das artes, Instagram, Claude e backup.
 import * as data from '../data.js';
-import { h, page, group, cell, sheet, formGroups, toast, actionSheet, fmtDay } from '../ui.js';
+import { h, page, group, cell, sheet, formGroups, toast, actionSheet, fmtDay, card, btn } from '../ui.js';
 import { tokenStatus } from '../lib/instagram.js';
 import { DEFAULT_PALETTE, drawSlide } from '../lib/render.js';
 import { toggle } from '../ui.js';
@@ -178,46 +178,64 @@ async function importFile() {
   input.click();
 }
 
+function profileForm(p) {
+  const f = formGroups([
+    { fields: [{ name: 'name', label: 'Nome' }, { name: 'instagram', label: 'Instagram', placeholder: '@' }, { name: 'tiktok', label: 'TikTok', placeholder: '@' }, { name: 'niches', label: 'Nichos', placeholder: 'Beleza, fitness…' }] },
+    { fields: [
+      { name: 'about', label: 'Sobre você (só fatos reais; o Claude usa isso)', type: 'textarea', rows: 3 },
+      { name: 'style', label: 'Seu jeito de criar', type: 'textarea', rows: 3 },
+      { name: 'avoid', label: 'O que evitar', type: 'textarea', rows: 3 },
+    ] },
+  ], p);
+  return card({
+    title: 'Perfil criativo', subtitle: 'Usado em todos os prompts e nas artes', id: 'profile-card',
+    children: f.el,
+    foot: h('div', { class: 'page-actions' }, btn('Salvar perfil', () => { data.saveProfile(f.read()); toast('Perfil salvo'); }, { kind: 'primary', id: 'save-profile' })),
+  });
+}
+
 export function render(root) {
   const p = data.profile();
   const cfg = data.igConfig();
   const last = data.lastBackup();
   const snap = data.snapshotInfo();
-  const initial = (p.name || '✦').trim().charAt(0).toUpperCase();
 
   root.append(page({
-    title: 'Perfil',
-    left: h('button', { type: 'button', class: 'nav-btn', onclick: () => (location.hash = '#/'), 'aria-label': 'Voltar para Hoje' }, '‹ Hoje'),
-    children: [
-      group({ children: [h('button', { type: 'button', class: 'cell tappable profile-card', 'data-id': 'edit-profile', onclick: editProfile },
-        h('span', { class: 'avatar' }, initial),
-        h('span', { class: 'cell-text' }, h('span', { class: 'cell-title big' }, p.name || 'Seu nome'), h('span', { class: 'cell-sub' }, [p.instagram, p.tiktok].filter(Boolean).join(' · ') || 'Toque para editar seu perfil')),
-        h('span', { class: 'chev-wrap', 'aria-hidden': 'true' }, '›'))] }),
-      group({ header: 'Constância', footer: 'Quantos posts por semana você quer manter. A aba Hoje acompanha.', children: [
-        cell({ emoji: '🎯', color: 'pink', title: 'Meta semanal', accessory: stepper(p.weeklyGoal || 4, (n) => data.saveProfile({ weeklyGoal: n })) }),
-      ] }),
-      planGroup(p),
-      paletteGroup(p),
-      group({ header: 'Conexões', children: [
-        cell({ emoji: '📸', color: 'pink', title: 'Instagram', detail: cfg?.token ? (cfg.lastError ? 'erro' : `@${cfg.username}`) : 'Conectar', chevron: true, onClick: instagramSheet, id: 'instagram-cell' }),
-        cell({ emoji: '✨', color: 'orange', title: 'Claude', detail: 'copiar e colar', chevron: true, onClick: () => sheet({ title: 'Como o Claude ajuda', body: h('div', { class: 'pad stack' },
-          h('p', {}, 'Como o site é público (GitHub Pages), ele não guarda chave de IA.'),
-          h('p', {}, 'Quando você toca em ✨, o site copia um prompt com seu perfil, o formato e o tema, e abre o Claude. Ao voltar, ele oferece colar a resposta e preenche o roteiro sozinho.'),
-          h('p', { class: 'muted' }, 'Funciona no plano gratuito do Claude.')) }) }),
-      ] }),
-      group({
-        header: 'Seus dados',
-        footer: `Tudo fica salvo só neste navegador (${Math.max(1, Math.round(data.sizeBytes() / 1024))} KB). Limpar os dados do navegador apaga. Baixe o backup toda semana. ${last ? `Último backup: ${fmtDay(last.slice(0, 10), { day: 'numeric', month: 'short' })}.` : 'Você ainda não fez backup.'}`,
-        children: [
-          cell({ emoji: '⬇️', color: 'blue', title: 'Baixar backup', onClick: () => { data.exportBackup(); toast('Backup baixado'); rerender(); }, id: 'backup' }),
-          cell({ emoji: '⬆️', color: 'blue', title: 'Importar backup', onClick: importFile, id: 'import' }),
-          cell({ emoji: '📄', color: 'green', title: 'Exportar planilha (CSV)', onClick: () => data.exportCsv() }),
-          snap && cell({ emoji: '↩️', color: 'gray', title: `Voltar ao início de ${fmtDay(snap.day, { day: 'numeric', month: 'short' })}`, subtitle: 'Desfaz um erro recente', onClick: async () => {
-            const ok = await actionSheet({ message: 'Voltar todos os dados para essa cópia? O que foi feito depois será perdido.', actions: [{ label: 'Voltar', destructive: true, value: true }] });
-            if (ok) { data.restoreSnapshot(); toast('Dados restaurados'); }
-          } }),
-        ],
-      }),
-    ],
+    kicker: 'Conta',
+    title: 'Configurações',
+    subtitle: 'Perfil, ritmo de publicação, estilo das artes, conexões e backup.',
+    children: h('div', { class: 'grid cols-main' },
+      h('div', { class: 'stack' },
+        profileForm(p),
+        card({ title: 'Plano e constância', flush: true, children: h('div', { class: 'card-body' },
+          group({ header: 'Meta', footer: 'Posts por semana que você quer manter. A Visão geral acompanha.', children: [
+            cell({ emoji: '🎯', color: 'pink', title: 'Meta semanal', accessory: stepper(p.weeklyGoal || 5, (n) => data.saveProfile({ weeklyGoal: n })) }),
+          ] }),
+          planGroup(p)) }),
+        card({ title: 'Estilo das artes', subtitle: 'Carrosséis e estáticos gerados no Estúdio', flush: true, children: h('div', { class: 'card-body' }, paletteGroup(p)) }),
+      ),
+      h('div', { class: 'stack' },
+        card({ title: 'Conexões', flush: true, children: group({ children: [
+          cell({ emoji: '📸', color: 'pink', title: 'Instagram', detail: cfg?.token ? (cfg.lastError ? 'erro' : `@${cfg.username}`) : 'Conectar', chevron: true, onClick: instagramSheet, id: 'instagram-cell' }),
+          cell({ emoji: '✨', color: 'orange', title: 'Claude', subtitle: 'Copiar e colar, sem chave de API', chevron: true, onClick: () => sheet({ title: 'Como o Claude ajuda', body: h('div', { class: 'stack' },
+            h('p', {}, 'Como o site é público (GitHub Pages), ele não guarda chave de IA.'),
+            h('p', {}, 'Nos botões ✨, o site copia um prompt com seu perfil, o formato e o tema, e abre o Claude. Ao voltar, ele oferece colar a resposta e preenche o conteúdo.'),
+            h('p', { class: 'muted' }, 'Funciona no plano gratuito do Claude.')) }) }),
+        ] }) }),
+        card({
+          title: 'Seus dados', flush: true, id: 'data-card',
+          foot: `Tudo fica salvo só neste navegador (${Math.max(1, Math.round(data.sizeBytes() / 1024))} KB). Limpar os dados do navegador apaga. ${last ? `Último backup: ${fmtDay(last.slice(0, 10), { day: 'numeric', month: 'short' })}.` : 'Você ainda não fez backup.'}`,
+          children: group({ children: [
+            cell({ emoji: '⬇️', color: 'blue', title: 'Baixar backup', subtitle: 'Arquivo JSON com tudo (sem o token e sem fotos)', onClick: () => { data.exportBackup(); toast('Backup baixado'); rerender(); }, id: 'backup' }),
+            cell({ emoji: '⬆️', color: 'blue', title: 'Importar backup', onClick: importFile, id: 'import' }),
+            cell({ emoji: '📄', color: 'green', title: 'Exportar conteúdos (CSV)', onClick: () => data.exportCsv() }),
+            snap && cell({ emoji: '↩️', color: 'gray', title: `Voltar ao início de ${fmtDay(snap.day, { day: 'numeric', month: 'short' })}`, subtitle: 'Desfaz um erro recente', onClick: async () => {
+              const ok = await actionSheet({ message: 'Voltar todos os dados para essa cópia? O que foi feito depois será perdido.', actions: [{ label: 'Voltar', destructive: true, value: true }] });
+              if (ok) { data.restoreSnapshot(); toast('Dados restaurados'); }
+            } }),
+          ] }),
+        }),
+      ),
+    ),
   }));
 }
