@@ -70,6 +70,27 @@ Para conectar, vá em Configurações → Instagram e cole um token gerado no pa
 
 A integração foi testada com uma simulação da API. A primeira conexão real confirma se tudo funciona na sua conta.
 
+## Portfólio (GoatCounter)
+
+O portfólio (`duanecardoso/ugc`) envia visitas e eventos para o GoatCounter (grátis, sem cookies, sem dados pessoais). Em **Desempenho → Portfólio** o Creator mostra:
+
+- **Visitantes:** por dia e total do período.
+- **De onde vêm:** etiquetas `?ref=` e sites de origem.
+- **Até onde rolam:** Trabalhos, Serviços, Números, Contato.
+- **Vídeos mais abertos.**
+- **Cliques:** WhatsApp, e-mail, Instagram, TikTok, YouTube.
+- **Formulários enviados.**
+- **Região e aparelhos.**
+
+Para conectar, crie uma chave em `https://SEU-CODIGO.goatcounter.com/user/api` com a permissão **Read statistics** e cole em Configurações → Portfólio. A chave fica só no aparelho e não vai no backup. Os números começam a contar a partir da instalação do contador; não há dados anteriores.
+
+**Links com etiqueta:** o Creator gera links como `…/ugc/?ref=bio` e `…/ugc/?ref=dm`, um para cada lugar, para saber de onde as marcas vêm. Para não contar as próprias visitas, abra uma vez em cada aparelho `…/ugc/#toggle-goatcounter`.
+
+**Análise como marca:**
+- O botão monta um pedido para o Claude com o link do portfólio, os números reais e um roteiro de avaliação em 7 áreas.
+- A resposta volta com nota por área e as 3 prioridades, e fica salva com a data para comparar de um mês para o outro.
+- O Claude não assiste aos vídeos. Se ele não conseguir abrir o link, peça a análise no Claude Code, que lê o portfólio direto do GitHub.
+
 ## Ativar o site (uma vez)
 
 GitHub → repositório `creator` → **Settings → Pages** → "Deploy from a branch" → **main** e **/ (root)** → Save. Em 1 a 2 minutos o site fica no ar.
@@ -81,8 +102,8 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 48 testes de lógica
-npm run test:e2e   # 28 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
+npm test           # 52 testes de lógica
+npm run test:e2e   # 29 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 
 ```

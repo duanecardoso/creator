@@ -40,6 +40,23 @@ async function mockInstagram(route) {
   return json({ error: { code: 100, message: 'não simulado' } }, 400);
 }
 
+// GoatCounter simulado (estatísticas do portfólio)
+let gcAuth = '';
+async function mockGoatCounter(route) {
+  const url = new URL(route.request().url());
+  gcAuth = route.request().headers().authorization || '';
+  const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+  if (gcAuth !== 'Bearer gc-chave-teste') return json({ error: 'unauthorized' }, 401);
+  if (url.pathname.endsWith('/stats/hits')) return json({ hits: [
+    { path: '/ugc/', event: false, count: 40, title: 'Portfólio', stats: [{ day: '2026-10-20', daily: 15 }, { day: '2026-10-21', daily: 25 }] },
+    { path: 'video-abc123', event: true, count: 12, title: 'Vídeo: Dove · Cabelos' },
+    { path: 'clique-whatsapp', event: true, count: 3 },
+    { path: 'secao-contato', event: true, count: 10 },
+  ] });
+  if (url.pathname.endsWith('/stats/toprefs')) return json({ stats: [{ name: 'bio', count: 22, ref_scheme: 'c' }, { name: '', count: 18 }] });
+  return json({ stats: [{ name: 'Brasil', count: 38 }] });
+}
+
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const errors = [];
 let step = 0;
@@ -48,6 +65,7 @@ const ok = (msg) => console.log(`  ✓ ${++step}. ${msg}`);
 async function newPage(opts, clock) {
   const context = await browser.newContext({ acceptDownloads: true, locale: 'pt-BR', ...opts });
   await context.route('https://graph.instagram.com/**', mockInstagram);
+  await context.route('https://duanecardoso.goatcounter.com/api/**', mockGoatCounter);
   await context.route('https://claude.ai/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>Claude (simulado)</p>' }));
   await context.route('https://fonts.googleapis.com/**', (r) => r.abort());
   await context.route('https://fonts.gstatic.com/**', (r) => r.abort());
@@ -300,6 +318,32 @@ try {
   await page.waitForSelector('tbody tr:has-text("Ideia do pacote 13")');
   await page.click('.filters .btn:has-text("Limpar filtros")');
   ok('Pacote importado junta ideias, formato e perfil sem apagar nada; "Ver todas as ideias" abre a lista filtrada');
+
+  // ---- Portfólio (GoatCounter) ----
+  await nav('analise/desempenho');
+  await page.click('.segmented button:has-text("Portfólio")');
+  await page.click('[data-id="gc-open"]');
+  await drawer().locator('input[name="token"]').fill('gc-chave-teste');
+  await save();
+  await page.waitForSelector('[data-id="gc-visits"] .kpi-value:text("40")');
+  await page.waitForSelector('[data-id="gc-contacts"] .kpi-value:text("3")');
+  await page.waitForSelector('[data-id="gc-reach"] .kpi-value:text("25%")');
+  await page.waitForSelector('tr[data-id="video-abc123"]:has-text("Dove · Cabelos")');
+  await page.waitForSelector('tr[data-id="ref-bio"] .tag:has-text("etiqueta")');
+  if (gcAuth !== 'Bearer gc-chave-teste') throw new Error('Chave não enviada ao GoatCounter');
+  const dbNow = await page.evaluate(() => localStorage.getItem('creator:db'));
+  if (dbNow.includes('gc-chave-teste')) throw new Error('Chave do GoatCounter foi parar nos dados do backup');
+  await page.click('[data-id="link-bio"]');
+  await page.waitForSelector('.toast:has-text("Link copiado"), .toast:has-text("?ref=bio")');
+  await noJunk('portfólio');
+  await snap('08-portfolio');
+  const qReview = await answerClaude(() => page.click('[data-id="ask-review"]'), '{"nota": 7, "contrataria": "talvez", "primeira_impressao": "UGC de beleza", "itens": [{"area": "Provas", "nota": 8, "bom": "logos", "melhorar": "depoimento com resultado"}], "top3": ["Preço visível", "Vídeos por nicho", "WhatsApp no topo"], "processo": "responder em 24h"}');
+  if (!qReview.includes('Visitantes: 40') || !qReview.includes('duanecardoso.github.io/ugc')) throw new Error('Prompt da análise sem números ou sem link');
+  await page.waitForSelector('dialog.sheet[open] .review-score:has-text("7")');
+  await page.waitForSelector('dialog.sheet[open] .cell:has-text("Preço visível")');
+  await drawer().locator('[data-id="sheet-done"]').click();
+  await page.waitForSelector('[data-id^="review-"]:has-text("nota 7")');
+  ok('Portfólio: números do GoatCounter (visitantes, contato, vídeos, origem), link com etiqueta e análise como marca salva');
   await nav('configuracoes');
 
   await nav('conteudo/lista');

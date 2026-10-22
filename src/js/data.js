@@ -1,6 +1,7 @@
 // Dados no navegador, backup, Instagram e ponte com o Claude.
 import { Store, MemoryStorage, counts, contentsToCsv } from './lib/store.js';
 import * as ig from './lib/instagram.js';
+import * as gc from './lib/goatcounter.js';
 import { generateWeek, shouldAutoGenerate, targetWeek, weekdays } from './lib/planner.js';
 import { toIcs, dealsToCsv } from './lib/deals.js';
 
@@ -218,4 +219,13 @@ export function syncInstagram({ onProgress } = {}) {
       syncing = null;
     });
   return syncing;
+}
+
+// ---------- Portfólio (GoatCounter) ----------
+// A chave fica só neste aparelho (fora do backup), como o token do Instagram.
+export const gcConfig = () => (storage ? gc.loadGc(storage) : { ...gc.DEFAULT_GC });
+export function saveGcConfig(cfg) {
+  gc.saveGc(storage, cfg);
+  emit('portfolio');
+  return cfg;
 }

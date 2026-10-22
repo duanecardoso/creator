@@ -868,6 +868,24 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 .boot-error { text-align: left; max-width: 640px; margin: 10vh auto; }
 .boot-detail { white-space: pre-wrap; font-size: 12px; color: var(--ink-3); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; }
 
+/* ================= Portfólio ================= */
+.btn-row.start { justify-content: flex-start; margin-top: 4px; }
+.steps-list { padding-left: 20px; margin: 0 0 16px; }
+.link-custom { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--line-2); }
+.link-custom .input { flex: 1; min-width: 0; }
+.card-foot a { font-weight: 600; }
+.warn-card { background: var(--warn-soft); border-color: transparent; }
+.review-score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 16px; padding: 16px 18px; border-radius: var(--r); background: var(--butter); color: var(--brown-700); }
+.review-score strong { font-size: 44px; font-weight: 800; letter-spacing: -0.05em; line-height: 1; }
+.review-score span { font-weight: 700; }
+.review-score p { flex-basis: 100%; font-weight: 600; }
+.review-item { display: grid; gap: 4px; align-items: start; }
+.review-item-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.review-item p { color: var(--ink-2); line-height: 1.5; }
+.review-item b { color: var(--ink); }
+.grid.align-start { align-items: start; }
+.kpis + .grid, .kpis + .data-note + .grid { margin-top: 16px; }
+
 </style>
 </head>
 <body>
@@ -984,7 +1002,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   var COLLECTIONS, SCHEMA_VERSION, KEY, SNAP_KEY, PROTECTED, Store, counts, MemoryStorage, CSV_COLS;
   var init_store = __esm({
     "src/js/lib/store.js"() {
-      COLLECTIONS = ["contents", "references", "brands", "formats", "deals", "plans"];
+      COLLECTIONS = ["contents", "references", "brands", "formats", "deals", "plans", "reviews"];
       SCHEMA_VERSION = 3;
       KEY = "creator:db";
       SNAP_KEY = "creator:snapshot";
@@ -1032,16 +1050,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         }
         // Uma vez por dia guarda a versão anterior inteira, para recuperar um erro recente.
         dailySnapshot() {
-          const today3 = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+          const today4 = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
           let snap = null;
           try {
             snap = JSON.parse(this.storage.getItem(SNAP_KEY) || "null");
           } catch (e) {
             snap = null;
           }
-          if ((snap == null ? void 0 : snap.day) === today3) return;
+          if ((snap == null ? void 0 : snap.day) === today4) return;
           const current2 = this.storage.getItem(KEY);
-          if (current2) this.storage.setItem(SNAP_KEY, JSON.stringify({ day: today3, data: current2 }));
+          if (current2) this.storage.setItem(SNAP_KEY, JSON.stringify({ day: today4, data: current2 }));
         }
         snapshotInfo() {
           try {
@@ -1396,6 +1414,106 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         if (Number.isNaN(d.getTime())) return "";
         return "".concat(d.getFullYear(), "-").concat(String(d.getMonth() + 1).padStart(2, "0"), "-").concat(String(d.getDate()).padStart(2, "0"));
       };
+    }
+  });
+
+  // src/js/lib/goatcounter.js
+  function loadGc(storage2) {
+    try {
+      return { ...DEFAULT_GC, ...JSON.parse(storage2.getItem(GC_KEY) || "null") || {} };
+    } catch (e) {
+      return { ...DEFAULT_GC };
+    }
+  }
+  function startOf(days, now = /* @__PURE__ */ new Date()) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    d.setUTCDate(d.getUTCDate() - (days - 1));
+    return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+  }
+  async function get(cfg, path, params, fetchImpl) {
+    const code = siteCode(cfg.site);
+    if (!code) throw new GcError("Informe o c\xF3digo do GoatCounter (ex.: duanecardoso).", "other");
+    if (!cfg.token) throw new GcError("Cole a chave da API do GoatCounter.", "auth");
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== void 0 && v !== "").map(([k, v]) => [k, String(v)]));
+    let res;
+    try {
+      res = await fetchImpl("https://".concat(code, ".goatcounter.com/api/v0/").concat(path, "?").concat(qs), { headers: { Authorization: "Bearer ".concat(cfg.token) } });
+    } catch (e) {
+      throw new GcError("Sem conex\xE3o com o GoatCounter. Confira a internet e o c\xF3digo do site.", "network");
+    }
+    if (res.status === 401 || res.status === 403) throw new GcError('O GoatCounter recusou a chave. Crie uma nova com a permiss\xE3o "Read statistics".', "auth");
+    if (res.status === 429) throw new GcError("Muitas consultas seguidas. Espere um minuto e atualize.", "rate");
+    if (!res.ok) throw new GcError("O GoatCounter respondeu com erro (".concat(res.status, ")."), "other");
+    return res.json();
+  }
+  async function fetchPortfolioStats(cfg, days = 30, fetchImpl = fetch, now = /* @__PURE__ */ new Date()) {
+    const start2 = startOf(days, now);
+    const [hits2, refs, locations, systems] = await Promise.all([
+      get(cfg, "stats/hits", { start: start2, daily: true, limit: 100 }, fetchImpl),
+      get(cfg, "stats/toprefs", { start: start2, limit: 20 }, fetchImpl),
+      get(cfg, "stats/locations", { start: start2, limit: 10 }, fetchImpl),
+      get(cfg, "stats/systems", { start: start2, limit: 10 }, fetchImpl)
+    ]);
+    return { days, start: start2, fetchedAt: now.toISOString(), hits: hits2.hits || [], refs: refs.stats || [], locations: locations.stats || [], systems: systems.stats || [] };
+  }
+  function summarize(raw) {
+    const hits2 = (raw == null ? void 0 : raw.hits) || [];
+    const pages = hits2.filter((h2) => !isEvent(h2));
+    const events = hits2.filter(isEvent);
+    const ev = (p) => {
+      var _a;
+      return ((_a = events.find((h2) => h2.path === p)) == null ? void 0 : _a.count) || 0;
+    };
+    const daily = /* @__PURE__ */ new Map();
+    for (const h2 of pages) for (const s of h2.stats || []) daily.set(s.day, (daily.get(s.day) || 0) + (s.daily || 0));
+    const visits = pages.reduce((a, h2) => a + (h2.count || 0), 0);
+    const videos = events.filter((h2) => h2.path.startsWith("video-")).map((h2) => ({ id: h2.path.slice(6), title: String(h2.title || h2.path).replace(/^Vídeo:\s*/, ""), count: h2.count || 0 })).sort((a, b) => b.count - a.count);
+    const clicks = Object.fromEntries(["whatsapp", "email", "instagram", "tiktok", "youtube"].map((k) => [k, ev("clique-".concat(k))]));
+    const funnel = [
+      { id: "visitas", label: "Abriram o portf\xF3lio", count: visits },
+      { id: "trabalhos", label: "Chegaram em Trabalhos", count: ev("secao-trabalhos") },
+      { id: "servicos", label: "Chegaram em Servi\xE7os", count: ev("secao-servicos") },
+      { id: "numeros", label: "Chegaram em N\xFAmeros", count: ev("secao-numeros") },
+      { id: "contato", label: "Chegaram em Contato", count: ev("secao-contato") }
+    ];
+    return {
+      visits,
+      daily: [...daily.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, count]) => ({ day, count })),
+      videos,
+      videoOpens: videos.reduce((a, v) => a + v.count, 0),
+      clicks,
+      contactClicks: clicks.whatsapp + clicks.email,
+      forms: { contato: ev("form-contato"), kit: ev("form-kit") },
+      english: ev("idioma-en"),
+      funnel,
+      refs: ((raw == null ? void 0 : raw.refs) || []).map((r) => ({ name: r.name || "", count: r.count || 0, tagged: r.ref_scheme === "c" })),
+      locations: ((raw == null ? void 0 : raw.locations) || []).map((r) => ({ name: r.name || "", count: r.count || 0 })),
+      systems: ((raw == null ? void 0 : raw.systems) || []).map((r) => ({ name: r.name || "", count: r.count || 0 }))
+    };
+  }
+  function taggedLink(base, ref) {
+    const tag2 = String(ref || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (!tag2) return base;
+    const u = new URL(base);
+    u.searchParams.set("ref", tag2);
+    return u.toString();
+  }
+  var GC_KEY, DEFAULT_GC, GcError, saveGc, siteCode, dashboardUrl, apiKeyUrl, isEvent;
+  var init_goatcounter = __esm({
+    "src/js/lib/goatcounter.js"() {
+      GC_KEY = "creator:goatcounter";
+      DEFAULT_GC = { site: "duanecardoso", portfolioUrl: "https://duanecardoso.github.io/ugc/" };
+      GcError = class extends Error {
+        constructor(message, kind) {
+          super(message);
+          this.kind = kind;
+        }
+      };
+      saveGc = (storage2, cfg) => storage2.setItem(GC_KEY, JSON.stringify(cfg));
+      siteCode = (s) => String(s || "").trim().replace(/^https?:\/\//, "").replace(/\.goatcounter\.com.*$/, "").replace(/[^a-z0-9-]/gi, "").toLowerCase();
+      dashboardUrl = (cfg) => "https://".concat(siteCode(cfg.site), ".goatcounter.com");
+      apiKeyUrl = (cfg) => "".concat(dashboardUrl(cfg), "/user/api");
+      isEvent = (h2) => h2.event === true || h2.event === 1 || h2.event === "true";
     }
   });
 
@@ -1906,19 +2024,19 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   });
 
   // src/js/lib/insights.js
-  function weekProgress(contents, today3, goal) {
-    const start2 = weekStart(today3);
+  function weekProgress(contents, today4, goal) {
+    const start2 = weekStart(today4);
     const end = addDays(start2, 6);
     const inWeek = (c) => postedDate(c) >= start2 && postedDate(c) <= end;
     const posted = contents.filter((c) => isPosted(c) && inWeek(c)).length;
     const planned = contents.filter((c) => !isPosted(c) && c.date >= start2 && c.date <= end).length;
     return { posted, planned, goal: Math.max(1, Number(goal) || 1), start: start2, end };
   }
-  function streak(contents, today3, goal) {
+  function streak(contents, today4, goal) {
     const g = Math.max(1, Number(goal) || 1);
     let count = 0;
-    let ws = weekStart(today3);
-    const current2 = weekProgress(contents, today3, g);
+    let ws = weekStart(today4);
+    const current2 = weekProgress(contents, today4, g);
     if (current2.posted >= g) count++;
     for (let i = 0; i < 104; i++) {
       ws = addDays(ws, -7);
@@ -2016,12 +2134,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return ((h2 ^= h2 >>> 16) >>> 0) / 4294967296;
     };
   }
-  function suggestions(contents, today3, { count = 3, shuffle: shuffle3 = 0, customFormats = [] } = {}) {
+  function suggestions(contents, today4, { count = 3, shuffle: shuffle3 = 0, customFormats = [] } = {}) {
     const pool = [...FORMATS, ...customFormats];
-    const recent = new Set(contents.filter((c) => (c.date || "") >= addDays(today3, -14)).map((c) => c.formatId));
+    const recent = new Set(contents.filter((c) => (c.date || "") >= addDays(today4, -14)).map((c) => c.formatId));
     const hitFormats = new Set(hits(contents).items.map((h2) => h2.content.formatId));
-    const rand = seeded("".concat(today3, ":").concat(shuffle3));
-    const focusOrder = [FOCUS_BY_WEEKDAY[(parse(today3).getDay() + 6) % 7], "seguidores", "comunidade", "marcas"];
+    const rand = seeded("".concat(today4, ":").concat(shuffle3));
+    const focusOrder = [FOCUS_BY_WEEKDAY[(parse(today4).getDay() + 6) % 7], "seguidores", "comunidade", "marcas"];
     const goals = [...new Set(focusOrder)];
     const picked = [];
     for (const goal of goals) {
@@ -2061,7 +2179,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       isPosted = (c) => c.status === "postado";
       n = (v) => v === null || v === void 0 || v === "" || Number.isNaN(Number(v)) ? null : Number(v);
       hasResults = (c) => c.results && ["views", "reach", "likes", "comments", "saves", "shares", "follows", "brandContacts"].some((k) => n(c.results[k]) !== null);
-      needsResults = (contents, today3) => contents.filter((c) => isPosted(c) && !hasResults(c) && postedDate(c) && postedDate(c) < today3);
+      needsResults = (contents, today4) => contents.filter((c) => isPosted(c) && !hasResults(c) && postedDate(c) && postedDate(c) < today4);
       FOCUS_BY_WEEKDAY = ["comunidade", "seguidores", "marcas", "comunidade", "seguidores", "marcas", "seguidores"];
     }
   });
@@ -2076,14 +2194,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return ((h2 ^= h2 >>> 16) >>> 0) / 4294967296;
     };
   }
-  function targetWeek(today3) {
-    const dow = parse(today3).getDay();
-    return dow === 6 || dow === 0 ? addDays(weekStart(today3), 7) : weekStart(today3);
+  function targetWeek(today4) {
+    const dow = parse(today4).getDay();
+    return dow === 6 || dow === 0 ? addDays(weekStart(today4), 7) : weekStart(today4);
   }
-  function shouldAutoGenerate(today3, plans) {
-    const dow = parse(today3).getDay();
+  function shouldAutoGenerate(today4, plans) {
+    const dow = parse(today4).getDay();
     if (dow !== 6 && dow !== 0) return false;
-    return !plans.some((p) => p.weekStart === targetWeek(today3));
+    return !plans.some((p) => p.weekStart === targetWeek(today4));
   }
   function fill(tpl, subject) {
     return tpl.replace("{S}", subject.charAt(0).toUpperCase() + subject.slice(1)).replace("{s}", subject).replace(/^./, (c) => c.toUpperCase());
@@ -2209,16 +2327,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
     return out.sort((a, b) => a.date.localeCompare(b.date));
   }
-  function upcoming(deals, today3, days = 7) {
-    const end = addDays(today3, days);
+  function upcoming(deals, today4, days = 7) {
+    const end = addDays(today4, days);
     const all2 = deadlines(deals);
     return {
-      overdue: all2.filter((x) => x.date < today3),
-      today: all2.filter((x) => x.date === today3),
-      soon: all2.filter((x) => x.date > today3 && x.date <= end)
+      overdue: all2.filter((x) => x.date < today4),
+      today: all2.filter((x) => x.date === today4),
+      soon: all2.filter((x) => x.date > today4 && x.date <= end)
     };
   }
-  function finance(deals, month, today3) {
+  function finance(deals, month, today4) {
     const inMonth = (s) => (s || "").startsWith(month);
     const active = deals.filter((d) => d.status !== "cancelado");
     const paid = active.filter((d) => d.paymentStatus === "pago");
@@ -2228,8 +2346,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     return {
       receivedMonth: paid.filter((d) => inMonth(d.paidAt)).reduce((a, d) => a + num(d.value), 0),
       toReceive: open2.reduce((a, d) => a + num(d.value), 0),
-      overdue: open2.filter((d) => d.paymentDue && d.paymentDue < today3).reduce((a, d) => a + num(d.value), 0),
-      overdueCount: open2.filter((d) => d.paymentDue && d.paymentDue < today3).length,
+      overdue: open2.filter((d) => d.paymentDue && d.paymentDue < today4).reduce((a, d) => a + num(d.value), 0),
+      overdueCount: open2.filter((d) => d.paymentDue && d.paymentDue < today4).length,
       closedMonth: active.filter((d) => inMonth(d.closedAt)).reduce((a, d) => a + num(d.value), 0),
       byType,
       ttsSales: tts.reduce((a, d) => a + num(d.sales), 0),
@@ -2420,10 +2538,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     emit("contents");
     return items.length;
   }
-  function autoPlan(today3) {
+  function autoPlan(today4) {
     if (profile().autoPlan === false) return null;
-    if (!shouldAutoGenerate(today3, all("plans"))) return null;
-    const monday = targetWeek(today3);
+    if (!shouldAutoGenerate(today4, all("plans"))) return null;
+    const monday = targetWeek(today4);
     generatePlan(monday, { seed: monday });
     return monday;
   }
@@ -2496,11 +2614,17 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     });
     return syncing;
   }
-  var listeners, store, storage, persistent, onChange, emit, all, get, profile, sizeBytes, snapshotInfo, stamp, META_KEY, meta, setMeta, exportCsv, lastBackup, exportDealsCsv, downloadIcs, planFor, PENDING_KEY, igConfig, syncing;
+  function saveGcConfig(cfg) {
+    saveGc(storage, cfg);
+    emit("portfolio");
+    return cfg;
+  }
+  var listeners, store, storage, persistent, onChange, emit, all, get2, profile, sizeBytes, snapshotInfo, stamp, META_KEY, meta, setMeta, exportCsv, lastBackup, exportDealsCsv, downloadIcs, planFor, PENDING_KEY, igConfig, syncing, gcConfig;
   var init_data = __esm({
     "src/js/data.js"() {
       init_store();
       init_instagram();
+      init_goatcounter();
       init_planner();
       init_deals();
       listeners = /* @__PURE__ */ new Set();
@@ -2513,7 +2637,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         var _a;
         return (_a = store == null ? void 0 : store.list(col)) != null ? _a : [];
       };
-      get = (col, id) => store == null ? void 0 : store.get(col, id);
+      get2 = (col, id) => store == null ? void 0 : store.get(col, id);
       profile = () => {
         var _a;
         return (_a = store == null ? void 0 : store.db.profile) != null ? _a : {};
@@ -2541,6 +2665,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       PENDING_KEY = "creator:pending-ai";
       igConfig = () => storage ? loadConfig(storage) : null;
       syncing = null;
+      gcConfig = () => storage ? loadGc(storage) : { ...DEFAULT_GC };
     }
   });
 
@@ -2874,7 +2999,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       const hit = el("rect", { class: "hit", x: cx - band / 2, y: pad.t - 10, width: band, height: H2 - pad.t - pad.b + 10, tabindex: "0", "aria-label": "".concat(d.label, ": ").concat(fmt(d.value || 0)) });
       if (path) el("path", { class: "bar".concat(d.hl ? " hl" : ""), d: path });
       if (d.hl || i === data.length - 1) el("text", { class: "value-label", x: cx, y: top - 6, "text-anchor": "middle" }, fmt(d.value || 0));
-      el("text", { class: "axis-label", x: cx, y: H2 - 8, "text-anchor": "middle" }, d.label);
+      const every = Math.ceil(data.length / 8);
+      if (data.length <= 12 || i === data.length - 1 || (data.length - 1 - i) % every === 0) el("text", { class: "axis-label", x: cx, y: H2 - 8, "text-anchor": "middle" }, d.label);
       const show = () => {
         tip.hidden = false;
         tip.replaceChildren(h("strong", {}, fmt(d.value || 0)), h("span", {}, d.tip || d.label));
@@ -3273,11 +3399,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           ctx.textBaseline = "middle";
           ctx.textAlign = "left";
           ctx.fillText("\u2039 Notas", 108, 200);
-          const today3 = (/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
+          const today4 = (/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
           ctx.font = font(600, 26);
           ctx.fillStyle = P.muted;
           ctx.textAlign = "right";
-          ctx.fillText(today3, W - 108, 200);
+          ctx.fillText(today4, W - 108, 200);
           ctx.fillStyle = P.dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)";
           ctx.fillRect(60, 262, W - 120, 2);
           let y = 316;
@@ -3509,7 +3635,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     return img;
   }
   async function deleteDesign(contentId) {
-    const c = get("contents", contentId);
+    const c = get2("contents", contentId);
     if (!c) return false;
     if (!await confirmDelete("o design deste conte\xFAdo (as telas e as fotos usadas nelas; o conte\xFAdo continua)")) return false;
     for (const s of c.slides || []) {
@@ -3525,14 +3651,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function openDesigner(contentId) {
     var _a;
-    const c = get("contents", contentId);
+    const c = get2("contents", contentId);
     if (c == null ? void 0 : c.noDesign) update("contents", contentId, { noDesign: false }, { silent: true });
     (_a = document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')) == null ? void 0 : _a.click();
     go("conteudo/estudio", { id: contentId });
   }
   function buildDesigner(contentId) {
     var _a, _b, _c, _d;
-    let c = get("contents", contentId);
+    let c = get2("contents", contentId);
     if (!c) return null;
     if (!((_a = c.slides) == null ? void 0 : _a.length)) {
       const slides2 = slidesFor(c.formatId, c.type === "estatico" ? "estatico" : "carrossel", { title: c.title, goal: c.goal });
@@ -3889,7 +4015,36 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return out;
     });
   }
-  var formatBlock, str, arr, TYPE_LABEL;
+  function statsBlock(s, days) {
+    if (!s) return "N\xFAmeros do portf\xF3lio: ainda n\xE3o conectados (sem dados de acesso).";
+    const top = s.videos.slice(0, 5).map((v) => "".concat(v.title, " (").concat(v.count, ")")).join("; ") || "nenhum aberto";
+    const refs = s.refs.slice(0, 6).map((r) => "".concat(r.name || "sem origem/app", " (").concat(r.count, ")")).join("; ") || "\u2014";
+    const funil = s.funnel.map((f) => "".concat(f.label, ": ").concat(f.count)).join(" \u2192 ");
+    return "N\xFAmeros reais do portf\xF3lio nos \xFAltimos ".concat(days, " dias (GoatCounter; contam visitantes, n\xE3o tempo de v\xEDdeo):\n- Visitantes: ").concat(s.visits, "\n- De onde vieram: ").concat(refs, "\n- At\xE9 onde rolaram: ").concat(funil, "\n- V\xEDdeos abertos no total: ").concat(s.videoOpens, ". Mais abertos: ").concat(top, "\n- Cliques em WhatsApp: ").concat(s.clicks.whatsapp, ", e-mail: ").concat(s.clicks.email, ", Instagram: ").concat(s.clicks.instagram, ", TikTok: ").concat(s.clicks.tiktok, "\n- Formul\xE1rios enviados: contato ").concat(s.forms.contato, ", kit ").concat(s.forms.kit, "\n- Taxa de contato (WhatsApp + e-mail \xF7 visitantes): ").concat(pct(s.contactClicks, s.visits));
+  }
+  function portfolioReviewPrompt({ profile: profile2, url: url2, stats, days = 30, previous }) {
+    var _a;
+    const prev = ((_a = previous == null ? void 0 : previous.top3) == null ? void 0 : _a.length) ? "\nNa an\xE1lise anterior (".concat(previous.date, "), as prioridades eram: ").concat(previous.top3.join(" | "), ". Diga o que melhorou e o que continua igual.") : "";
+    return "Aja como a gerente de marketing de uma marca m\xE9dia de beleza que contrata criadoras UGC. Voc\xEA recebeu o portf\xF3lio abaixo e precisa decidir se chamaria essa criadora.\n\nPortf\xF3lio: ".concat(url2, "\nAbra o link e analise o portf\xF3lio inteiro (textos, servi\xE7os, marcas, n\xFAmeros, depoimentos, lista de v\xEDdeos, contato). Se n\xE3o conseguir abrir o link, diga isso na primeira linha e n\xE3o invente o conte\xFAdo. Voc\xEA n\xE3o consegue assistir aos v\xEDdeos: avalie t\xEDtulos, marcas, capas, ordem e variedade.\n\nSobre a criadora: ").concat(profile2.about || "\u2014", "\nNichos: ").concat(profile2.niches || "\u2014", "\n\n").concat(statsBlock(stats, days)).concat(prev, "\n\nAvalie cada \xE1rea de 0 a 10, com o que funciona e o que mudar de forma concreta (o que escrever, tirar, mover ou acrescentar). Use os n\xFAmeros reais para apontar onde as marcas desistem. Seja direta como uma marca seria, sem elogio vazio. N\xE3o invente dados: se algo n\xE3o aparece no portf\xF3lio, diga que n\xE3o aparece.\n\n\xC1reas: ").concat(REVIEW_AREAS.map((a, i) => "".concat(i + 1, ") ").concat(a)).join(" "), '\n\nResponda APENAS com JSON neste formato:\n{"nota": 0, "contrataria": "sim, talvez ou n\xE3o, e por qu\xEA em uma frase", "primeira_impressao": "o que uma marca entende nos primeiros 5 segundos", "itens": [{"area": "nome da \xE1rea", "nota": 0, "bom": "o que funciona", "melhorar": "o que mudar, concreto"}], "top3": ["mudan\xE7a mais importante", "segunda", "terceira"], "processo": "uma dica para o processo de trabalho dela (prospec\xE7\xE3o, prazos, entrega)"}');
+  }
+  function parseReview(text2) {
+    const raw = String(text2 || "").trim();
+    if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
+    const d = extractJson(raw);
+    const n2 = (v) => Number.isFinite(Number(v)) && v !== "" && v !== null ? Math.max(0, Math.min(10, Number(v))) : null;
+    if (!d) return { nota: null, contrataria: "", primeira: "", itens: [], top3: [], processo: "", texto: raw, loose: true };
+    return {
+      nota: n2(d.nota),
+      contrataria: str(d.contrataria),
+      primeira: str(d.primeira_impressao),
+      itens: (Array.isArray(d.itens) ? d.itens : []).filter((i) => i && typeof i === "object").map((i) => ({ area: str(i.area), nota: n2(i.nota), bom: str(i.bom), melhorar: str(i.melhorar) })),
+      top3: arr(d.top3).slice(0, 5),
+      processo: str(d.processo),
+      texto: "",
+      loose: false
+    };
+  }
+  var formatBlock, str, arr, TYPE_LABEL, REVIEW_AREAS, pct;
   var init_prompts = __esm({
     "src/js/lib/prompts.js"() {
       init_formats();
@@ -3897,6 +4052,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       str = (v) => typeof v === "string" ? v.trim() : v == null ? "" : String(v);
       arr = (v) => Array.isArray(v) ? v.map(str).filter(Boolean) : v ? [str(v)] : [];
       TYPE_LABEL = { video: "v\xEDdeo", carrossel: "carrossel", estatico: "post est\xE1tico", stories: "stories" };
+      REVIEW_AREAS = [
+        "Primeira impress\xE3o (5 segundos)",
+        "Clareza: o que voc\xEA faz e para quem",
+        "Provas: marcas, n\xFAmeros e depoimentos",
+        "V\xEDdeos: qualidade, variedade e ordem",
+        "Servi\xE7os, prazo e como contratar",
+        "Contato e chamada para a\xE7\xE3o",
+        "Experi\xEAncia no celular"
+      ];
+      pct = (a, b) => b ? "".concat(Math.round(a / b * 100), "%") : "\u2014";
     }
   });
 
@@ -4545,7 +4710,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       }
       return out;
     };
-    const deal = c.dealId && get("deals", c.dealId);
+    const deal = c.dealId && get2("deals", c.dealId);
     const designBtn = h("div");
     const drawDesignBtn = () => {
       var _a2, _b2;
@@ -4561,7 +4726,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         } }, miss ? "\u{1F4F7} Design: adicionar ".concat(miss, " foto(s)") : ((_a2 = c.slides) == null ? void 0 : _a2.length) ? "\u{1F3A8} Abrir design (".concat(c.slides.length, " tela").concat(c.slides.length > 1 ? "s" : "", ")") : "\u{1F3A8} Criar design"),
         c.id && ((_b2 = c.slides) == null ? void 0 : _b2.length) ? h("button", { type: "button", class: "cell tappable destructive", "data-id": "content-delete-design", onclick: async () => {
           if (await deleteDesign(c.id)) {
-            c = get("contents", c.id);
+            c = get2("contents", c.id);
             drawDesignBtn();
           }
         } }, "Apagar design") : null
@@ -4644,7 +4809,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           check: r.check,
           critique: r.critique
         };
-        let c = ctx.contentId && get("contents", ctx.contentId);
+        let c = ctx.contentId && get2("contents", ctx.contentId);
         if (c) {
           if (c.status === "ideia") patch.status = "roteiro";
           c = update("contents", c.id, patch);
@@ -5343,8 +5508,293 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_insights();
   init_formats();
   init_content_sheet();
-  var state4 = { period: "90", platform: "", view: "grade" };
+
+  // src/js/views/portfolio.js
+  init_data();
+  init_ui();
+  init_goatcounter();
+  init_prompts();
+  init_claude();
+  init_insights();
   var rerender4 = () => document.dispatchEvent(new Event("rerender"));
+  var today3 = () => iso(/* @__PURE__ */ new Date());
+  var pct2 = (a, b) => b ? "".concat(Math.round(a / b * 100), "%") : "\u2014";
+  var cache = /* @__PURE__ */ new Map();
+  function load(days, { force = false } = {}) {
+    const cfg = gcConfig();
+    if (!cfg.token) return null;
+    const hit = cache.get(days);
+    if (hit && !force && (hit.status === "loading" || Date.now() - hit.at < 10 * 6e4)) return hit;
+    const entry = { status: "loading", at: Date.now() };
+    cache.set(days, entry);
+    fetchPortfolioStats(cfg, days).then((raw) => cache.set(days, { status: "ok", summary: summarize(raw), at: Date.now() })).catch((err) => cache.set(days, { status: "error", error: err, at: Date.now() })).finally(rerender4);
+    return entry;
+  }
+  var clearPortfolioCache = () => cache.clear();
+  function openGcSheet() {
+    const cfg = gcConfig();
+    const f = formGroups([
+      { fields: [
+        { name: "site", label: "C\xF3digo do GoatCounter", placeholder: "duanecardoso" },
+        { name: "portfolioUrl", label: "Endere\xE7o do portf\xF3lio", type: "url", placeholder: "https://\u2026" }
+      ] },
+      { header: "Chave da API", footer: 'Fica guardada s\xF3 neste aparelho e n\xE3o vai no backup. Use uma chave s\xF3 com a permiss\xE3o "Read statistics".', fields: [
+        { name: "token", label: "Chave", type: "password", placeholder: cfg.token ? "\u2022\u2022\u2022\u2022 (j\xE1 salva; cole outra para trocar)" : "cole a chave aqui", full: true }
+      ] }
+    ], { site: cfg.site, portfolioUrl: cfg.portfolioUrl });
+    sheet({
+      title: "Portf\xF3lio (GoatCounter)",
+      body: h(
+        "div",
+        { class: "sheet-stack" },
+        h(
+          "ol",
+          { class: "plain-list steps-list" },
+          h("li", {}, "Abra ", h("a", { href: apiKeyUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "a p\xE1gina de API do seu GoatCounter"), " (entre com sua conta)."),
+          h("li", {}, 'Crie uma chave nova e marque s\xF3 "Read statistics".'),
+          h("li", {}, "Copie a chave e cole aqui embaixo.")
+        ),
+        f.el,
+        cfg.token && h("button", { type: "button", class: "btn btn-ghost btn-danger btn-sm", "data-id": "gc-disconnect", onclick: async () => {
+          var _a;
+          if (await confirmDelete("a chave do GoatCounter deste aparelho (os n\xFAmeros continuam no GoatCounter)")) {
+            saveGcConfig({ ...gcConfig(), token: "" });
+            clearPortfolioCache();
+            (_a = document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"]')) == null ? void 0 : _a.click();
+          }
+        } }, "Remover chave deste aparelho")
+      ),
+      onSave: () => {
+        const v = f.read();
+        if (!String(v.site || "").trim()) throw new Error("Informe o c\xF3digo do GoatCounter.");
+        try {
+          new URL(v.portfolioUrl);
+        } catch (e) {
+          throw new Error("Confira o endere\xE7o do portf\xF3lio (come\xE7a com https://).");
+        }
+        const token = String(v.token || "").trim() || cfg.token || "";
+        if (!token) throw new Error("Cole a chave da API.");
+        saveGcConfig({ site: v.site.trim(), portfolioUrl: v.portfolioUrl.trim(), token });
+        clearPortfolioCache();
+        toast("Portf\xF3lio conectado");
+      }
+    });
+  }
+  var PRESETS = [
+    { ref: "bio", label: "Bio do Instagram" },
+    { ref: "dm", label: "DM para marcas" },
+    { ref: "email", label: "E-mail" },
+    { ref: "whatsapp", label: "WhatsApp" },
+    { ref: "tiktok", label: "Bio do TikTok" },
+    { ref: "plataforma", label: "Plataformas (Seu Influencer\u2026)" }
+  ];
+  function linksCard(cfg) {
+    const custom = h("input", { type: "text", class: "input", placeholder: "Outra etiqueta (ex.: proposta-marca-x)", "aria-label": "Etiqueta personalizada" });
+    const copy = async (url2) => toast(await copyText(url2) ? "Link copiado" : url2);
+    return card({
+      title: "Links com etiqueta",
+      subtitle: "Use um link diferente em cada lugar para saber de onde as marcas v\xEAm",
+      flush: true,
+      children: [
+        group({ children: PRESETS.map((p) => cell({ title: p.label, subtitle: taggedLink(cfg.portfolioUrl, p.ref), onClick: () => copy(taggedLink(cfg.portfolioUrl, p.ref)), detail: "Copiar", id: "link-".concat(p.ref) })) }),
+        h("div", { class: "card-body link-custom" }, custom, btn("Copiar", () => copy(taggedLink(cfg.portfolioUrl, custom.value)), { small: true, id: "link-custom" })),
+        h("p", { class: "card-foot" }, "Para n\xE3o contar as suas pr\xF3prias visitas: abra uma vez em cada celular/computador ", h("a", { href: "".concat(cfg.portfolioUrl.split("#")[0], "#toggle-goatcounter"), target: "_blank", rel: "noopener noreferrer" }, "este link"), " e confirme o aviso.")
+      ]
+    });
+  }
+  onClaudeResult("portfolio-review", (text2, ctx) => {
+    var _a;
+    const r = parseReview(text2);
+    const rec = create("reviews", { ...r, date: today3(), days: ctx.days || null, visits: (_a = ctx.visits) != null ? _a : null, url: ctx.url || "" });
+    toast("An\xE1lise salva");
+    go("analise/desempenho", { aba: "portfolio" });
+    setTimeout(() => openReview(rec), 300);
+  });
+  function askReview(cfg, days, summary) {
+    var _a;
+    const prev = all("reviews").slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+    askClaude({
+      kind: "portfolio-review",
+      context: { days, visits: (_a = summary == null ? void 0 : summary.visits) != null ? _a : null, url: cfg.portfolioUrl },
+      prompt: portfolioReviewPrompt({ profile: profile(), url: cfg.portfolioUrl, stats: summary, days, previous: prev && { date: fmtDay(prev.date), top3: prev.top3 } })
+    });
+  }
+  function openReview(r) {
+    var _a, _b;
+    sheet({
+      title: "An\xE1lise de ".concat(fmtDay(r.date, { day: "numeric", month: "long" })),
+      tall: true,
+      body: h(
+        "div",
+        { class: "sheet-stack review" },
+        r.nota !== null && r.nota !== void 0 && h("div", { class: "review-score" }, h("strong", {}, String(r.nota)), h("span", {}, "/10"), r.contrataria && h("p", {}, r.contrataria)),
+        r.primeira && group({ header: "Primeira impress\xE3o", children: [h("p", { class: "cell prose" }, r.primeira)] }),
+        ((_a = r.top3) == null ? void 0 : _a.length) > 0 && group({ header: "O que mudar primeiro", children: r.top3.map((t, i) => cell({ iconEl: h("span", { class: "step-n" }, String(i + 1)), title: t })) }),
+        ((_b = r.itens) == null ? void 0 : _b.length) > 0 && group({ header: "Por \xE1rea", children: r.itens.map((i) => h(
+          "div",
+          { class: "cell review-item" },
+          h("div", { class: "review-item-head" }, h("strong", {}, i.area || "\u2014"), i.nota !== null ? tag("".concat(i.nota, "/10"), i.nota >= 8 ? "ok" : i.nota >= 5 ? "warn" : "danger") : null),
+          i.bom && h("p", {}, h("b", {}, "Funciona: "), i.bom),
+          i.melhorar && h("p", {}, h("b", {}, "Mudar: "), i.melhorar)
+        )) }),
+        r.processo && group({ header: "Para o seu processo", children: [h("p", { class: "cell prose" }, r.processo)] }),
+        r.texto && group({ header: "Resposta do Claude", children: [h("p", { class: "cell prose prewrap" }, r.texto)] }),
+        group({ children: [h("button", { type: "button", class: "cell tappable destructive", onclick: async () => {
+          var _a2;
+          if (await confirmDelete("esta an\xE1lise")) {
+            remove("reviews", r.id);
+            (_a2 = document.querySelector('dialog.sheet[open] [data-id="sheet-done"]')) == null ? void 0 : _a2.click();
+          }
+        } }, "Apagar an\xE1lise")] })
+      )
+    });
+  }
+  function reviewsCard(cfg, days, summary) {
+    const list = all("reviews").slice().sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return card({
+      title: "An\xE1lise como marca",
+      subtitle: "O Claude avalia o portf\xF3lio como uma marca que pensa em te contratar",
+      actions: btn("Pedir an\xE1lise", () => askReview(cfg, days, summary), { kind: "primary", iconName: "sparkle", small: true, id: "ask-review" }),
+      flush: true,
+      children: [
+        list.length ? group({ children: list.map((r) => {
+          var _a;
+          return cell({
+            title: "".concat(fmtDay(r.date, { day: "numeric", month: "short", year: "numeric" })).concat(r.nota !== null && r.nota !== void 0 ? " \xB7 nota ".concat(r.nota) : ""),
+            subtitle: ((_a = r.top3) == null ? void 0 : _a[0]) ? "Prioridade: ".concat(r.top3[0]) : r.contrataria || "Abrir an\xE1lise",
+            chevron: true,
+            id: "review-".concat(r.id),
+            onClick: () => openReview(r)
+          });
+        }) }) : emptyNote("Nenhuma an\xE1lise ainda", "Pe\xE7a a primeira. Depois pe\xE7a de novo a cada m\xEAs para ver se melhorou."),
+        h("p", { class: "card-foot" }, "O Claude avalia: ".concat(REVIEW_AREAS.join(", ").toLowerCase(), ". Ele n\xE3o assiste aos v\xEDdeos; avalia t\xEDtulos, marcas, capas e ordem. Se ele n\xE3o conseguir abrir o link, pe\xE7a a an\xE1lise no Claude Code, que l\xEA o portf\xF3lio direto do GitHub."))
+      ]
+    });
+  }
+  function portfolioTab(state8) {
+    var _a;
+    const cfg = gcConfig();
+    const days = Number(state8.portfolioDays || 30);
+    if (!cfg.token) {
+      return [
+        card({ cls: "accent", id: "gc-connect", children: h(
+          "div",
+          { class: "stack" },
+          h("h3", {}, "Conecte o portf\xF3lio"),
+          h("p", { class: "muted" }, "O portf\xF3lio j\xE1 envia visitas, origem, v\xEDdeos abertos e cliques para o GoatCounter. Para ver os n\xFAmeros aqui, cole a chave de leitura da sua conta."),
+          h("div", { class: "btn-row start" }, btn("Conectar", openGcSheet, { kind: "primary", id: "gc-open" }), h("a", { class: "btn btn-ghost", href: dashboardUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "Abrir o GoatCounter"))
+        ) }),
+        h("div", { class: "grid cols-2 section" }, reviewsCard(cfg, days, null), linksCard(cfg))
+      ];
+    }
+    const entry = load(days);
+    const head = h(
+      "div",
+      { class: "toolbar" },
+      h("p", { class: "muted small" }, (entry == null ? void 0 : entry.status) === "ok" ? "Atualizado ".concat(new Date(entry.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), " \xB7 contam visitantes (cada pessoa uma vez por dia)") : " "),
+      h(
+        "div",
+        { class: "page-actions" },
+        btn("Atualizar", () => {
+          load(days, { force: true });
+          rerender4();
+        }, { iconName: "refresh", small: true, kind: "ghost", id: "gc-refresh" }),
+        btn("Configurar", openGcSheet, { small: true, kind: "ghost", id: "gc-settings" }),
+        h("a", { class: "btn btn-sm btn-ghost", href: dashboardUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "GoatCounter")
+      )
+    );
+    if (!entry || entry.status === "loading") return [head, card({ children: h("p", { class: "muted", "data-id": "gc-loading" }, "Buscando os n\xFAmeros do portf\xF3lio\u2026") })];
+    if (entry.status === "error") {
+      return [
+        head,
+        card({ cls: "warn-card", children: h("div", { class: "stack" }, h("p", { "data-id": "gc-error" }, entry.error.message), btn("Configurar conex\xE3o", openGcSheet, { small: true })) }),
+        h("div", { class: "grid cols-2 section" }, reviewsCard(cfg, days, null), linksCard(cfg))
+      ];
+    }
+    const s = entry.summary;
+    const maxVideo = Math.max(0, ...s.videos.map((v) => v.count));
+    const maxRef = Math.max(0, ...s.refs.map((r) => r.count));
+    const dayList = Array.from({ length: Math.min(days, 31) }, (_, i) => {
+      const d = /* @__PURE__ */ new Date();
+      d.setDate(d.getDate() - (Math.min(days, 31) - 1 - i));
+      return iso(d);
+    });
+    const byDay = new Map(s.daily.map((d) => [d.day, d.count]));
+    const contato = ((_a = s.funnel.find((f) => f.id === "contato")) == null ? void 0 : _a.count) || 0;
+    return [
+      head,
+      h(
+        "div",
+        { class: "grid cols-4 kpis" },
+        kpi({ label: "Visitantes", value: fmtNum(s.visits), hint: "\xFAltimos ".concat(days, " dias"), id: "gc-visits" }),
+        kpi({ label: "V\xEDdeos abertos", value: fmtNum(s.videoOpens), hint: s.visits ? "".concat((s.videoOpens / s.visits).toLocaleString("pt-BR", { maximumFractionDigits: 1 }), " por visitante") : "\u2014", id: "gc-videos" }),
+        kpi({ label: "Cliques de contato", value: fmtNum(s.contactClicks), hint: "".concat(pct2(s.contactClicks, s.visits), " dos visitantes \xB7 WhatsApp e e-mail"), id: "gc-contacts" }),
+        kpi({ label: "Chegaram no contato", value: pct2(contato, s.visits), hint: "".concat(fmtNum(contato), " de ").concat(fmtNum(s.visits), " rolaram at\xE9 l\xE1"), id: "gc-reach" })
+      ),
+      s.visits === 0 && h("p", { class: "data-note" }, "Ainda sem visitas neste per\xEDodo. Os n\xFAmeros come\xE7am a contar a partir da instala\xE7\xE3o do contador no portf\xF3lio."),
+      h(
+        "div",
+        { class: "grid cols-2" },
+        card({ title: "Visitantes por dia", subtitle: days > 31 ? "\xDAltimos 31 dias" : "\xDAltimos ".concat(days, " dias"), children: barChart({ label: "Visitantes por dia", fmt: (v) => String(v), data: dayList.map((d, i) => ({ label: fmtDay(d, { day: "numeric", month: "short" }), tip: fmtDay(d, { weekday: "short", day: "numeric", month: "short" }), value: byDay.get(d) || 0, hl: i === dayList.length - 1 })) }) }),
+        card({ title: "At\xE9 onde as pessoas rolam", subtitle: "Onde as marcas desistem do portf\xF3lio", flush: true, children: table({
+          caption: "At\xE9 onde rolam",
+          rows: s.funnel,
+          rowId: (f) => "funil-".concat(f.id),
+          columns: [
+            { label: "Etapa", main: true, render: (f) => f.label },
+            { label: "Pessoas", render: (f) => hbar(f.count, s.visits || 1, fmtNum(f.count)) },
+            { label: "%", cls: "right", render: (f) => h("span", { class: "num" }, pct2(f.count, s.visits)) }
+          ]
+        }) })
+      ),
+      h(
+        "div",
+        { class: "grid cols-2 section" },
+        card({ title: "De onde v\xEAm", subtitle: 'Etiquetas (?ref=) e sites de origem. "Sem origem" costuma ser app do Instagram ou WhatsApp.', flush: true, children: table({
+          caption: "Origem das visitas",
+          rows: s.refs,
+          rowId: (r) => "ref-".concat(r.name || "direto"),
+          empty: "Sem dados de origem ainda.",
+          columns: [
+            { label: "Origem", main: true, render: (r) => h("div", { class: "td-flex" }, h("span", { class: "td-title" }, r.name || "Sem origem (direto ou app)"), r.tagged ? tag("etiqueta", "t-butter") : null) },
+            { label: "Visitantes", render: (r) => hbar(r.count, maxRef, fmtNum(r.count)) }
+          ]
+        }) }),
+        card({ title: "V\xEDdeos mais abertos", subtitle: "Quantas vezes cada v\xEDdeo foi aberto no portf\xF3lio", flush: true, children: table({
+          caption: "V\xEDdeos mais abertos",
+          rows: s.videos.slice(0, 12),
+          rowId: (v) => "video-".concat(v.id),
+          empty: "Nenhum v\xEDdeo aberto no per\xEDodo.",
+          columns: [
+            { label: "V\xEDdeo", main: true, render: (v) => h("a", { href: "https://youtube.com/shorts/".concat(v.id), target: "_blank", rel: "noopener noreferrer", class: "td-title" }, v.title) },
+            { label: "Aberturas", render: (v) => hbar(v.count, maxVideo, fmtNum(v.count)) }
+          ]
+        }) })
+      ),
+      h(
+        "div",
+        { class: "grid cols-3 section align-start" },
+        card({ title: "Cliques", flush: true, children: group({ children: [
+          ["whatsapp", "WhatsApp", "\u{1F4AC}"],
+          ["email", "E-mail", "\u2709\uFE0F"],
+          ["instagram", "Instagram", "\u{1F4F8}"],
+          ["tiktok", "TikTok", "\u{1F3B5}"],
+          ["youtube", "Abrir no YouTube", "\u25B6\uFE0F"]
+        ].map(([k, label2, emoji]) => cell({ emoji, color: "gray", title: label2, detail: fmtNum(s.clicks[k]) })).concat([
+          cell({ emoji: "\u{1F4DD}", color: "yellow", title: "Formul\xE1rio de contato", detail: fmtNum(s.forms.contato) }),
+          cell({ emoji: "\u{1F4E6}", color: "yellow", title: "Formul\xE1rio do kit", detail: fmtNum(s.forms.kit) }),
+          cell({ emoji: "\u{1F1FA}\u{1F1F8}", color: "gray", title: "Trocaram para ingl\xEAs", detail: fmtNum(s.english) })
+        ]) }) }),
+        card({ title: "Onde est\xE3o", flush: true, children: s.locations.length ? group({ children: s.locations.slice(0, 8).map((l) => cell({ title: l.name || "Desconhecido", detail: fmtNum(l.count) })) }) : emptyNote("Sem dados ainda.") }),
+        card({ title: "Aparelhos", flush: true, children: s.systems.length ? group({ children: s.systems.slice(0, 8).map((l) => cell({ title: l.name || "Desconhecido", detail: fmtNum(l.count) })) }) : emptyNote("Sem dados ainda.") })
+      ),
+      h("div", { class: "grid cols-2 section align-start" }, reviewsCard(cfg, days, s), linksCard(cfg))
+    ];
+  }
+
+  // src/js/views/results.js
+  var state4 = { period: "90", platform: "", view: "grade", tab: "redes", portfolioDays: "30" };
+  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
   var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
   var sum = (list, k) => {
     const vals = list.map((c) => {
@@ -5385,8 +5835,30 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       );
     }));
   }
-  function render5(root) {
+  var TABS = [{ value: "redes", label: "Instagram e TikTok" }, { value: "portfolio", label: "Portf\xF3lio" }];
+  function render5(root, params = {}) {
     var _a, _b;
+    if (params.aba && TABS.some((t2) => t2.value === params.aba)) {
+      state4.tab = params.aba;
+      history.replaceState(null, "", "#/analise/desempenho");
+    }
+    const tabsEl = tabs(TABS, state4.tab, (v) => {
+      state4.tab = v;
+      rerender5();
+    }, "\xC1rea");
+    if (state4.tab === "portfolio") {
+      root.append(page({
+        kicker: "An\xE1lise",
+        title: "Desempenho",
+        subtitle: "Quem abre seu portf\xF3lio, de onde vem, o que assiste e se chama voc\xEA. E o que uma marca acharia dele.",
+        actions: filterSelect("Per\xEDodo", [{ value: "7", label: "\xDAltimos 7 dias" }, { value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }], state4.portfolioDays, (v) => {
+          state4.portfolioDays = v || "30";
+          rerender5();
+        }),
+        children: [tabsEl, ...portfolioTab(state4)]
+      }));
+      return;
+    }
     const t = today();
     const contents = all("contents");
     const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state4.platform || (c.platforms || []).includes(state4.platform)));
@@ -5413,14 +5885,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       actions: [
         filterSelect("Per\xEDodo", PERIODS, state4.period, (v) => {
           state4.period = v || "90";
-          rerender4();
+          rerender5();
         }),
         filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state4.platform, (v) => {
           state4.platform = v;
-          rerender4();
+          rerender5();
         })
       ],
       children: [
+        tabsEl,
         h(
           "div",
           { class: "grid cols-4 kpis" },
@@ -5470,7 +5943,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
             subtitle: ((_a = igConfig()) == null ? void 0 : _a.token) ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
             actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state4.view, (v) => {
               state4.view = v;
-              rerender4();
+              rerender5();
             }, "Visualiza\xE7\xE3o dos posts"),
             flush: state4.view === "tabela",
             children: state4.view === "grade" ? postGrid(measured.slice().reverse()) : table({
@@ -5590,7 +6063,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  var rerender5 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
   var when = (s) => s ? new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "nunca";
   function stepper(value, onChange2, min = 1, max = 14) {
     const out = h("span", { class: "step-val", "aria-live": "polite" }, String(value));
@@ -5782,6 +6255,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           { class: "stack" },
           card({ title: "Conex\xF5es", flush: true, children: group({ children: [
             cell({ emoji: "\u{1F4F8}", color: "pink", title: "Instagram", detail: (cfg == null ? void 0 : cfg.token) ? cfg.lastError ? "erro" : "@".concat(cfg.username) : "Conectar", chevron: true, onClick: instagramSheet, id: "instagram-cell" }),
+            cell({ emoji: "\u{1F310}", color: "yellow", title: "Portf\xF3lio (GoatCounter)", detail: gcConfig().token ? "Conectado" : "Conectar", chevron: true, onClick: openGcSheet, id: "gc-cell" }),
             cell({ emoji: "\u2728", color: "orange", title: "Claude", subtitle: "Copiar e colar, sem chave de API", chevron: true, onClick: () => sheet({ title: "Como o Claude ajuda", body: h(
               "div",
               { class: "stack" },
@@ -5799,7 +6273,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
               cell({ emoji: "\u2B07\uFE0F", color: "blue", title: "Baixar backup", subtitle: "Arquivo JSON com tudo (sem o token e sem fotos)", onClick: () => {
                 exportBackup();
                 toast("Backup baixado");
-                rerender5();
+                rerender6();
               }, id: "backup" }),
               cell({ emoji: "\u2B06\uFE0F", color: "blue", title: "Importar backup", onClick: importFile, id: "import" }),
               cell({ emoji: "\u{1F4C4}", color: "green", title: "Exportar conte\xFAdos (CSV)", onClick: () => exportCsv() }),
@@ -5829,7 +6303,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_designer();
   init_content_sheet();
   var state5 = { filter: "" };
-  var rerender6 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
   function thumb(c) {
     var _a;
     const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
@@ -5853,7 +6327,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       children: [
         chips([{ value: "carrossel", label: "Carross\xE9is" }, { value: "estatico", label: "Est\xE1ticos" }, { value: "fotos", label: "Faltando foto" }], state5.filter, (v) => {
           state5.filter = v;
-          rerender6();
+          rerender7();
         }),
         list.length ? h("div", { class: "gallery" }, list.map((c) => {
           var _a, _b, _c;
@@ -5878,7 +6352,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function render7(root, params = {}) {
     var _a, _b;
     if (!params.id) return gallery(root);
-    const c = get("contents", params.id);
+    const c = get2("contents", params.id);
     if (!c) {
       root.append(page({ title: "Est\xFAdio", children: emptyNote("Conte\xFAdo n\xE3o encontrado", "Ele pode ter sido apagado.", btn("Ver todas as artes", () => go("conteudo/estudio"))) }));
       return;
@@ -5896,7 +6370,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       subtitle: [c.date ? fmtDay(c.date, { weekday: "long", day: "numeric", month: "long" }) : null, (_b = formatById(c.formatId, all("formats"))) == null ? void 0 : _b.name].filter(Boolean).join(" \xB7 "),
       actions: [
         btn("Todas as artes", () => go("conteudo/estudio"), { iconName: "back", kind: "ghost" }),
-        btn("Abrir conte\xFAdo", () => openContent(get("contents", c.id)), { id: "open-content-from-studio" })
+        btn("Abrir conte\xFAdo", () => openContent(get2("contents", c.id)), { id: "open-content-from-studio" })
       ],
       children: designer
     }));
@@ -5914,10 +6388,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_content_sheet();
   init_designer();
   var state6 = { view: "tabela", q: "", status: "", type: "", formatId: "", goal: "", period: "" };
-  var rerender7 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
   var set = (k) => (v) => {
     state6[k] = v;
-    rerender7();
+    rerender8();
   };
   var PERIODS2 = [
     { value: "semana", label: "Pr\xF3ximos 7 dias" },
@@ -6009,7 +6483,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
             e.preventDefault();
             col.classList.remove("drop");
             const id = e.dataTransfer.getData("text/plain");
-            const c = get("contents", id);
+            const c = get2("contents", id);
             if (!c || c.status === s.id) return;
             const patch = { status: s.id };
             if (s.id === "postado" && !c.postedAt) patch.postedAt = c.date && c.date <= today() ? c.date : today();
@@ -6068,7 +6542,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           filterSelect("Per\xEDodo", PERIODS2, state6.period, set("period")),
           active && btn("Limpar filtros", () => {
             Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
-            rerender7();
+            rerender8();
           }, { kind: "ghost", small: true })
         ),
         !total ? emptyNote("Nenhum conte\xFAdo ainda", "Gere o plano da semana ou crie um conte\xFAdo.", btn("Ir para o Planejamento", () => go("conteudo/planejamento"), { kind: "primary" })) : state6.view === "tabela" ? tableView(list) : boardView(list)
@@ -6085,7 +6559,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_ui();
   init_formats();
   var state7 = { q: "", formatId: "" };
-  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
+  var rerender9 = () => document.dispatchEvent(new Event("rerender"));
   function render9(root) {
     const all2 = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
     const formats = [...FORMATS, ...all("formats")];
@@ -6101,11 +6575,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           { class: "filters" },
           searchBox(state7.q, (v) => {
             state7.q = v;
-            rerender8();
+            rerender9();
           }, "Buscar refer\xEAncia"),
           filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state7.formatId, (v) => {
             state7.formatId = v;
-            rerender8();
+            rerender9();
           })
         ),
         !all2.length ? emptyNote("Nenhuma refer\xEAncia ainda", "Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conte\xFAdo seu.", btn("Nova refer\xEAncia", () => editReference(), { kind: "primary" })) : card({

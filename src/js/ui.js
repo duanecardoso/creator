@@ -398,7 +398,9 @@ export function barChart({ data, height = 180, fmt = (v) => String(v), refValue 
     const hit = el('rect', { class: 'hit', x: cx - band / 2, y: pad.t - 10, width: band, height: H - pad.t - pad.b + 10, tabindex: '0', 'aria-label': `${d.label}: ${fmt(d.value || 0)}` });
     if (path) el('path', { class: `bar${d.hl ? ' hl' : ''}`, d: path });
     if (d.hl || i === data.length - 1) el('text', { class: 'value-label', x: cx, y: top - 6, 'text-anchor': 'middle' }, fmt(d.value || 0));
-    el('text', { class: 'axis-label', x: cx, y: H - 8, 'text-anchor': 'middle' }, d.label);
+    // Com muitas barras, mostra só algumas datas (a última sempre) para não sobrepor.
+    const every = Math.ceil(data.length / 8);
+    if (data.length <= 12 || i === data.length - 1 || (data.length - 1 - i) % every === 0) el('text', { class: 'axis-label', x: cx, y: H - 8, 'text-anchor': 'middle' }, d.label);
     const show = () => {
       tip.hidden = false;
       tip.replaceChildren(h('strong', {}, fmt(d.value || 0)), h('span', {}, d.tip || d.label));

@@ -157,3 +157,69 @@ export function mergeSlides(slides = [], incoming = []) {
     return out;
   });
 }
+
+// ---------- Análise do portfólio como se fosse uma marca ----------
+export const REVIEW_AREAS = [
+  'Primeira impressão (5 segundos)',
+  'Clareza: o que você faz e para quem',
+  'Provas: marcas, números e depoimentos',
+  'Vídeos: qualidade, variedade e ordem',
+  'Serviços, prazo e como contratar',
+  'Contato e chamada para ação',
+  'Experiência no celular',
+];
+
+const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
+
+function statsBlock(s, days) {
+  if (!s) return 'Números do portfólio: ainda não conectados (sem dados de acesso).';
+  const top = s.videos.slice(0, 5).map((v) => `${v.title} (${v.count})`).join('; ') || 'nenhum aberto';
+  const refs = s.refs.slice(0, 6).map((r) => `${r.name || 'sem origem/app'} (${r.count})`).join('; ') || '—';
+  const funil = s.funnel.map((f) => `${f.label}: ${f.count}`).join(' → ');
+  return `Números reais do portfólio nos últimos ${days} dias (GoatCounter; contam visitantes, não tempo de vídeo):
+- Visitantes: ${s.visits}
+- De onde vieram: ${refs}
+- Até onde rolaram: ${funil}
+- Vídeos abertos no total: ${s.videoOpens}. Mais abertos: ${top}
+- Cliques em WhatsApp: ${s.clicks.whatsapp}, e-mail: ${s.clicks.email}, Instagram: ${s.clicks.instagram}, TikTok: ${s.clicks.tiktok}
+- Formulários enviados: contato ${s.forms.contato}, kit ${s.forms.kit}
+- Taxa de contato (WhatsApp + e-mail ÷ visitantes): ${pct(s.contactClicks, s.visits)}`;
+}
+
+export function portfolioReviewPrompt({ profile, url, stats, days = 30, previous }) {
+  const prev = previous?.top3?.length ? `\nNa análise anterior (${previous.date}), as prioridades eram: ${previous.top3.join(' | ')}. Diga o que melhorou e o que continua igual.` : '';
+  return `Aja como a gerente de marketing de uma marca média de beleza que contrata criadoras UGC. Você recebeu o portfólio abaixo e precisa decidir se chamaria essa criadora.
+
+Portfólio: ${url}
+Abra o link e analise o portfólio inteiro (textos, serviços, marcas, números, depoimentos, lista de vídeos, contato). Se não conseguir abrir o link, diga isso na primeira linha e não invente o conteúdo. Você não consegue assistir aos vídeos: avalie títulos, marcas, capas, ordem e variedade.
+
+Sobre a criadora: ${profile.about || '—'}
+Nichos: ${profile.niches || '—'}
+
+${statsBlock(stats, days)}${prev}
+
+Avalie cada área de 0 a 10, com o que funciona e o que mudar de forma concreta (o que escrever, tirar, mover ou acrescentar). Use os números reais para apontar onde as marcas desistem. Seja direta como uma marca seria, sem elogio vazio. Não invente dados: se algo não aparece no portfólio, diga que não aparece.
+
+Áreas: ${REVIEW_AREAS.map((a, i) => `${i + 1}) ${a}`).join(' ')}
+
+Responda APENAS com JSON neste formato:
+{"nota": 0, "contrataria": "sim, talvez ou não, e por quê em uma frase", "primeira_impressao": "o que uma marca entende nos primeiros 5 segundos", "itens": [{"area": "nome da área", "nota": 0, "bom": "o que funciona", "melhorar": "o que mudar, concreto"}], "top3": ["mudança mais importante", "segunda", "terceira"], "processo": "uma dica para o processo de trabalho dela (prospecção, prazos, entrega)"}`;
+}
+
+export function parseReview(text) {
+  const raw = String(text || '').trim();
+  if (!raw) throw new Error('Nada para colar. Copie a resposta do Claude primeiro.');
+  const d = extractJson(raw);
+  const n = (v) => (Number.isFinite(Number(v)) && v !== '' && v !== null ? Math.max(0, Math.min(10, Number(v))) : null);
+  if (!d) return { nota: null, contrataria: '', primeira: '', itens: [], top3: [], processo: '', texto: raw, loose: true };
+  return {
+    nota: n(d.nota),
+    contrataria: str(d.contrataria),
+    primeira: str(d.primeira_impressao),
+    itens: (Array.isArray(d.itens) ? d.itens : []).filter((i) => i && typeof i === 'object').map((i) => ({ area: str(i.area), nota: n(i.nota), bom: str(i.bom), melhorar: str(i.melhorar) })),
+    top3: arr(d.top3).slice(0, 5),
+    processo: str(d.processo),
+    texto: '',
+    loose: false,
+  };
+}

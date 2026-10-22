@@ -5,8 +5,9 @@ import { byFormat, hasResults, scores, median, confidence, weekStart, addDays } 
 import { GOALS, TYPES, formatById } from '../lib/formats.js';
 import { openContent, today } from './content-sheet.js';
 import { hitsList } from './formats.js';
+import { portfolioTab } from './portfolio.js';
 
-const state = { period: '90', platform: '', view: 'grade' };
+const state = { period: '90', platform: '', view: 'grade', tab: 'redes', portfolioDays: '30' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 const sum = (list, k) => {
@@ -40,7 +41,25 @@ function postGrid(list) {
   }));
 }
 
-export function render(root) {
+const TABS = [{ value: 'redes', label: 'Instagram e TikTok' }, { value: 'portfolio', label: 'Portfólio' }];
+
+export function render(root, params = {}) {
+  // Vindo de um link (#/analise/desempenho?aba=portfolio): abre a aba e limpa o endereço.
+  if (params.aba && TABS.some((t) => t.value === params.aba)) {
+    state.tab = params.aba;
+    history.replaceState(null, '', '#/analise/desempenho');
+  }
+  const tabsEl = tabs(TABS, state.tab, (v) => { state.tab = v; rerender(); }, 'Área');
+  if (state.tab === 'portfolio') {
+    root.append(page({
+      kicker: 'Análise',
+      title: 'Desempenho',
+      subtitle: 'Quem abre seu portfólio, de onde vem, o que assiste e se chama você. E o que uma marca acharia dele.',
+      actions: filterSelect('Período', [{ value: '7', label: 'Últimos 7 dias' }, { value: '30', label: 'Últimos 30 dias' }, { value: '90', label: 'Últimos 90 dias' }], state.portfolioDays, (v) => { state.portfolioDays = v || '30'; rerender(); }),
+      children: [tabsEl, ...portfolioTab(state)],
+    }));
+    return;
+  }
   const t = today();
   const contents = data.all('contents');
   const posted = contents.filter((c) => c.status === 'postado' && inPeriod(c, t) && (!state.platform || (c.platforms || []).includes(state.platform)));
@@ -76,6 +95,7 @@ export function render(root) {
       filterSelect('Plataforma', [{ value: 'instagram', label: 'Instagram' }, { value: 'tiktok', label: 'TikTok' }], state.platform, (v) => { state.platform = v; rerender(); }),
     ],
     children: [
+      tabsEl,
       h('div', { class: 'grid cols-4 kpis' },
         kpi({ label: 'Posts publicados', value: fmtNum(posted.length), hint: `${measured.length} com números anotados` }),
         kpi({ label: 'Novos seguidores', value: fmtNum(sum(posted, 'follows')), hint: 'soma dos posts com esse dado' }),

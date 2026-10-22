@@ -41,3 +41,19 @@ test('ideias: aceita só formatos conhecidos', () => {
   assert.equal(r[1].formatId, '');
   assert.throws(() => parseIdeas('nada'), /lista/);
 });
+
+test('análise do portfólio: prompt com números reais e leitura da resposta', async () => {
+  const { portfolioReviewPrompt, parseReview } = await import('../../src/js/lib/prompts.js');
+  const stats = { visits: 40, videoOpens: 21, contactClicks: 4, clicks: { whatsapp: 3, email: 1, instagram: 0, tiktok: 0 }, forms: { contato: 0, kit: 2 }, videos: [{ title: 'Dove · Cabelos', count: 9 }], refs: [{ name: 'bio', count: 20 }], funnel: [{ label: 'Abriram o portfólio', count: 40 }, { label: 'Chegaram em Contato', count: 10 }] };
+  const p = portfolioReviewPrompt({ profile: { about: 'UGC' }, url: 'https://duanecardoso.github.io/ugc/', stats, days: 30, previous: { date: '01/10', top3: ['Mostrar preço'] } });
+  assert.match(p, /Visitantes: 40/);
+  assert.match(p, /Taxa de contato .*: 10%/);
+  assert.match(p, /Mostrar preço/);
+  assert.match(portfolioReviewPrompt({ profile: {}, url: 'u' }), /ainda não conectados/);
+  const r = parseReview('aqui: {"nota": 7, "contrataria": "talvez", "itens": [{"area": "Provas", "nota": 12, "bom": "logos", "melhorar": "depoimento"}], "top3": ["a", "b", "c"]}');
+  assert.equal(r.nota, 7);
+  assert.equal(r.itens[0].nota, 10);
+  assert.deepEqual(r.top3, ['a', 'b', 'c']);
+  assert.equal(parseReview('texto solto').loose, true);
+  assert.throws(() => parseReview(''), /Nada para colar/);
+});

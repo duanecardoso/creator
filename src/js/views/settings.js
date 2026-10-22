@@ -4,6 +4,7 @@ import { h, page, group, cell, sheet, formGroups, toast, actionSheet, fmtDay, ca
 import { tokenStatus } from '../lib/instagram.js';
 import { DEFAULT_PALETTE, drawSlide } from '../lib/render.js';
 import { toggle } from '../ui.js';
+import { openGcSheet } from './portfolio.js';
 
 const SWATCHES = [
   ['bg', 'Fundo'], ['card', 'Cartões'], ['ink', 'Texto'], ['accent', 'Destaque 1 (manteiga)'], ['accent2', 'Destaque 2 (rosa)'], ['accent3', 'Detalhes (marrom)'], ['accent4', 'Ponto final (rosa)'],
@@ -233,6 +234,7 @@ export function render(root) {
       h('div', { class: 'stack' },
         card({ title: 'Conexões', flush: true, children: group({ children: [
           cell({ emoji: '📸', color: 'pink', title: 'Instagram', detail: cfg?.token ? (cfg.lastError ? 'erro' : `@${cfg.username}`) : 'Conectar', chevron: true, onClick: instagramSheet, id: 'instagram-cell' }),
+          cell({ emoji: '🌐', color: 'yellow', title: 'Portfólio (GoatCounter)', detail: data.gcConfig().token ? 'Conectado' : 'Conectar', chevron: true, onClick: openGcSheet, id: 'gc-cell' }),
           cell({ emoji: '✨', color: 'orange', title: 'Claude', subtitle: 'Copiar e colar, sem chave de API', chevron: true, onClick: () => sheet({ title: 'Como o Claude ajuda', body: h('div', { class: 'stack' },
             h('p', {}, 'Como o site é público (GitHub Pages), ele não guarda chave de IA.'),
             h('p', {}, 'Nos botões ✨, o site copia um prompt com seu perfil, o formato e o tema, e abre o Claude. Ao voltar, ele oferece colar a resposta e preenche o conteúdo.'),
