@@ -104,7 +104,7 @@ export async function refreshToken(cfg, fetchImpl = fetch) {
 export async function listMedia(cfg, limit = 30, fetchImpl = fetch) {
   const out = [];
   let next = url(cfg, 'me/media', {
-    fields: 'id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count',
+    fields: 'id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
     limit: String(Math.min(limit, 50)),
   });
   while (next && out.length < limit) {
@@ -153,6 +153,12 @@ export async function mediaInsights(cfg, media, unsupported = new Set(), fetchIm
 export function shortcode(link) {
   const m = String(link || '').match(/instagram\.com\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
   return m ? m[1] : null;
+}
+
+// Imagem de capa do post: vídeos/reels têm thumbnail_url; fotos e carrosséis usam media_url (1ª imagem).
+// Os links do Instagram expiram depois de alguns dias, por isso são renovados a cada sincronização.
+export function thumbOf(m) {
+  return m.thumbnail_url || (m.media_type !== 'VIDEO' ? m.media_url : '') || '';
 }
 
 export function mediaFormat(m) {
@@ -229,6 +235,8 @@ export async function syncInstagram({ cfg, db, limit = 30, fetchImpl = fetch, on
         igMediaId: m.id,
         caption: existing.caption || m.caption || '',
         link: existing.link || m.permalink,
+        igThumb: thumbOf(m) || existing.igThumb || '',
+        igFormat: mediaFormat(m),
         postedAt: existing.postedAt || date,
         date: existing.date || date,
         status: 'postado',
@@ -248,6 +256,7 @@ export async function syncInstagram({ cfg, db, limit = 30, fetchImpl = fetch, on
         postedAt: date,
         link: m.permalink,
         igMediaId: m.id,
+        igThumb: thumbOf(m),
         source: 'instagram',
         results: toResults(ins, m),
       });

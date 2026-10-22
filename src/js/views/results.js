@@ -1,12 +1,12 @@
 // Desempenho: o que traz seguidores, salvamentos e marcas (não só views), por post e por formato.
 import * as data from '../data.js';
-import { h, page, card, kpi, table, filterSelect, badge, tag, fmtNum, fmtDec, fmtDay, emptyNote, barChart, hbar, go } from '../ui.js';
+import { h, page, card, kpi, table, filterSelect, badge, tag, tabs, postThumb, fmtNum, fmtDec, fmtDay, emptyNote, barChart, hbar, go } from '../ui.js';
 import { byFormat, hasResults, scores, median, confidence, weekStart, addDays } from '../lib/insights.js';
-import { GOALS, TYPES } from '../lib/formats.js';
+import { GOALS, TYPES, formatById } from '../lib/formats.js';
 import { openContent, today } from './content-sheet.js';
 import { hitsList } from './formats.js';
 
-const state = { period: '90', platform: '' };
+const state = { period: '90', platform: '', view: 'grade' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 const sum = (list, k) => {
@@ -19,6 +19,25 @@ function inPeriod(c, t) {
   const d = c.postedAt || c.date || '';
   if (state.period === 'all') return Boolean(d);
   return d >= addDays(t, -Number(state.period)) && d <= t;
+}
+
+// Grade visual dos posts, como o perfil do Instagram, com os números que importam embaixo.
+function postGrid(list) {
+  if (!list.length) return emptyNote('Nenhum post com números neste período.');
+  return h('div', { class: 'post-grid' }, list.map((c) => {
+    const f = formatById(c.formatId, data.all('formats'));
+    const s = scores(c);
+    const stat = (label, v, prefix = '') => (v === null || v === undefined ? null : h('span', { class: 'pg-stat' }, h('b', {}, `${prefix}${fmtNum(v)}`), label));
+    return h('button', { type: 'button', class: 'post-card', 'data-id': `post-${c.id}`, onclick: () => openContent(c) },
+      h('span', { class: 'pg-media' },
+        c.igThumb ? postThumb(c, { cls: 'pg-img', emoji: f?.emoji || '📷', color: f?.color || 'gray' }) : h('span', { class: 'pg-empty' }, h('span', { class: 'pg-emoji' }, f?.emoji || '📝'), h('span', {}, 'Sem capa')),
+        h('span', { class: 'pg-type' }, c.igFormat === 'reels' || (!c.igFormat && (c.type || 'video') === 'video') ? 'Reels' : c.igFormat === 'carrossel' || c.type === 'carrossel' ? 'Carrossel' : c.igFormat === 'foto' || c.type === 'estatico' ? 'Foto' : 'Post')),
+      h('span', { class: 'pg-body' },
+        h('span', { class: 'pg-top' }, h('span', { class: 'subtle small' }, fmtDay(c.postedAt || c.date, { day: 'numeric', month: 'short' })), c.results?.source === 'instagram' ? tag('Instagram', 'info') : tag('Manual')),
+        h('span', { class: 'pg-title' }, c.title),
+        h('span', { class: 'pg-stats' }, stat('views', s.views), stat('seguidores', num(c.results?.follows), '+'), stat('salvos', num(c.results?.saves)))),
+    );
+  }));
 }
 
 export function render(root) {
@@ -89,12 +108,14 @@ export function render(root) {
       ),
       h('div', { class: 'section' },
         card({
-          title: 'Posts com resultado', flush: true,
-          children: table({
+          title: 'Posts com resultado', subtitle: data.igConfig()?.token ? 'As capas vêm do Instagram e são atualizadas a cada sincronização.' : null,
+          actions: tabs([{ value: 'grade', label: 'Grade' }, { value: 'tabela', label: 'Tabela' }], state.view, (v) => { state.view = v; rerender(); }, 'Visualização dos posts'),
+          flush: state.view === 'tabela',
+          children: state.view === 'grade' ? postGrid(measured.slice().reverse()) : table({
             caption: 'Posts com resultado', rows: measured.slice().reverse(), onRowClick: (c) => openContent(c), rowId: (c) => `post-${c.id}`,
             empty: 'Nenhum post com números neste período.',
             columns: [
-              { label: 'Post', main: true, render: (c) => h('div', {}, h('div', { class: 'td-title' }, c.title), h('div', { class: 'td-sub' }, [fmtDay(c.postedAt || c.date, { day: 'numeric', month: 'short' }), TYPES[c.type || 'video']?.label, GOALS[c.goal]?.label].filter(Boolean).join(' · '))) },
+              { label: 'Post', main: true, render: (c) => h('div', { class: 'td-flex' }, postThumb(c, { cls: 'td-thumb', emoji: formatById(c.formatId, data.all('formats'))?.emoji || '📝' }), h('div', {}, h('div', { class: 'td-title' }, c.title), h('div', { class: 'td-sub' }, [fmtDay(c.postedAt || c.date, { day: 'numeric', month: 'short' }), TYPES[c.type || 'video']?.label, GOALS[c.goal]?.label].filter(Boolean).join(' · ')))) },
               { label: 'Views', cls: 'right', render: (c) => h('span', { class: 'num' }, fmtNum(scores(c).views)) },
               { label: 'Curtidas', cls: 'right', render: (c) => h('span', { class: 'num' }, fmtNum(num(c.results?.likes))) },
               { label: 'Coment.', cls: 'right', render: (c) => h('span', { class: 'num' }, fmtNum(num(c.results?.comments))) },

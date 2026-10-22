@@ -77,6 +77,13 @@ export const icon = (name, cls = 'ic') =>
 
 // Quadradinho com emoji (identifica formato, tipo de campanha etc.).
 export const badge = (emoji, color = 'gray') => h('span', { class: `badge c-${color}`, 'aria-hidden': 'true' }, emoji);
+// Capa do post do Instagram. Se o link expirou ou falhou, mostra o emoji no lugar.
+export function postThumb(c, { cls = 'post-thumb', emoji = '📷', color = 'gray' } = {}) {
+  if (!c?.igThumb) return badge(emoji, color);
+  const img = h('img', { class: cls, src: c.igThumb, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async' });
+  img.addEventListener('error', () => img.replaceWith(badge(emoji, color)), { once: true });
+  return img;
+}
 export const tag = (text, tone = '') => (text ? h('span', { class: `tag ${tone}` }, text) : null);
 
 export const btn = (label, onClick, { kind = '', iconName, id, small = false, title } = {}) =>

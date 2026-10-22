@@ -40,6 +40,7 @@ Cada carrossel ou estático do plano já vem com as telas montadas (1080×1350, 
 - **Quando precisa de foto sua**, o site pede (por exemplo: "📷 Você segurando o produto, luz natural, fundo neutro"). O pedido aparece na Visão geral e no Estúdio.
 - As fotos ficam guardadas só no aparelho e **não entram no backup**.
 - Os textos que dependem da sua experiência ficam com uma dica ✏︎ até você (ou o Claude) escrever. Nada é inventado.
+- **Apagar design**: no Estúdio ou dentro do conteúdo. Apaga as telas e as fotos usadas nelas; o conteúdo e os números continuam.
 - **Salvar imagens**: no iPhone abre a folha de compartilhar. No computador, baixa os arquivos JPG.
 
 ## Claude (IA)
@@ -61,7 +62,8 @@ Funciona no plano gratuito do Claude, sem chave de API.
 
 Para conectar, vá em Configurações → Instagram e cole um token gerado no painel da Meta (o passo a passo está dentro do app).
 
-- O site importa seus posts e números, sincroniza ao abrir e renova o token sozinho.
+- O site importa seus posts, as capas e os números, sincroniza ao abrir e renova o token sozinho.
+- Em Desempenho, os posts aparecem em grade, como no seu perfil, com views, seguidores e salvamentos. Os links das capas do Instagram expiram depois de alguns dias e são renovados a cada sincronização.
 - O token fica só no navegador e não vai no backup.
 - Contatos de marcas continuam manuais.
 
@@ -78,8 +80,8 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 46 testes de lógica
-npm run test:e2e   # 26 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
+npm test           # 47 testes de lógica
+npm run test:e2e   # 27 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 
 ```

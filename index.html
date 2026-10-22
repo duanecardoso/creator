@@ -834,6 +834,33 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   .format-grid, .gallery { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ================= Posts do Instagram em grade ================= */
+.card-head .segmented { margin: 0; width: auto; }
+.post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.post-card { display: flex; flex-direction: column; padding: 0; border: 1px solid rgba(0, 0, 0, 0.07); border-radius: var(--r); background: var(--surface); text-align: left; color: var(--ink); overflow: hidden; box-shadow: var(--shadow); transition: transform 0.45s var(--spring), box-shadow 0.35s; }
+.post-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.pg-media { position: relative; display: block; aspect-ratio: 4 / 5; background: var(--surface-2); overflow: hidden; }
+.pg-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--spring); }
+.post-card:hover .pg-img { transform: scale(1.05); }
+.pg-media > .badge { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; font-size: 34px; }
+.pg-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; color: var(--ink-3); font-size: 12px; font-weight: 600; }
+.pg-emoji { font-size: 32px; }
+.pg-type { position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 999px; background: rgba(255, 255, 255, 0.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-size: 11px; font-weight: 700; color: var(--ink); }
+.pg-body { display: grid; gap: 6px; padding: 10px 12px 12px; }
+.pg-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.pg-title { font-weight: 700; font-size: 14px; line-height: 1.3; letter-spacing: -0.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pg-stats { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-3); }
+.pg-stat b { color: var(--ink); font-weight: 800; margin-right: 3px; }
+.td-thumb { width: 40px; height: 50px; flex-shrink: 0; object-fit: cover; border-radius: 8px; background: var(--surface-2); }
+.sheet-thumb { display: flex; gap: 12px; align-items: center; margin: 0 0 16px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.sheet-thumb img { width: 72px; height: 90px; object-fit: cover; border-radius: 10px; }
+@media (max-width: 760px) {
+  .post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pg-body { padding: 8px 10px 10px; }
+  .card-head .segmented { width: 100%; }
+}
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+
 </style>
 </head>
 <body>
@@ -1153,7 +1180,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   async function listMedia(cfg, limit = 30, fetchImpl = fetch) {
     const out = [];
     let next = url(cfg, "me/media", {
-      fields: "id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count",
+      fields: "id,caption,media_type,media_product_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count",
       limit: String(Math.min(limit, 50))
     });
     while (next && out.length < limit) {
@@ -1194,6 +1221,9 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
   function shortcode(link) {
     const m = String(link || "").match(/instagram\.com\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
     return m ? m[1] : null;
+  }
+  function thumbOf(m) {
+    return m.thumbnail_url || (m.media_type !== "VIDEO" ? m.media_url : "") || "";
   }
   function mediaFormat(m) {
     if (m.media_product_type === "REELS" || m.media_type === "VIDEO") return "reels";
@@ -1256,6 +1286,8 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           igMediaId: m.id,
           caption: existing.caption || m.caption || "",
           link: existing.link || m.permalink,
+          igThumb: thumbOf(m) || existing.igThumb || "",
+          igFormat: mediaFormat(m),
           postedAt: existing.postedAt || date,
           date: existing.date || date,
           status: "postado",
@@ -1275,6 +1307,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
           postedAt: date,
           link: m.permalink,
           igMediaId: m.id,
+          igThumb: thumbOf(m),
           source: "instagram",
           results: toResults(ins, m)
         });
@@ -2463,6 +2496,12 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     const qs = params ? `?${new URLSearchParams(params)}` : "";
     location.hash = `#/${path}${qs}`;
   }
+  function postThumb(c, { cls = "post-thumb", emoji = "\u{1F4F7}", color = "gray" } = {}) {
+    if (!c?.igThumb) return badge(emoji, color);
+    const img = h("img", { class: cls, src: c.igThumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer", decoding: "async" });
+    img.addEventListener("error", () => img.replaceWith(badge(emoji, color)), { once: true });
+    return img;
+  }
   function page({ kicker, title, subtitle, right, actions, children }) {
     return h(
       "div",
@@ -3349,7 +3388,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       img.src = url2;
     });
   }
-  var DB, STORE, memory, dbp, putPhoto, getPhoto, newPhotoId;
+  var DB, STORE, memory, dbp, putPhoto, getPhoto, deletePhoto, newPhotoId;
   var init_media = __esm({
     "src/js/lib/media.js"() {
       DB = "creator-media";
@@ -3358,6 +3397,7 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
       dbp = null;
       putPhoto = (id, blob) => tx("readwrite", (s) => s ? s.put(blob, id) : memory.set(id, blob));
       getPhoto = (id) => id ? tx("readonly", (s) => s ? s.get(id) : { result: memory.get(id) }) : Promise.resolve(null);
+      deletePhoto = (id) => tx("readwrite", (s) => s ? s.delete(id) : memory.delete(id));
       newPhotoId = () => `ph-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     }
   });
@@ -3372,7 +3412,24 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
     imgCache.set(slide.photoId, img);
     return img;
   }
+  async function deleteDesign(contentId) {
+    const c = get("contents", contentId);
+    if (!c) return false;
+    if (!await confirmDelete("o design deste conte\xFAdo (as telas e as fotos usadas nelas; o conte\xFAdo continua)")) return false;
+    for (const s of c.slides || []) {
+      if (s.photoId) {
+        imgCache.delete(s.photoId);
+        await deletePhoto(s.photoId).catch(() => {
+        });
+      }
+    }
+    update("contents", contentId, { slides: [], needsPhoto: false, designDark: null, noDesign: true });
+    toast("Design apagado");
+    return true;
+  }
   function openDesigner(contentId) {
+    const c = get("contents", contentId);
+    if (c?.noDesign) update("contents", contentId, { noDesign: false }, { silent: true });
     document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')?.click();
     go("conteudo/estudio", { id: contentId });
   }
@@ -3602,7 +3659,10 @@ h1, h2, h3, .page-title, .section-title h2, .sheet-head h2, .empty-title, .plan-
             }, "Tema escuro"), "Tema escuro"),
             h("button", { type: "button", class: "btn btn-primary", "data-id": "export-design", onclick: exportAll }, icon("download"), "Salvar imagens")
           ),
-          miss > 0 && h("p", { class: "hint-line" }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.`)
+          miss > 0 && h("p", { class: "hint-line" }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.`),
+          h("button", { type: "button", class: "btn btn-ghost btn-danger btn-sm", "data-id": "delete-design", onclick: async () => {
+            if (await deleteDesign(contentId)) go("conteudo/estudio");
+          } }, "Apagar design")
         ] }),
         editor
       )
@@ -4407,12 +4467,18 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       const ty = typeSel.value;
       if (ty !== "carrossel" && ty !== "estatico") return designBtn.replaceChildren();
       const miss = c.id ? missingPhotos(c) : 0;
-      designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : "Artes 1080\xD71350 no seu estilo iOS, prontas para salvar no Fotos.", children: [
+      designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : "Artes 1080\xD71350 no seu estilo, prontas para salvar no Fotos.", children: [
         h("button", { type: "button", class: "cell tappable tint", "data-id": "content-design", onclick: () => {
           const saved = saveNow();
           document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
           setTimeout(() => openDesigner(saved.id), 260);
-        } }, miss ? `\u{1F4F7} Design: adicionar ${miss} foto(s)` : `\u{1F3A8} Abrir design${c.slides?.length ? ` (${c.slides.length} tela${c.slides.length > 1 ? "s" : ""})` : ""}`)
+        } }, miss ? `\u{1F4F7} Design: adicionar ${miss} foto(s)` : c.slides?.length ? `\u{1F3A8} Abrir design (${c.slides.length} tela${c.slides.length > 1 ? "s" : ""})` : "\u{1F3A8} Criar design"),
+        c.id && c.slides?.length ? h("button", { type: "button", class: "cell tappable destructive", "data-id": "content-delete-design", onclick: async () => {
+          if (await deleteDesign(c.id)) {
+            c = get("contents", c.id);
+            drawDesignBtn();
+          }
+        } }, "Apagar design") : null
       ] }));
     };
     typeSel.addEventListener("change", drawDesignBtn);
@@ -4428,6 +4494,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       body: h(
         "div",
         { class: "sheet-stack" },
+        c.igThumb && h("div", { class: "sheet-thumb" }, postThumb(c), h("div", { class: "cell-text" }, h("span", { class: "cell-title" }, "Post do Instagram"), c.link && h("a", { href: c.link, target: "_blank", rel: "noopener noreferrer", class: "small" }, "Ver no Instagram"))),
         deal && group({ children: [cell({ emoji: DEAL_TYPES[deal.type]?.emoji, color: DEAL_TYPES[deal.type]?.color, title: `Campanha: ${deal.brandName}`, subtitle: `${DEAL_TYPES[deal.type]?.label} \xB7 ${stageLabel(deal)}`, chevron: true, onClick: () => Promise.resolve().then(() => (init_brands(), brands_exports)).then((m) => m.openDeal(deal)) })] }),
         main2.el,
         stepper2,
@@ -5159,7 +5226,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   init_insights();
   init_formats();
   init_content_sheet();
-  var state4 = { period: "90", platform: "" };
+  var state4 = { period: "90", platform: "", view: "grade" };
   var rerender4 = () => document.dispatchEvent(new Event("rerender"));
   var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
   var sum = (list, k) => {
@@ -5171,6 +5238,31 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const d = c.postedAt || c.date || "";
     if (state4.period === "all") return Boolean(d);
     return d >= addDays(t, -Number(state4.period)) && d <= t;
+  }
+  function postGrid(list) {
+    if (!list.length) return emptyNote("Nenhum post com n\xFAmeros neste per\xEDodo.");
+    return h("div", { class: "post-grid" }, list.map((c) => {
+      const f = formatById(c.formatId, all("formats"));
+      const s = scores(c);
+      const stat = (label2, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, `${prefix}${fmtNum(v)}`), label2);
+      return h(
+        "button",
+        { type: "button", class: "post-card", "data-id": `post-${c.id}`, onclick: () => openContent(c) },
+        h(
+          "span",
+          { class: "pg-media" },
+          c.igThumb ? postThumb(c, { cls: "pg-img", emoji: f?.emoji || "\u{1F4F7}", color: f?.color || "gray" }) : h("span", { class: "pg-empty" }, h("span", { class: "pg-emoji" }, f?.emoji || "\u{1F4DD}"), h("span", {}, "Sem capa")),
+          h("span", { class: "pg-type" }, c.igFormat === "reels" || !c.igFormat && (c.type || "video") === "video" ? "Reels" : c.igFormat === "carrossel" || c.type === "carrossel" ? "Carrossel" : c.igFormat === "foto" || c.type === "estatico" ? "Foto" : "Post")
+        ),
+        h(
+          "span",
+          { class: "pg-body" },
+          h("span", { class: "pg-top" }, h("span", { class: "subtle small" }, fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" })), c.results?.source === "instagram" ? tag("Instagram", "info") : tag("Manual")),
+          h("span", { class: "pg-title" }, c.title),
+          h("span", { class: "pg-stats" }, stat("views", s.views), stat("seguidores", num2(c.results?.follows), "+"), stat("salvos", num2(c.results?.saves)))
+        )
+      );
+    }));
   }
   function render5(root) {
     const t = today();
@@ -5250,15 +5342,20 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           { class: "section" },
           card({
             title: "Posts com resultado",
-            flush: true,
-            children: table({
+            subtitle: igConfig()?.token ? "As capas v\xEAm do Instagram e s\xE3o atualizadas a cada sincroniza\xE7\xE3o." : null,
+            actions: tabs([{ value: "grade", label: "Grade" }, { value: "tabela", label: "Tabela" }], state4.view, (v) => {
+              state4.view = v;
+              rerender4();
+            }, "Visualiza\xE7\xE3o dos posts"),
+            flush: state4.view === "tabela",
+            children: state4.view === "grade" ? postGrid(measured.slice().reverse()) : table({
               caption: "Posts com resultado",
               rows: measured.slice().reverse(),
               onRowClick: (c) => openContent(c),
               rowId: (c) => `post-${c.id}`,
               empty: "Nenhum post com n\xFAmeros neste per\xEDodo.",
               columns: [
-                { label: "Post", main: true, render: (c) => h("div", {}, h("div", { class: "td-title" }, c.title), h("div", { class: "td-sub" }, [fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), TYPES[c.type || "video"]?.label, GOALS[c.goal]?.label].filter(Boolean).join(" \xB7 "))) },
+                { label: "Post", main: true, render: (c) => h("div", { class: "td-flex" }, postThumb(c, { cls: "td-thumb", emoji: formatById(c.formatId, all("formats"))?.emoji || "\u{1F4DD}" }), h("div", {}, h("div", { class: "td-title" }, c.title), h("div", { class: "td-sub" }, [fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), TYPES[c.type || "video"]?.label, GOALS[c.goal]?.label].filter(Boolean).join(" \xB7 ")))) },
                 { label: "Views", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(scores(c).views)) },
                 { label: "Curtidas", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.likes))) },
                 { label: "Coment.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.comments))) },
@@ -5574,7 +5671,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     return cv;
   }
   function gallery(root) {
-    const all2 = all("contents").filter((c) => c.type === "carrossel" || c.type === "estatico").sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const all2 = all("contents").filter((c) => (c.type === "carrossel" || c.type === "estatico") && !c.noDesign && (c.slides?.length || c.status !== "postado")).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     const list = all2.filter((c) => state5.filter === "fotos" ? missingPhotos(c) > 0 : state5.filter ? c.type === state5.filter : true);
     root.append(page({
       kicker: "Conte\xFAdo",
@@ -5609,6 +5706,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     const c = get("contents", params.id);
     if (!c) {
       root.append(page({ title: "Est\xFAdio", children: emptyNote("Conte\xFAdo n\xE3o encontrado", "Ele pode ter sido apagado.", btn("Ver todas as artes", () => go("conteudo/estudio"))) }));
+      return;
+    }
+    if (c.noDesign) {
+      root.append(page({ kicker: "Est\xFAdio", title: c.title || "Sem t\xEDtulo", children: emptyNote("Design apagado", "O conte\xFAdo continua salvo. Voc\xEA pode criar um design novo quando quiser.", h("div", { class: "btn-row" }, btn("Criar design de novo", () => {
+        update("contents", c.id, { noDesign: false });
+      }, { kind: "primary" }), btn("Todas as artes", () => go("conteudo/estudio"), { kind: "ghost" }))) }));
       return;
     }
     const designer = buildDesigner(c.id);
@@ -5692,7 +5795,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             return h(
               "div",
               { class: "td-flex" },
-              badge(f?.emoji || "\u{1F4DD}", f?.color || "gray"),
+              c.igThumb ? postThumb(c, { cls: "td-thumb", emoji: f?.emoji || "\u{1F4DD}", color: f?.color || "gray" }) : badge(f?.emoji || "\u{1F4DD}", f?.color || "gray"),
               h("div", {}, h("div", { class: "td-title" }, c.title || "Sem t\xEDtulo"), h("div", { class: "td-sub" }, [f?.name, c.theme && c.theme !== c.title ? c.theme : null].filter(Boolean).join(" \xB7 ")))
             );
           } },

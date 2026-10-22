@@ -113,3 +113,11 @@ test('auxiliares', () => {
   assert.equal(titleFromCaption('\n  Primeira linha\nsegunda'), 'Primeira linha');
   assert.match(titleFromCaption('', '2026-10-05T15:00:00+0000'), /Publicação de \d\d\/10\/2026/);
 });
+
+test('capa do post: vídeo usa thumbnail_url, foto e carrossel usam media_url', async () => {
+  const { thumbOf } = await import('../../src/js/lib/instagram.js');
+  assert.equal(thumbOf({ media_type: 'VIDEO', media_url: 'v.mp4', thumbnail_url: 't.jpg' }), 't.jpg');
+  assert.equal(thumbOf({ media_type: 'VIDEO', media_url: 'v.mp4' }), '');
+  assert.equal(thumbOf({ media_type: 'IMAGE', media_url: 'i.jpg' }), 'i.jpg');
+  assert.equal(thumbOf({ media_type: 'CAROUSEL_ALBUM', media_url: 'c.jpg' }), 'c.jpg');
+});

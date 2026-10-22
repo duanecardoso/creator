@@ -21,6 +21,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const base = pathToFileURL(path.join(root, 'index.html')).href;
 const ROUTES = ['visao-geral', 'conteudo/planejamento', 'conteudo/lista', 'conteudo/estudio', 'conteudo/formatos', 'conteudo/referencias', 'marcas/campanhas', 'marcas/financeiro', 'marcas/contatos', 'analise/desempenho', 'configuracoes'];
 
+// Capa simulada do post (imagem PNG embutida, sem rede)
+const CAPA = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP4z8Dwn4Hh////DAwMDAAm4gP9Vh1o8wAAAABJRU5ErkJggg==';
 // Instagram simulado (nenhuma chamada real sai do teste)
 let igOk = true;
 async function mockInstagram(route) {
@@ -29,7 +31,7 @@ async function mockInstagram(route) {
   if (!igOk) return json({ error: { code: 190, message: 'Invalid OAuth access token' } }, 400);
   if (url.pathname.endsWith('/me')) return json({ user_id: '1', username: 'duda.ugc', account_type: 'MEDIA_CREATOR', followers_count: 1234 });
   if (url.pathname.endsWith('/me/media')) return json({ data: [
-    { id: 'm1', caption: 'Minha mesa de trabalho\n#setup', media_type: 'CAROUSEL_ALBUM', media_product_type: 'FEED', permalink: 'https://www.instagram.com/p/BBB222/', timestamp: '2026-10-06T15:00:00+0000', like_count: 50, comments_count: 9 },
+    { id: 'm1', caption: 'Minha mesa de trabalho\n#setup', media_type: 'CAROUSEL_ALBUM', media_product_type: 'FEED', media_url: CAPA, permalink: 'https://www.instagram.com/p/BBB222/', timestamp: '2026-10-06T15:00:00+0000', like_count: 50, comments_count: 9 },
   ] });
   if (url.pathname.includes('/insights')) {
     const v = { reach: 1200, views: 2000, likes: 50, comments: 9, saved: 22, shares: 9, total_interactions: 90, profile_visits: 30, follows: 6 };
@@ -261,8 +263,12 @@ try {
   await page.waitForTimeout(500);
   await nav('analise/desempenho');
   await page.selectOption('select[aria-label="Período"]', 'all');
-  await page.waitForSelector('[data-id^="post-"]:has-text("Minha mesa de trabalho") .tag:has-text("Instagram")');
-  ok('Instagram conectado: post importado com números e origem marcada');
+  await page.waitForSelector('.post-grid [data-id^="post-"]:has-text("Minha mesa de trabalho") .tag:has-text("Instagram")');
+  await page.waitForSelector('.post-grid [data-id^="post-"]:has-text("Minha mesa de trabalho") img.pg-img');
+  await page.click('.card-head .segmented button:has-text("Tabela")');
+  await page.waitForSelector('tbody tr[data-id^="post-"]:has-text("Minha mesa de trabalho") img.td-thumb');
+  await page.click('.card-head .segmented button:has-text("Grade")');
+  ok('Instagram conectado: post importado com capa na grade e na tabela, números e origem marcada');
 
   await nav('configuracoes');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-id="backup"]')]);
@@ -337,6 +343,20 @@ try {
   await sp.waitForSelector('.toast:has-text("Foto adicionada")');
   await sp.waitForFunction((k) => document.querySelectorAll('.need-photo').length === k - 1, need);
   ok('Carrossel pede foto sua e guarda a foto enviada');
+
+  const studioUrl = sp.url();
+  await sp.click('[data-id="delete-design"]');
+  await sp.click('[data-id="confirm-delete"]');
+  await sp.waitForSelector('.toast:has-text("Design apagado")');
+  await sp.waitForFunction((u) => location.href !== u, studioUrl);
+  await sp.waitForSelector('.page-title:has-text("Estúdio")');
+  if (await sp.locator('.gallery-item:has-text("protetor da minha mãe")').count()) throw new Error('Design apagado continua no Estúdio');
+  await nav('conteudo/lista');
+  await sp.locator('tbody tr:has-text("protetor da minha mãe")').click();
+  await drawer(sp).locator('[data-id="content-design"]:has-text("Criar design")').waitFor();
+  if (await drawer(sp).locator('[data-id="content-delete-design"]').count()) throw new Error('Botão de apagar design sem design');
+  await drawer(sp).locator('[data-id="sheet-cancel"]').click();
+  ok('Apagar design: some do Estúdio, o conteúdo continua e dá para criar de novo');
 
   await nav('marcas/campanhas');
   await sp.click('[data-id="new-deal"]');

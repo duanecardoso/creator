@@ -17,7 +17,8 @@ function thumb(c) {
 }
 
 function gallery(root) {
-  const all = data.all('contents').filter((c) => c.type === 'carrossel' || c.type === 'estatico')
+  // Some da galeria: design apagado, ou post já publicado que nunca teve design.
+  const all = data.all('contents').filter((c) => (c.type === 'carrossel' || c.type === 'estatico') && !c.noDesign && (c.slides?.length || c.status !== 'postado'))
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const list = all.filter((c) => (state.filter === 'fotos' ? missingPhotos(c) > 0 : state.filter ? c.type === state.filter : true));
   root.append(page({
@@ -47,6 +48,10 @@ export function render(root, params = {}) {
   const c = data.get('contents', params.id);
   if (!c) {
     root.append(page({ title: 'Estúdio', children: emptyNote('Conteúdo não encontrado', 'Ele pode ter sido apagado.', btn('Ver todas as artes', () => go('conteudo/estudio'))) }));
+    return;
+  }
+  if (c.noDesign) {
+    root.append(page({ kicker: 'Estúdio', title: c.title || 'Sem título', children: emptyNote('Design apagado', 'O conteúdo continua salvo. Você pode criar um design novo quando quiser.', h('div', { class: 'btn-row' }, btn('Criar design de novo', () => { data.update('contents', c.id, { noDesign: false }); }, { kind: 'primary' }), btn('Todas as artes', () => go('conteudo/estudio'), { kind: 'ghost' }))) }));
     return;
   }
   const designer = buildDesigner(c.id);

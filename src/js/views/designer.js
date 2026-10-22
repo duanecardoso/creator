@@ -1,9 +1,9 @@
 // Estúdio: editor de design de carrossel/estático (prévia, edição de texto, foto e exportação).
 import * as data from '../data.js';
-import { h, group, cell, toast, actionSheet, toggle, go, card, icon } from '../ui.js';
+import { h, group, cell, toast, actionSheet, toggle, go, card, icon, confirmDelete } from '../ui.js';
 import { drawSlide } from '../lib/render.js';
 import { LAYOUTS, slidesFor, emptyFields, needsPhoto } from '../lib/designs.js';
-import { putPhoto, getPhoto, shrink, loadImage, newPhotoId } from '../lib/media.js';
+import { putPhoto, getPhoto, deletePhoto, shrink, loadImage, newPhotoId } from '../lib/media.js';
 
 const imgCache = new Map();
 async function imageFor(slide) {
@@ -25,7 +25,26 @@ const opts = (c, i, total, preview) => {
 export const missingPhotos = (c) => (c.slides || []).filter((s) => s.photo && !s.photoId).length;
 
 // Abre o Estúdio (página) para um conteúdo.
+// Apaga as telas do design (e as fotos guardadas para elas). O conteúdo e os números continuam.
+export async function deleteDesign(contentId) {
+  const c = data.get('contents', contentId);
+  if (!c) return false;
+  if (!(await confirmDelete('o design deste conteúdo (as telas e as fotos usadas nelas; o conteúdo continua)'))) return false;
+  for (const s of c.slides || []) {
+    if (s.photoId) {
+      imgCache.delete(s.photoId);
+      await deletePhoto(s.photoId).catch(() => {});
+    }
+  }
+  data.update('contents', contentId, { slides: [], needsPhoto: false, designDark: null, noDesign: true });
+  toast('Design apagado');
+  return true;
+}
+
 export function openDesigner(contentId) {
+  const c = data.get('contents', contentId);
+  // Abrir o design de propósito desfaz um "apagar design" anterior.
+  if (c?.noDesign) data.update('contents', contentId, { noDesign: false }, { silent: true });
   document.querySelector('dialog.sheet[open] [data-id="sheet-cancel"], dialog.sheet[open] [data-id="sheet-done"]')?.click();
   go('conteudo/estudio', { id: contentId });
 }
@@ -229,6 +248,7 @@ export function buildDesigner(contentId) {
           h('label', { class: 'mini-toggle' }, toggle(dark, (v) => { dark = v; persist(); drawStrip(); }, 'Tema escuro'), 'Tema escuro'),
           h('button', { type: 'button', class: 'btn btn-primary', 'data-id': 'export-design', onclick: exportAll }, icon('download'), 'Salvar imagens')),
         miss > 0 && h('p', { class: 'hint-line' }, `Faltam ${miss} foto(s) sua(s). Escolha a tela marcada com 📷.`),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-danger btn-sm', 'data-id': 'delete-design', onclick: async () => { if (await deleteDesign(contentId)) go('conteudo/estudio'); } }, 'Apagar design'),
       ] }),
       editor),
   );

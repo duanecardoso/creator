@@ -1,6 +1,6 @@
 // Conteúdos: todos os conteúdos em tabela (com filtros) ou em quadro por etapa.
 import * as data from '../data.js';
-import { h, page, card, btn, tabs, table, filterSelect, searchBox, badge, tag, fmtDay, fmtNum, emptyNote, toast, norm, go } from '../ui.js';
+import { h, page, card, btn, tabs, table, filterSelect, searchBox, badge, postThumb, tag, fmtDay, fmtNum, emptyNote, toast, norm, go } from '../ui.js';
 import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
 import { STATUSES, statusIndex, scores, addDays } from '../lib/insights.js';
 import { openContent, newContent, today } from './content-sheet.js';
@@ -59,7 +59,7 @@ function tableView(list) {
       columns: [
         { label: 'Conteúdo', main: true, render: (c) => {
           const f = formatById(c.formatId, data.all('formats'));
-          return h('div', { class: 'td-flex' }, badge(f?.emoji || '📝', f?.color || 'gray'),
+          return h('div', { class: 'td-flex' }, c.igThumb ? postThumb(c, { cls: 'td-thumb', emoji: f?.emoji || '📝', color: f?.color || 'gray' }) : badge(f?.emoji || '📝', f?.color || 'gray'),
             h('div', {}, h('div', { class: 'td-title' }, c.title || 'Sem título'), h('div', { class: 'td-sub' }, [f?.name, c.theme && c.theme !== c.title ? c.theme : null].filter(Boolean).join(' · '))));
         } },
         { label: 'Data', render: (c) => (c.date ? fmtDay(c.date, { day: 'numeric', month: 'short', weekday: 'short' }) : h('span', { class: 'subtle' }, 'ideia')) },

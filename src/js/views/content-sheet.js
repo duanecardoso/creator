@@ -1,8 +1,8 @@
 // Editor de um conteúdo (folha). É a mesma tela para ideia, roteiro e post publicado.
 import * as data from '../data.js';
-import { h, sheet, group, cell, formGroups, toast, confirmDelete, badge } from '../ui.js';
+import { h, sheet, group, cell, formGroups, toast, confirmDelete, badge, postThumb } from '../ui.js';
 import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
-import { openDesigner, missingPhotos } from './designer.js';
+import { openDesigner, missingPhotos, deleteDesign } from './designer.js';
 import { DEAL_TYPES, stageLabel } from '../lib/deals.js';
 import { STATUSES, iso } from '../lib/insights.js';
 import { contentPrompt, parseContent } from '../lib/prompts.js';
@@ -161,12 +161,18 @@ export function openContent(c) {
     const ty = typeSel.value;
     if (ty !== 'carrossel' && ty !== 'estatico') return designBtn.replaceChildren();
     const miss = c.id ? missingPhotos(c) : 0;
-    designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : 'Artes 1080×1350 no seu estilo iOS, prontas para salvar no Fotos.', children: [
+    designBtn.replaceChildren(group({ footer: miss ? `Falta ${miss} foto(s) sua(s) para este design.` : 'Artes 1080×1350 no seu estilo, prontas para salvar no Fotos.', children: [
       h('button', { type: 'button', class: 'cell tappable tint', 'data-id': 'content-design', onclick: () => {
         const saved = saveNow();
         document.querySelector('dialog.sheet [data-id="sheet-cancel"]')?.click();
         setTimeout(() => openDesigner(saved.id), 260);
-      } }, miss ? `📷 Design: adicionar ${miss} foto(s)` : `🎨 Abrir design${c.slides?.length ? ` (${c.slides.length} tela${c.slides.length > 1 ? 's' : ''})` : ''}`),
+      } }, miss ? `📷 Design: adicionar ${miss} foto(s)` : c.slides?.length ? `🎨 Abrir design (${c.slides.length} tela${c.slides.length > 1 ? 's' : ''})` : '🎨 Criar design'),
+      c.id && c.slides?.length ? h('button', { type: 'button', class: 'cell tappable destructive', 'data-id': 'content-delete-design', onclick: async () => {
+        if (await deleteDesign(c.id)) {
+          c = data.get('contents', c.id);
+          drawDesignBtn();
+        }
+      } }, 'Apagar design') : null,
     ] }));
   };
   typeSel.addEventListener('change', drawDesignBtn);
@@ -182,6 +188,7 @@ export function openContent(c) {
       toast('Salvo');
     },
     body: h('div', { class: 'sheet-stack' },
+      c.igThumb && h('div', { class: 'sheet-thumb' }, postThumb(c), h('div', { class: 'cell-text' }, h('span', { class: 'cell-title' }, 'Post do Instagram'), c.link && h('a', { href: c.link, target: '_blank', rel: 'noopener noreferrer', class: 'small' }, 'Ver no Instagram'))),
       deal && group({ children: [cell({ emoji: DEAL_TYPES[deal.type]?.emoji, color: DEAL_TYPES[deal.type]?.color, title: `Campanha: ${deal.brandName}`, subtitle: `${DEAL_TYPES[deal.type]?.label} · ${stageLabel(deal)}`, chevron: true, onClick: () => import('./brands.js').then((m) => m.openDeal(deal)) })] }),
       main.el,
       stepper,
