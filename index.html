@@ -1003,25 +1003,25 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
   }
   async function syncInstagram({ cfg, db, limit = 30, fetchImpl = fetch, onProgress = () => {
   } }) {
-    const summary2 = { fetched: 0, created: 0, updated: 0, withInsights: 0, insightErrors: 0, skippedStories: 0, firstError: null };
+    const summary = { fetched: 0, created: 0, updated: 0, withInsights: 0, insightErrors: 0, skippedStories: 0, firstError: null };
     onProgress("Buscando publica\xE7\xF5es\u2026");
     const media = await listMedia(cfg, limit, fetchImpl);
-    summary2.fetched = media.length;
+    summary.fetched = media.length;
     const unsupported = /* @__PURE__ */ new Set();
     for (const [i, m] of media.entries()) {
       if (mediaKind(m) === "STORY") {
-        summary2.skippedStories++;
+        summary.skippedStories++;
         continue;
       }
       onProgress(`Lendo m\xE9tricas ${i + 1} de ${media.length}\u2026`);
       let ins = {};
       try {
         ins = await mediaInsights(cfg, m, unsupported, fetchImpl);
-        if (Object.keys(ins).length) summary2.withInsights++;
+        if (Object.keys(ins).length) summary.withInsights++;
       } catch (err) {
         if (err.kind === "auth" || err.kind === "rate" || err.kind === "network") throw err;
-        summary2.insightErrors++;
-        summary2.firstError || (summary2.firstError = err.message);
+        summary.insightErrors++;
+        summary.firstError || (summary.firstError = err.message);
       }
       const existing = findPost(db.list(), m);
       const date = localDate(m.timestamp);
@@ -1036,7 +1036,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
           platforms: existing.platforms?.length ? existing.platforms : ["instagram"],
           results: toResults(ins, m, existing.results || {})
         });
-        summary2.updated++;
+        summary.updated++;
       } else {
         db.create({
           title: titleFromCaption(m.caption, m.timestamp),
@@ -1052,10 +1052,10 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
           source: "instagram",
           results: toResults(ins, m)
         });
-        summary2.created++;
+        summary.created++;
       }
     }
-    return summary2;
+    return summary;
   }
   var IG_HOST, IG_DEFAULT_VERSION, CFG_KEY, REFRESH_AFTER_DAYS, DAY, METRICS_BY_KIND, IgError, needsRefresh, url, mediaKind, localDate;
   var init_instagram = __esm({
@@ -2146,15 +2146,15 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       } catch (err) {
         if (err.kind === "auth" || err.kind === "network") throw err;
       }
-      const summary2 = await syncInstagram({
+      const summary = await syncInstagram({
         cfg,
         limit: cfg.syncLimit || 30,
         onProgress,
         db: { list: () => store.list("contents"), create: (r) => store.create("contents", r), update: (id, p) => store.update("contents", id, p) }
       });
-      saveIgConfig({ ...cfg, lastSync: (/* @__PURE__ */ new Date()).toISOString(), lastSummary: summary2, lastError: null, lastErrorKind: null }, { silent: true });
+      saveIgConfig({ ...cfg, lastSync: (/* @__PURE__ */ new Date()).toISOString(), lastSummary: summary, lastError: null, lastErrorKind: null }, { silent: true });
       emit("contents");
-      return summary2;
+      return summary;
     })();
     syncing.catch((err) => {
       const cfg = igConfig();
@@ -2546,7 +2546,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       return false;
     }
   }
-  var clear, norm, fmtNum, fmtDec, ICONS, icon, badge, tag, btn, tabs, confirmDelete, emptyNote;
+  var clear, norm, fmtNum, fmtDec, ICONS, icon, badge, tag, btn, tabs, confirmDelete, hbar, emptyNote;
   var init_ui = __esm({
     "src/js/ui.js"() {
       clear = (el) => {
@@ -2587,6 +2587,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       btn = (label, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: `btn${kind ? ` btn-${kind}` : ""}${small ? " btn-sm" : ""}`, onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label && h("span", { class: "btn-label" }, label));
       tabs = segmented;
       confirmDelete = (what) => actionSheet({ title: "Apagar", message: `Apagar ${what}? N\xE3o d\xE1 para desfazer.`, actions: [{ label: "Apagar", destructive: true, value: true, id: "confirm-delete" }] }).then((v) => v === true);
+      hbar = (value, max, text2) => value === null || value === void 0 ? h("span", { class: "subtle" }, "\u2014") : h("span", { class: "bar-cell" }, h("span", { class: "hbar", style: { width: `${Math.max(2, Math.round(value / (max || 1) * 120))}px` } }), h("span", { class: "num" }, text2));
       emptyNote = (title, text2, action) => h("div", { class: "empty" }, h("p", { class: "empty-title" }, title), text2 && h("p", {}, text2), action && h("p", { style: { marginTop: "12px" } }, action));
     }
   });
@@ -3403,9 +3404,9 @@ Responda SOMENTE com este JSON:
     const ids = new Set(FORMATS.map((f) => f.id));
     return d.ideas.filter((i) => i && typeof i === "object" && str(i.title)).map((i) => ({ title: str(i.title), formatId: ids.has(str(i.formatId)) ? str(i.formatId) : "", hook: str(i.hook), why: str(i.why) }));
   }
-  function weekPrompt({ profile: profile2, items, formats: formats2 }) {
+  function weekPrompt({ profile: profile2, items, formats }) {
     const list = items.map((c, i) => {
-      const f = formats2.find((x) => x.id === c.formatId);
+      const f = formats.find((x) => x.id === c.formatId);
       const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${s.layout}${s.photo ? ", tem foto minha" : ""})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(" / ")}` : ""}`).join("\n");
       return `${i + 1}. ${c.date} \xB7 ${TYPE_LABEL[c.type] || c.type} \xB7 foco ${c.goal || "\u2014"} \xB7 formato ${f?.name || "livre"}
    Tema: ${c.theme || c.title}
@@ -4859,83 +4860,121 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   init_data();
   init_ui();
   init_insights();
+  init_formats();
   init_content_sheet();
-  init_deals();
-  var state4 = { tab: "resumo" };
+  var state4 = { period: "90", platform: "" };
   var rerender4 = () => document.dispatchEvent(new Event("rerender"));
-  function summary() {
-    const contents = all("contents");
-    const month = today().slice(0, 7);
-    const posted = contents.filter((c) => c.status === "postado");
-    const monthPosts = posted.filter((c) => (c.postedAt || c.date || "").startsWith(month));
-    const measured = posted.filter(hasResults);
-    const sum = (list, k) => {
-      const vals = list.map((c) => c.results?.[k]).filter((v) => v !== null && v !== void 0 && v !== "");
-      return vals.length ? vals.reduce((a, b) => a + Number(b), 0) : null;
-    };
-    const conf = confidence(measured.length);
-    const top = hits(contents);
-    return [
-      h(
-        "div",
-        { class: "widgets four" },
-        stat("Posts no m\xEAs", fmtNum(monthPosts.length)),
-        stat("Seguidores (m\xEAs)", fmtNum(sum(monthPosts, "follows"))),
-        stat("Contatos de marcas", fmtNum(sum(posted, "brandContacts"))),
-        stat("Recebido de marcas", `R$ ${fmtMoney(finance(all("deals"), month, today()).receivedMonth)}`),
-        stat("Views t\xEDpicas", fmtNum(median(measured.map((c) => scores(c).views)))),
-        stat("Posts medidos", fmtNum(measured.length))
-      ),
-      h("p", { class: "data-note" }, measured.length ? `${measured.length} posts com resultado \xB7 ${conf.label.toLowerCase()}. ${measured.length < 15 ? "Use como pista, n\xE3o como regra." : ""}` : "Registre os n\xFAmeros dos seus posts (ou conecte o Instagram em Perfil) para ver o que funciona."),
-      top.items.length > 0 && group({ header: "Destaques", children: top.items.slice(0, 5).map(({ content: c, reasons }) => cell({ emoji: "\u2B50\uFE0F", color: "yellow", title: c.title, subtitle: reasons.join(", "), chevron: true, onClick: () => openContent(c) })) }),
-      measured.length > 0 && group({
-        header: "\xDAltimos posts",
-        children: measured.slice().sort((a, b) => String(b.postedAt || b.date).localeCompare(a.postedAt || a.date)).slice(0, 8).map((c) => {
-          const s = scores(c);
-          return cell({ title: c.title, subtitle: [`${fmtNum(s.views)} views`, c.results.follows != null ? `+${c.results.follows} seguidores` : null, s.value != null ? `${fmtDec(s.value)} salv+comp/mil` : null].filter(Boolean).join(" \xB7 "), chevron: true, onClick: () => openContent(c) });
-        })
-      })
-    ];
-  }
-  var stat = (label, value) => h("div", { class: "widget stat" }, h("p", { class: "w-label" }, label), h("p", { class: "w-value" }, value));
-  function formats() {
-    const rows = byFormat(all("contents"), all("formats"));
-    if (!rows.length) return [emptyNote("Sem dados por formato ainda", "Escolha o formato de cada conte\xFAdo e registre os resultados. Aqui aparece qual formato traz mais seguidores, salvamentos e marcas.")];
-    return [group({
-      header: "Por formato",
-      footer: 'Valores t\xEDpicos (mediana). "Por mil" = a cada mil visualiza\xE7\xF5es, para comparar posts grandes e pequenos. Com menos de 3 posts num formato, ainda n\xE3o d\xE1 para comparar.',
-      children: rows.map((r) => h(
-        "div",
-        { class: "cell fmt-row" },
-        badge(r.format?.emoji || "\u2022", r.format?.color || "gray"),
-        h(
-          "span",
-          { class: "cell-text" },
-          h("span", { class: "cell-title" }, r.format?.name || (r.formatId === "sem-formato" ? "Sem formato" : r.formatId)),
-          h("span", { class: "cell-sub" }, `${r.count} post${r.count > 1 ? "s" : ""} \xB7 ${fmtNum(r.views)} views t\xEDpicas`),
-          h(
-            "span",
-            { class: "metrics-line" },
-            h("span", {}, h("b", {}, fmtDec(r.follows)), " seguidores/mil"),
-            h("span", {}, h("b", {}, fmtDec(r.value)), " salv+comp/mil"),
-            h("span", {}, h("b", {}, String(r.brand)), " marcas")
-          )
-        ),
-        h("span", { class: `tag conf-${r.confidence.level}` }, r.confidence.label)
-      ))
-    })];
+  var num2 = (v) => v === null || v === void 0 || v === "" ? null : Number(v);
+  var sum = (list, k) => {
+    const vals = list.map((c) => num2(c.results?.[k])).filter((v) => v !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+  };
+  var PERIODS = [{ value: "30", label: "\xDAltimos 30 dias" }, { value: "90", label: "\xDAltimos 90 dias" }, { value: "365", label: "\xDAltimo ano" }, { value: "all", label: "Tudo" }];
+  function inPeriod(c, t) {
+    const d = c.postedAt || c.date || "";
+    if (state4.period === "all") return Boolean(d);
+    return d >= addDays(t, -Number(state4.period)) && d <= t;
   }
   function render5(root) {
-    const tabs2 = [{ value: "resumo", label: "Resumo" }, { value: "formatos", label: "Por formato" }];
+    const t = today();
+    const contents = all("contents");
+    const posted = contents.filter((c) => c.status === "postado" && inPeriod(c, t) && (!state4.platform || (c.platforms || []).includes(state4.platform)));
+    const measured = posted.filter(hasResults).sort((a, b) => (a.postedAt || a.date).localeCompare(b.postedAt || b.date));
+    const conf = confidence(measured.length);
+    const formats = byFormat(measured, all("formats"));
+    const maxFollows = Math.max(0, ...formats.map((r) => r.follows || 0));
+    const maxValue = Math.max(0, ...formats.map((r) => r.value || 0));
+    const last = measured.slice(-12);
+    const viewsChart = last.length ? barChart({
+      label: "Visualiza\xE7\xF5es por post",
+      fmt: (v) => v >= 1e3 ? `${(v / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil` : String(Math.round(v)),
+      data: last.map((c, i) => ({ label: fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), tip: c.title, value: scores(c).views || 0, hl: i === last.length - 1 }))
+    }) : emptyNote("Sem n\xFAmeros ainda", "Anote as visualiza\xE7\xF5es dos posts ou conecte o Instagram em Configura\xE7\xF5es.");
+    const weeks = Array.from({ length: 8 }, (_, i) => addDays(weekStart(t), -7 * (7 - i)));
+    const followsByWeek = weeks.map((w, i) => {
+      const list = contents.filter((c) => c.status === "postado" && (c.postedAt || c.date) >= w && (c.postedAt || c.date) <= addDays(w, 6));
+      return { label: fmtDay(w, { day: "numeric", month: "short" }), tip: `Semana de ${fmtDay(w, { day: "numeric", month: "short" })}`, value: sum(list, "follows") || 0, hl: i === weeks.length - 1 };
+    });
     root.append(page({
-      title: "Resultados",
-      subtitle: "Seguidores, comunidade e marcas \u2014 n\xE3o s\xF3 views",
-      children: [
-        h("div", { class: "pad-x" }, segmented(tabs2, state4.tab, (v) => {
-          state4.tab = v;
+      kicker: "An\xE1lise",
+      title: "Desempenho",
+      subtitle: "Seguidores, salvamentos e contatos de marcas, al\xE9m das views. Comparado sempre com a sua pr\xF3pria m\xE9dia.",
+      actions: [
+        filterSelect("Per\xEDodo", PERIODS, state4.period, (v) => {
+          state4.period = v || "90";
           rerender4();
-        }, "Se\xE7\xF5es")),
-        state4.tab === "resumo" ? summary() : formats()
+        }),
+        filterSelect("Plataforma", [{ value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }], state4.platform, (v) => {
+          state4.platform = v;
+          rerender4();
+        })
+      ],
+      children: [
+        h(
+          "div",
+          { class: "grid cols-4 kpis" },
+          kpi({ label: "Posts publicados", value: fmtNum(posted.length), hint: `${measured.length} com n\xFAmeros anotados` }),
+          kpi({ label: "Novos seguidores", value: fmtNum(sum(posted, "follows")), hint: "soma dos posts com esse dado" }),
+          kpi({ label: "Views t\xEDpicas por post", value: fmtNum(median(measured.map((c) => scores(c).views))), hint: "mediana (n\xE3o \xE9 afetada por um viral)" }),
+          kpi({ label: "Contatos de marcas", value: fmtNum(sum(posted, "brandContacts")), hint: "vindos de posts" })
+        ),
+        h("p", { class: "data-note" }, measured.length ? `Base: ${measured.length} post(s) com resultado \xB7 n\xEDvel de confian\xE7a: ${conf.label.toLowerCase()}. ${measured.length < 15 ? "Use como pista, n\xE3o como regra." : ""}` : "Ainda n\xE3o h\xE1 posts com n\xFAmeros neste per\xEDodo."),
+        h(
+          "div",
+          { class: "grid cols-2" },
+          card({ title: "Visualiza\xE7\xF5es por post", subtitle: "\xDAltimos 12 posts com n\xFAmeros", children: viewsChart }),
+          card({ title: "Novos seguidores por semana", subtitle: "\xDAltimas 8 semanas", children: barChart({ data: followsByWeek, label: "Novos seguidores por semana", fmt: (v) => String(v) }) })
+        ),
+        h(
+          "div",
+          { class: "stack section" },
+          card({
+            title: "Por formato",
+            subtitle: "Valores t\xEDpicos a cada mil visualiza\xE7\xF5es, para comparar posts grandes e pequenos",
+            flush: true,
+            children: table({
+              caption: "Desempenho por formato",
+              rows: formats,
+              empty: "Escolha o formato dos conte\xFAdos e anote os resultados para comparar.",
+              columns: [
+                { label: "Formato", main: true, render: (r) => h("div", { class: "td-flex" }, badge(r.format?.emoji || "\u2022", r.format?.color || "gray"), h("span", { class: "td-title" }, r.format?.name || (r.formatId === "sem-formato" ? "Sem formato" : r.formatId))) },
+                { label: "Posts", cls: "right", render: (r) => h("span", { class: "num" }, String(r.count)) },
+                { label: "Seguidores / mil", render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
+                { label: "Salv. + compart. / mil", render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },
+                { label: "Marcas", cls: "right", render: (r) => h("span", { class: "num" }, String(r.brand)) },
+                { label: "Confian\xE7a", render: (r) => tag(r.confidence.label, `conf-${r.confidence.level}`) }
+              ]
+            })
+          }),
+          card({ title: "Seus destaques", subtitle: "Posts claramente acima da sua m\xE9dia em seguidores, salvamentos ou alcance, ou que trouxeram marcas", flush: true, children: hitsList() })
+        ),
+        h(
+          "div",
+          { class: "section" },
+          card({
+            title: "Posts com resultado",
+            flush: true,
+            children: table({
+              caption: "Posts com resultado",
+              rows: measured.slice().reverse(),
+              onRowClick: (c) => openContent(c),
+              rowId: (c) => `post-${c.id}`,
+              empty: "Nenhum post com n\xFAmeros neste per\xEDodo.",
+              columns: [
+                { label: "Post", main: true, render: (c) => h("div", {}, h("div", { class: "td-title" }, c.title), h("div", { class: "td-sub" }, [fmtDay(c.postedAt || c.date, { day: "numeric", month: "short" }), TYPES[c.type || "video"]?.label, GOALS[c.goal]?.label].filter(Boolean).join(" \xB7 "))) },
+                { label: "Views", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(scores(c).views)) },
+                { label: "Curtidas", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.likes))) },
+                { label: "Coment.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.comments))) },
+                { label: "Salv.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.saves))) },
+                { label: "Compart.", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.shares))) },
+                { label: "Seguidores", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.follows))) },
+                { label: "Marcas", cls: "right", render: (c) => h("span", { class: "num" }, fmtNum(num2(c.results?.brandContacts))) },
+                { label: "Origem", render: (c) => c.results?.source === "instagram" ? tag("Instagram", "info") : tag("Manual") }
+              ]
+            })
+          })
+        ),
+        !igConfig()?.token && h("p", { class: "subtle small" }, "Quer os n\xFAmeros autom\xE1ticos do Instagram? ", h("button", { type: "button", class: "link-btn", onclick: () => go("configuracoes") }, "Conecte em Configura\xE7\xF5es"), ".")
       ]
     }));
   }
@@ -5304,7 +5343,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     state6[k] = v;
     rerender7();
   };
-  var PERIODS = [
+  var PERIODS2 = [
     { value: "semana", label: "Pr\xF3ximos 7 dias" },
     { value: "mes", label: "Este m\xEAs" },
     { value: "passado", label: "J\xE1 passaram" },
@@ -5441,7 +5480,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
           filterSelect("Tipo", Object.entries(TYPES).map(([value, t]) => ({ value, label: t.label })), state6.type, set("type")),
           filterSelect("Foco", Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state6.goal, set("goal")),
           filterSelect("Formato", [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: f.name })), state6.formatId, set("formatId")),
-          filterSelect("Per\xEDodo", PERIODS, state6.period, set("period")),
+          filterSelect("Per\xEDodo", PERIODS2, state6.period, set("period")),
           active && btn("Limpar filtros", () => {
             Object.assign(state6, { q: "", status: "", type: "", formatId: "", goal: "", period: "" });
             rerender7();
@@ -5464,7 +5503,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
   var rerender8 = () => document.dispatchEvent(new Event("rerender"));
   function render9(root) {
     const all2 = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-    const formats2 = [...FORMATS, ...all("formats")];
+    const formats = [...FORMATS, ...all("formats")];
     const list = all2.filter((r) => !state7.formatId || r.formatId === state7.formatId).filter((r) => !state7.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state7.q)));
     root.append(page({
       kicker: "Conte\xFAdo",
@@ -5479,7 +5518,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             state7.q = v;
             rerender8();
           }, "Buscar refer\xEAncia"),
-          filterSelect("Formato", formats2.map((f) => ({ value: f.id, label: f.name })), state7.formatId, (v) => {
+          filterSelect("Formato", formats.map((f) => ({ value: f.id, label: f.name })), state7.formatId, (v) => {
             state7.formatId = v;
             rerender8();
           })
@@ -5494,7 +5533,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
             empty: "Nada com esses filtros.",
             columns: [
               { label: "Refer\xEAncia", main: true, render: (r) => h("div", {}, h("div", { class: "td-title" }, r.title || "Sem nome"), r.link && h("a", { href: r.link, target: "_blank", rel: "noopener noreferrer", class: "td-sub" }, r.link.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48))) },
-              { label: "Formato", render: (r) => tag(formats2.find((f) => f.id === r.formatId)?.name) || h("span", { class: "subtle" }, "\u2014") },
+              { label: "Formato", render: (r) => tag(formats.find((f) => f.id === r.formatId)?.name) || h("span", { class: "subtle" }, "\u2014") },
               { label: "O que funcionou", render: (r) => h("span", { class: "clamp-2" }, r.worked || "\u2014") },
               { label: "Como adaptar", render: (r) => h("span", { class: "clamp-2" }, r.adapt || "\u2014") },
               { label: "Salva em", render: (r) => r.createdAt ? fmtDay(r.createdAt.slice(0, 10), { day: "numeric", month: "short" }) : "\u2014" }

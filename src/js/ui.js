@@ -402,7 +402,9 @@ export function barChart({ data, height = 180, fmt = (v) => String(v), refValue 
 }
 
 // Barra horizontal simples para dentro de tabelas.
-export const hbar = (value, max, text) => h('span', { class: 'bar-cell' }, h('span', { class: 'hbar', style: { width: `${Math.max(2, Math.round(((value || 0) / (max || 1)) * 120))}px` } }), h('span', { class: 'num' }, text));
+export const hbar = (value, max, text) => (value === null || value === undefined
+  ? h('span', { class: 'subtle' }, '—')
+  : h('span', { class: 'bar-cell' }, h('span', { class: 'hbar', style: { width: `${Math.max(2, Math.round((value / (max || 1)) * 120))}px` } }), h('span', { class: 'num' }, text)));
 
 export async function copyText(text) {
   try {
