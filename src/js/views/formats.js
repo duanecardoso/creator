@@ -1,13 +1,13 @@
-// Aba Formatos: biblioteca de formatos validados, seus hits e referências de outros criadores.
+// Formatos: biblioteca de formatos validados (e os seus). Também exporta o editor de referências e a lista de hits.
 import * as data from '../data.js';
-import { h, page, group, cell, segmented, chips, sheet, badge, formGroups, toast, confirmDelete, norm, navButton, emptyNote } from '../ui.js';
-import { FORMATS, GOALS } from '../lib/formats.js';
+import { h, page, group, cell, chips, sheet, badge, formGroups, toast, confirmDelete, norm, emptyNote, btn, tag, searchBox, filterSelect } from '../ui.js';
+import { FORMATS, GOALS, TYPES, metaOf } from '../lib/formats.js';
 import { hits, iso } from '../lib/insights.js';
 import { contentPrompt } from '../lib/prompts.js';
 import { newContent, formatOptions } from './content-sheet.js';
 import { askClaude } from './claude.js';
 
-const state = { tab: 'biblioteca', goal: '', q: '' };
+const state = { goal: '', q: '', type: '' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const today = () => iso(new Date());
 
@@ -42,30 +42,26 @@ export function openFormat(f) {
 }
 
 function library() {
+  const hitIds = new Set(hits(data.all('contents')).items.map((x) => x.content.formatId));
+  const used = data.all('contents').reduce((m, c) => (c.formatId ? m.set(c.formatId, (m.get(c.formatId) || 0) + 1) : m), new Map());
   const list = [...FORMATS, ...data.all('formats').map((f) => ({ ...f, custom: true }))]
     .filter((f) => !state.goal || f.goals?.includes(state.goal))
+    .filter((f) => !state.type || (f.custom ? true : metaOf(f.id).types.includes(state.type)))
     .filter((f) => !state.q || norm(`${f.name} ${f.why}`).includes(norm(state.q)));
-  const search = h('input', { type: 'search', class: 'search', placeholder: 'Buscar formato', value: state.q, 'aria-label': 'Buscar formato' });
-  search.addEventListener('input', () => {
-    state.q = search.value;
-    const pos = search.selectionStart;
-    rerender();
-    const s = document.querySelector('.search');
-    s?.focus();
-    s?.setSelectionRange(pos, pos);
-  });
   return [
-    h('div', { class: 'pad-x' }, search),
-    h('div', { class: 'pad-x' }, chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state.goal, (v) => { state.goal = v; rerender(); })),
+    h('div', { class: 'filters' },
+      searchBox(state.q, (v) => { state.q = v; rerender(); }, 'Buscar formato'),
+      filterSelect('Tipo de post', Object.entries(TYPES).filter(([k]) => k !== 'stories').map(([value, t]) => ({ value, label: t.label })), state.type, (v) => { state.type = v; rerender(); })),
+    chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state.goal, (v) => { state.goal = v; rerender(); }),
     h('div', { class: 'format-grid' }, list.map((f) => h('button', { type: 'button', class: 'format-card', 'data-id': `format-${f.id}`, onclick: () => openFormat(f) },
-      h('span', { class: `fc-emoji c-${f.color || 'gray'}` }, f.emoji || '✦'),
+      h('span', { class: 'fc-top' }, h('span', { class: `fc-emoji c-${f.color || 'gray'}` }, f.emoji || '✦'), hitIds.has(f.id) ? tag('Funcionou para você', 'ok') : f.custom ? tag('Seu formato', 't-brown') : null),
       h('span', { class: 'fc-name' }, f.name),
-      h('span', { class: 'fc-goals' }, (f.goals || []).map((g) => GOALS[g]?.label).join(' · ')),
+      h('span', { class: 'fc-why' }, f.why),
+      h('span', { class: 'tags' }, (f.custom ? [] : metaOf(f.id).types).map((t) => tag(TYPES[t]?.label, `type-${t}`))),
+      h('span', { class: 'fc-goals' }, [(f.goals || []).map((g) => GOALS[g]?.label).join(' · '), used.get(f.id) ? `usado ${used.get(f.id)}x` : null].filter(Boolean).join(' — ')),
     ))),
     !list.length && emptyNote('Nenhum formato encontrado.'),
-    group({ footer: 'Formatos são estruturas que se repetem entre criadores porque funcionam pelo motivo descrito em cada um. O que funciona para VOCÊ aparece em "Meus hits" conforme você registra resultados.', children: [
-      cell({ emoji: '➕', color: 'gray', title: 'Criar meu próprio formato', chevron: true, onClick: newFormat }),
-    ] }),
+    h('p', { class: 'subtle small' }, 'Formatos são estruturas que se repetem entre criadores porque funcionam pelo motivo descrito em cada um. O que funciona para você aparece em Desempenho conforme você registra resultados.'),
   ];
 }
 
@@ -93,37 +89,28 @@ function newFormat() {
   });
 }
 
-function myHits() {
+// Seus hits (usado na página Desempenho).
+export function hitsList() {
   const r = hits(data.all('contents'));
   if (!r.items.length) {
-    return [emptyNote(
-      'Seus hits aparecem aqui',
+    return emptyNote(
+      'Seus destaques aparecem aqui',
       r.measured < 5
-        ? `Registre os resultados de pelo menos 5 posts (hoje: ${r.measured}). Aí o site compara cada post com a sua própria média e mostra o que trouxe mais seguidores, salvamentos ou marcas.`
-        : 'Nenhum post ficou claramente acima da sua média ainda. Continue registrando.',
-    )];
+        ? `Registre os resultados de pelo menos 5 posts (hoje: ${r.measured}). Aí cada post é comparado com a sua própria média.`
+        : 'Nenhum post ficou claramente acima da sua média ainda.',
+    );
   }
-  return [group({
-    header: r.enough ? 'Acima da sua média' : 'Trouxeram marcas',
+  return group({
     footer: r.enough ? `Comparado com a sua mediana em ${r.measured} posts com resultado.` : 'Com menos de 5 posts medidos, só aparecem os que trouxeram contato de marca.',
     children: r.items.map(({ content: c, reasons }) => {
       const f = [...FORMATS, ...data.all('formats')].find((x) => x.id === c.formatId);
       return h('div', { class: 'sugg' },
         h('div', { class: 'content-main static' }, badge(f?.emoji || '⭐️', f?.color || 'yellow'),
           h('span', { class: 'cell-text' }, h('span', { class: 'cell-title' }, c.title), h('span', { class: 'cell-sub' }, `${f ? `${f.name} · ` : ''}${reasons.join(', ')}`))),
-        h('button', { type: 'button', class: 'next-btn', onclick: () => newContent({ formatId: c.formatId, notes: `Variação de: ${c.title}`, title: '' }) }, 'Repetir'),
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => newContent({ formatId: c.formatId, notes: `Variação de: ${c.title}`, title: '' }) }, 'Repetir'),
       );
     }),
-  })];
-}
-
-function references() {
-  const refs = data.all('references').slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-  return [
-    refs.length
-      ? group({ header: 'Salvos de outros criadores', children: refs.map((r) => cell({ emoji: '🔖', color: 'purple', title: r.title || r.link || 'Referência', subtitle: r.worked || r.link, chevron: true, onClick: () => editReference(r) })) })
-      : emptyNote('Nenhuma referência ainda', 'Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conteúdo seu, sem copiar.'),
-  ];
+  });
 }
 
 export function editReference(r = {}) {
@@ -153,14 +140,11 @@ export function editReference(r = {}) {
 }
 
 export function render(root) {
-  const tabs = [{ value: 'biblioteca', label: 'Biblioteca' }, { value: 'hits', label: 'Meus hits' }, { value: 'referencias', label: 'Referências' }];
   root.append(page({
+    kicker: 'Conteúdo',
     title: 'Formatos',
-    subtitle: 'O que já funciona, para você usar com o seu jeito',
-    right: state.tab === 'referencias' ? navButton('', () => editReference(), { iconName: 'plus', id: 'new-reference' }) : null,
-    children: [
-      h('div', { class: 'pad-x' }, segmented(tabs, state.tab, (v) => { state.tab = v; rerender(); }, 'Seções')),
-      state.tab === 'biblioteca' ? library() : state.tab === 'hits' ? myHits() : references(),
-    ],
+    subtitle: 'Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.',
+    actions: btn('Criar formato', newFormat, { iconName: 'plus', id: 'new-format' }),
+    children: library(),
   }));
 }

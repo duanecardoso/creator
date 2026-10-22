@@ -599,6 +599,10 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
 .kanban-card:hover { border-color: #e2cf9a; }
 .kanban-card strong { font-size: 14px; line-height: 1.3; }
 .kanban-empty { text-align: center; padding: 16px 0; }
+.fc-top { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; gap: 8px; }
+.fc-why { font-size: 13px; color: var(--ink-2); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.format-card { min-height: 220px; }
+.clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 320px; color: var(--ink-2); }
 
 </style>
 </head>
@@ -4127,6 +4131,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
   var formats_exports = {};
   __export(formats_exports, {
     editReference: () => editReference,
+    hitsList: () => hitsList,
     openFormat: () => openFormat,
     render: () => render2
   });
@@ -4137,7 +4142,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
   init_prompts();
   init_content_sheet();
   init_claude();
-  var state2 = { tab: "biblioteca", goal: "", q: "" };
+  var state2 = { goal: "", q: "", type: "" };
   var rerender2 = () => document.dispatchEvent(new Event("rerender"));
   var today2 = () => iso(/* @__PURE__ */ new Date());
   function openFormat(f) {
@@ -4189,33 +4194,37 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     });
   }
   function library() {
-    const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => !state2.goal || f.goals?.includes(state2.goal)).filter((f) => !state2.q || norm(`${f.name} ${f.why}`).includes(norm(state2.q)));
-    const search = h("input", { type: "search", class: "search", placeholder: "Buscar formato", value: state2.q, "aria-label": "Buscar formato" });
-    search.addEventListener("input", () => {
-      state2.q = search.value;
-      const pos = search.selectionStart;
-      rerender2();
-      const s = document.querySelector(".search");
-      s?.focus();
-      s?.setSelectionRange(pos, pos);
-    });
+    const hitIds = new Set(hits(all("contents")).items.map((x) => x.content.formatId));
+    const used = all("contents").reduce((m, c) => c.formatId ? m.set(c.formatId, (m.get(c.formatId) || 0) + 1) : m, /* @__PURE__ */ new Map());
+    const list = [...FORMATS, ...all("formats").map((f) => ({ ...f, custom: true }))].filter((f) => !state2.goal || f.goals?.includes(state2.goal)).filter((f) => !state2.type || (f.custom ? true : metaOf(f.id).types.includes(state2.type))).filter((f) => !state2.q || norm(`${f.name} ${f.why}`).includes(norm(state2.q)));
     return [
-      h("div", { class: "pad-x" }, search),
-      h("div", { class: "pad-x" }, chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state2.goal, (v) => {
+      h(
+        "div",
+        { class: "filters" },
+        searchBox(state2.q, (v) => {
+          state2.q = v;
+          rerender2();
+        }, "Buscar formato"),
+        filterSelect("Tipo de post", Object.entries(TYPES).filter(([k]) => k !== "stories").map(([value, t]) => ({ value, label: t.label })), state2.type, (v) => {
+          state2.type = v;
+          rerender2();
+        })
+      ),
+      chips(Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), state2.goal, (v) => {
         state2.goal = v;
         rerender2();
-      })),
+      }),
       h("div", { class: "format-grid" }, list.map((f) => h(
         "button",
         { type: "button", class: "format-card", "data-id": `format-${f.id}`, onclick: () => openFormat(f) },
-        h("span", { class: `fc-emoji c-${f.color || "gray"}` }, f.emoji || "\u2726"),
+        h("span", { class: "fc-top" }, h("span", { class: `fc-emoji c-${f.color || "gray"}` }, f.emoji || "\u2726"), hitIds.has(f.id) ? tag("Funcionou para voc\xEA", "ok") : f.custom ? tag("Seu formato", "t-brown") : null),
         h("span", { class: "fc-name" }, f.name),
-        h("span", { class: "fc-goals" }, (f.goals || []).map((g) => GOALS[g]?.label).join(" \xB7 "))
+        h("span", { class: "fc-why" }, f.why),
+        h("span", { class: "tags" }, (f.custom ? [] : metaOf(f.id).types).map((t) => tag(TYPES[t]?.label, `type-${t}`))),
+        h("span", { class: "fc-goals" }, [(f.goals || []).map((g) => GOALS[g]?.label).join(" \xB7 "), used.get(f.id) ? `usado ${used.get(f.id)}x` : null].filter(Boolean).join(" \u2014 "))
       ))),
       !list.length && emptyNote("Nenhum formato encontrado."),
-      group({ footer: 'Formatos s\xE3o estruturas que se repetem entre criadores porque funcionam pelo motivo descrito em cada um. O que funciona para VOC\xCA aparece em "Meus hits" conforme voc\xEA registra resultados.', children: [
-        cell({ emoji: "\u2795", color: "gray", title: "Criar meu pr\xF3prio formato", chevron: true, onClick: newFormat })
-      ] })
+      h("p", { class: "subtle small" }, "Formatos s\xE3o estruturas que se repetem entre criadores porque funcionam pelo motivo descrito em cada um. O que funciona para voc\xEA aparece em Desempenho conforme voc\xEA registra resultados.")
     ];
   }
   function newFormat() {
@@ -4248,16 +4257,15 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       }
     });
   }
-  function myHits() {
+  function hitsList() {
     const r = hits(all("contents"));
     if (!r.items.length) {
-      return [emptyNote(
-        "Seus hits aparecem aqui",
-        r.measured < 5 ? `Registre os resultados de pelo menos 5 posts (hoje: ${r.measured}). A\xED o site compara cada post com a sua pr\xF3pria m\xE9dia e mostra o que trouxe mais seguidores, salvamentos ou marcas.` : "Nenhum post ficou claramente acima da sua m\xE9dia ainda. Continue registrando."
-      )];
+      return emptyNote(
+        "Seus destaques aparecem aqui",
+        r.measured < 5 ? `Registre os resultados de pelo menos 5 posts (hoje: ${r.measured}). A\xED cada post \xE9 comparado com a sua pr\xF3pria m\xE9dia.` : "Nenhum post ficou claramente acima da sua m\xE9dia ainda."
+      );
     }
-    return [group({
-      header: r.enough ? "Acima da sua m\xE9dia" : "Trouxeram marcas",
+    return group({
       footer: r.enough ? `Comparado com a sua mediana em ${r.measured} posts com resultado.` : "Com menos de 5 posts medidos, s\xF3 aparecem os que trouxeram contato de marca.",
       children: r.items.map(({ content: c, reasons }) => {
         const f = [...FORMATS, ...all("formats")].find((x) => x.id === c.formatId);
@@ -4270,16 +4278,10 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
             badge(f?.emoji || "\u2B50\uFE0F", f?.color || "yellow"),
             h("span", { class: "cell-text" }, h("span", { class: "cell-title" }, c.title), h("span", { class: "cell-sub" }, `${f ? `${f.name} \xB7 ` : ""}${reasons.join(", ")}`))
           ),
-          h("button", { type: "button", class: "next-btn", onclick: () => newContent({ formatId: c.formatId, notes: `Varia\xE7\xE3o de: ${c.title}`, title: "" }) }, "Repetir")
+          h("button", { type: "button", class: "btn btn-sm", onclick: () => newContent({ formatId: c.formatId, notes: `Varia\xE7\xE3o de: ${c.title}`, title: "" }) }, "Repetir")
         );
       })
-    })];
-  }
-  function references() {
-    const refs = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-    return [
-      refs.length ? group({ header: "Salvos de outros criadores", children: refs.map((r) => cell({ emoji: "\u{1F516}", color: "purple", title: r.title || r.link || "Refer\xEAncia", subtitle: r.worked || r.link, chevron: true, onClick: () => editReference(r) })) }) : emptyNote("Nenhuma refer\xEAncia ainda", "Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conte\xFAdo seu, sem copiar.")
-    ];
+    });
   }
   function editReference(r = {}) {
     const f = formGroups([
@@ -4320,18 +4322,12 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     });
   }
   function render2(root) {
-    const tabs2 = [{ value: "biblioteca", label: "Biblioteca" }, { value: "hits", label: "Meus hits" }, { value: "referencias", label: "Refer\xEAncias" }];
     root.append(page({
+      kicker: "Conte\xFAdo",
       title: "Formatos",
-      subtitle: "O que j\xE1 funciona, para voc\xEA usar com o seu jeito",
-      right: state2.tab === "referencias" ? navButton("", () => editReference(), { iconName: "plus", id: "new-reference" }) : null,
-      children: [
-        h("div", { class: "pad-x" }, segmented(tabs2, state2.tab, (v) => {
-          state2.tab = v;
-          rerender2();
-        }, "Se\xE7\xF5es")),
-        state2.tab === "biblioteca" ? library() : state2.tab === "hits" ? myHits() : references()
-      ]
+      subtitle: "Estruturas que funcionam, com passo a passo e ganchos-modelo para usar do seu jeito.",
+      actions: btn("Criar formato", newFormat, { iconName: "plus", id: "new-format" }),
+      children: library()
     }));
   }
 
@@ -5353,6 +5349,59 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }));
   }
 
+  // src/js/views/references.js
+  var references_exports = {};
+  __export(references_exports, {
+    render: () => render9
+  });
+  init_data();
+  init_ui();
+  init_formats();
+  var state7 = { q: "", formatId: "" };
+  var rerender8 = () => document.dispatchEvent(new Event("rerender"));
+  function render9(root) {
+    const all2 = all("references").slice().sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
+    const formats2 = [...FORMATS, ...all("formats")];
+    const list = all2.filter((r) => !state7.formatId || r.formatId === state7.formatId).filter((r) => !state7.q || norm([r.title, r.worked, r.adapt, r.link].join(" ")).includes(norm(state7.q)));
+    root.append(page({
+      kicker: "Conte\xFAdo",
+      title: "Refer\xEAncias",
+      subtitle: "Posts de outros criadores que funcionaram: o que chamou aten\xE7\xE3o e como fazer do seu jeito.",
+      actions: btn("Nova refer\xEAncia", () => editReference(), { kind: "primary", iconName: "plus", id: "new-reference" }),
+      children: [
+        all2.length > 0 && h(
+          "div",
+          { class: "filters" },
+          searchBox(state7.q, (v) => {
+            state7.q = v;
+            rerender8();
+          }, "Buscar refer\xEAncia"),
+          filterSelect("Formato", formats2.map((f) => ({ value: f.id, label: f.name })), state7.formatId, (v) => {
+            state7.formatId = v;
+            rerender8();
+          })
+        ),
+        !all2.length ? emptyNote("Nenhuma refer\xEAncia ainda", "Viu um post que bombou? Salve o link e anote o que funcionou. Depois transforme em conte\xFAdo seu.", btn("Nova refer\xEAncia", () => editReference(), { kind: "primary" })) : card({
+          flush: true,
+          children: table({
+            caption: "Refer\xEAncias",
+            rows: list,
+            rowId: (r) => `ref-${r.id}`,
+            onRowClick: (r) => editReference(r),
+            empty: "Nada com esses filtros.",
+            columns: [
+              { label: "Refer\xEAncia", main: true, render: (r) => h("div", {}, h("div", { class: "td-title" }, r.title || "Sem nome"), r.link && h("a", { href: r.link, target: "_blank", rel: "noopener noreferrer", class: "td-sub" }, r.link.replace(/^https?:\/\/(www\.)?/, "").slice(0, 48))) },
+              { label: "Formato", render: (r) => tag(formats2.find((f) => f.id === r.formatId)?.name) || h("span", { class: "subtle" }, "\u2014") },
+              { label: "O que funcionou", render: (r) => h("span", { class: "clamp-2" }, r.worked || "\u2014") },
+              { label: "Como adaptar", render: (r) => h("span", { class: "clamp-2" }, r.adapt || "\u2014") },
+              { label: "Salva em", render: (r) => r.createdAt ? fmtDay(r.createdAt.slice(0, 10), { day: "numeric", month: "short" }) : "\u2014" }
+            ]
+          })
+        })
+      ]
+    }));
+  }
+
   // src/js/routes.js
   var ROUTES = {
     "visao-geral": { label: "Vis\xE3o geral", icon: "overview", view: overview_exports },
@@ -5360,13 +5409,14 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     "conteudo/lista": { module: "Conte\xFAdo", label: "Conte\xFAdos", icon: "list", view: contents_exports },
     "conteudo/estudio": { module: "Conte\xFAdo", label: "Est\xFAdio", icon: "studio", view: studio_exports },
     "conteudo/formatos": { module: "Conte\xFAdo", label: "Formatos", icon: "formats", view: formats_exports },
+    "conteudo/referencias": { module: "Conte\xFAdo", label: "Refer\xEAncias", icon: "refs", view: references_exports },
     "marcas/campanhas": { module: "Marcas", label: "Campanhas", icon: "campaigns", view: brands_exports },
     "analise/desempenho": { module: "An\xE1lise", label: "Desempenho", icon: "performance", view: results_exports },
     configuracoes: { label: "Configura\xE7\xF5es", icon: "settings", view: settings_exports }
   };
   var NAV = [
     { items: ["visao-geral"] },
-    { label: "Conte\xFAdo", items: ["conteudo/planejamento", "conteudo/lista", "conteudo/estudio", "conteudo/formatos"] },
+    { label: "Conte\xFAdo", items: ["conteudo/planejamento", "conteudo/lista", "conteudo/estudio", "conteudo/formatos", "conteudo/referencias"] },
     { label: "Marcas", items: ["marcas/campanhas"] },
     { label: "An\xE1lise", items: ["analise/desempenho"] }
   ];
