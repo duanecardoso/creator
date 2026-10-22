@@ -20,7 +20,7 @@ export function parseHash() {
 
 function drawSidebar() {
   const p = data.profile();
-  const late = upcoming(data.all('deals'), todayIso(), 0).overdue.length;
+  const late = new Set(upcoming(data.all('deals'), todayIso(), 0).overdue.map((x) => x.deal.id)).size;
   const counts = { 'marcas/campanhas': late };
   clear(sidebar).append(
     h('a', { class: 'brand', href: '#/visao-geral' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, 'C'), h('span', { class: 'brand-name' }, 'Creator', h('em', {}, '.'))),

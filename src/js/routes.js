@@ -8,6 +8,8 @@ import * as settings from './views/settings.js';
 import * as studio from './views/studio.js';
 import * as contents from './views/contents.js';
 import * as references from './views/references.js';
+import * as finance from './views/finance.js';
+import * as contacts from './views/contacts.js';
 
 export const ROUTES = {
   'visao-geral': { label: 'Visão geral', icon: 'overview', view: overview },
@@ -17,6 +19,8 @@ export const ROUTES = {
   'conteudo/formatos': { module: 'Conteúdo', label: 'Formatos', icon: 'formats', view: formats },
   'conteudo/referencias': { module: 'Conteúdo', label: 'Referências', icon: 'refs', view: references },
   'marcas/campanhas': { module: 'Marcas', label: 'Campanhas', icon: 'campaigns', view: brands },
+  'marcas/financeiro': { module: 'Marcas', label: 'Financeiro', icon: 'finance', view: finance },
+  'marcas/contatos': { module: 'Marcas', label: 'Contatos', icon: 'contacts', view: contacts },
   'analise/desempenho': { module: 'Análise', label: 'Desempenho', icon: 'performance', view: results },
   configuracoes: { label: 'Configurações', icon: 'settings', view: settings },
 };
@@ -24,7 +28,7 @@ export const ROUTES = {
 export const NAV = [
   { items: ['visao-geral'] },
   { label: 'Conteúdo', items: ['conteudo/planejamento', 'conteudo/lista', 'conteudo/estudio', 'conteudo/formatos', 'conteudo/referencias'] },
-  { label: 'Marcas', items: ['marcas/campanhas'] },
+  { label: 'Marcas', items: ['marcas/campanhas', 'marcas/financeiro', 'marcas/contatos'] },
   { label: 'Análise', items: ['analise/desempenho'] },
 ];
 

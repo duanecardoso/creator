@@ -1,10 +1,10 @@
-// Aba Marcas: entregas (UGC, Publi, TikTok Shop), financeiro e contatos de marcas.
+// Marcas: Campanhas (UGC, Publi, TikTok Shop), Financeiro e Contatos. Também exporta o editor de campanha.
 import * as data from '../data.js';
-import { h, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, navButton, badge, fmtDay, copyText, emptyNote, actionSheet } from '../ui.js';
+import { h, page, group, cell, segmented, chips, sheet, formGroups, toast, confirmDelete, badge, fmtDay, copyText, emptyNote, actionSheet, btn, card, kpi, table, tabs, tag, searchBox, filterSelect, barChart, norm } from '../ui.js';
 import { DEAL_TYPES, PIPELINES, PAYMENT, stageLabel, stageIndex, isDone, deadlines, upcoming, nextDeadline, finance, fmtMoney } from '../lib/deals.js';
 import { openContent, today } from './content-sheet.js';
 
-const state = { tab: 'entregas', type: '', month: null };
+const state = { show: 'abertas', type: '', stage: '', q: '', month: null, brandStatus: '' };
 const rerender = () => document.dispatchEvent(new Event('rerender'));
 const money = (v) => `R$ ${fmtMoney(v)}`;
 
@@ -168,56 +168,91 @@ function segmentedRaw(options, value, onChange) {
   return segmented(options, value, onChange, 'Tipo');
 }
 
-// ---------- Entregas ----------
-function dealRow(d) {
-  const t = DEAL_TYPES[d.type] || DEAL_TYPES.ugc;
-  const nd = nextDeadline(d);
-  const td = today();
-  const items = d.deliverables || [];
-  const done = items.filter((x) => x.done).length;
-  return h('button', { type: 'button', class: 'cell tappable deal-row', 'data-id': `deal-${d.id}`, onclick: () => openDeal(d) },
-    badge(t.emoji, t.color),
-    h('span', { class: 'cell-text' },
-      h('span', { class: 'cell-title' }, d.brandName, d.title ? h('span', { class: 'muted' }, ` · ${d.title}`) : null),
-      h('span', { class: 'cell-sub' }, `${t.label} · ${stageLabel(d)}`),
-      nd && h('span', { class: `deadline${nd.date < td ? ' late' : nd.date === td ? ' today' : ''}` }, `${nd.date < td ? 'Atrasado: ' : nd.date === td ? 'Hoje: ' : ''}${nd.label} · ${fmtDay(nd.date, { day: 'numeric', month: 'short' })}`),
-    ),
-    items.length > 0 && h('span', { class: 'cell-detail' }, `${done}/${items.length}`),
-  );
+// ---------- Campanhas ----------
+const stageOptions = () => {
+  const seen = new Map();
+  for (const list of Object.values(PIPELINES)) for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
+  return [...seen].map(([value, label]) => ({ value, label }));
+};
+
+async function chooseNewDeal() {
+  const t = await actionSheet({ title: 'Nova campanha', message: 'Qual tipo?', actions: Object.entries(DEAL_TYPES).map(([value, t]) => ({ label: `${t.emoji} ${t.label}`, value, id: `new-${value}` })) });
+  if (t) newDeal(t);
 }
 
-function deliveries() {
+function campaignsTable(list, td) {
+  return table({
+    caption: 'Campanhas',
+    rows: list,
+    rowId: (d) => `deal-${d.id}`,
+    rowCls: (d) => ((nextDeadline(d)?.date || '9') < td && !isDone(d) ? 'is-late' : ''),
+    onRowClick: (d) => openDeal(d),
+    empty: 'Nenhuma campanha com esses filtros.',
+    columns: [
+      { label: 'Marca', main: true, render: (d) => h('div', { class: 'td-flex' }, badge(DEAL_TYPES[d.type]?.emoji, DEAL_TYPES[d.type]?.color), h('div', {}, h('div', { class: 'td-title' }, d.brandName), d.title && h('div', { class: 'td-sub' }, d.title))) },
+      { label: 'Tipo', render: (d) => tag(DEAL_TYPES[d.type]?.label, d.type === 'publi' ? 't-pink' : d.type === 'tts' ? 't-butter' : 't-brown') },
+      { label: 'Etapa', render: (d) => (d.status === 'cancelado' ? tag('Cancelado') : isDone(d) ? tag('Concluído', 'ok') : h('span', {}, stageLabel(d))) },
+      { label: 'Próximo prazo', render: (d) => {
+        const nd = nextDeadline(d);
+        if (!nd) return h('span', { class: 'subtle' }, '—');
+        return h('span', { class: `deadline${nd.date < td ? ' late' : nd.date === td ? ' today' : ''}` }, `${nd.date < td ? 'Atrasado · ' : nd.date === td ? 'Hoje · ' : ''}${nd.label} · ${fmtDay(nd.date, { day: 'numeric', month: 'short' })}`);
+      } },
+      { label: 'Entregáveis', render: (d) => {
+        const items = d.deliverables || [];
+        if (!items.length) return h('span', { class: 'subtle' }, '—');
+        const done = items.filter((x) => x.done).length;
+        return h('span', { class: 'bar-cell' }, h('span', { class: 'meter mini' }, h('span', { style: { width: `${Math.round((done / items.length) * 100)}%` } })), h('span', { class: 'num small' }, `${done}/${items.length}`));
+      } },
+      { label: 'Valor', cls: 'right', render: (d) => (Number(d.value) > 0 ? h('span', { class: 'num' }, money(d.value)) : d.type === 'tts' && d.commissionPct ? h('span', { class: 'subtle' }, `${d.commissionPct}% comissão`) : h('span', { class: 'subtle' }, '—')) },
+      { label: 'Pagamento', render: (d) => (Number(d.value) > 0 ? tag(PAYMENT[d.paymentStatus || 'pendente'], d.paymentStatus === 'pago' ? 'ok' : d.paymentDue && d.paymentDue < td ? 'danger' : 'warn') : h('span', { class: 'subtle' }, '—')) },
+    ],
+  });
+}
+
+export function renderCampaigns(root) {
   const td = today();
-  const all = data.all('deals').filter((d) => !state.type || d.type === state.type);
+  const all = data.all('deals');
   const open = all.filter((d) => !isDone(d));
   const up = upcoming(open, td, 7);
   const lateIds = new Set(up.overdue.map((x) => x.deal.id));
   const soonIds = new Set([...up.today, ...up.soon].map((x) => x.deal.id));
-  const late = open.filter((d) => lateIds.has(d.id));
-  const soon = open.filter((d) => !lateIds.has(d.id) && soonIds.has(d.id));
-  const rest = open.filter((d) => !lateIds.has(d.id) && !soonIds.has(d.id));
-  const done = all.filter(isDone).slice(-8).reverse();
-  const byNext = (a, b) => (nextDeadline(a)?.date || '9').localeCompare(nextDeadline(b)?.date || '9');
-  return [
-    h('div', { class: 'widgets three' },
-      stat('Atrasados', String(late.length), late.length ? 'red' : ''),
-      stat('Próx. 7 dias', String(soon.length)),
-      stat('Em andamento', String(open.length)),
-    ),
-    h('div', { class: 'pad-x' }, chips(Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state.type, (v) => { state.type = v; rerender(); })),
-    !all.length && emptyNote('Nenhuma campanha ainda', 'Toque em + para registrar um UGC, uma publi ou um produto do TikTok Shop.'),
-    late.length > 0 && group({ header: 'Atrasados', children: late.sort(byNext).map(dealRow) }),
-    soon.length > 0 && group({ header: 'Próximos 7 dias', children: soon.sort(byNext).map(dealRow) }),
-    rest.length > 0 && group({ header: 'Em andamento', children: rest.sort(byNext).map(dealRow) }),
-    done.length > 0 && group({ header: 'Concluídas e canceladas', children: done.map(dealRow) }),
-    all.length > 0 && group({ children: [h('button', { type: 'button', class: 'cell tappable tint', onclick: () => { const evs = deadlines(open); if (!evs.length) return toast('Sem prazos em aberto.', 'error'); data.downloadIcs(evs, 'prazos-marcas'); } }, '📅 Todos os prazos no Calendário')] }),
-  ];
+  const fin = finance(all, td.slice(0, 7), td);
+  const list = all
+    .filter((d) => !state.type || d.type === state.type)
+    .filter((d) => (state.show === 'abertas' ? !isDone(d) : state.show === 'concluidas' ? isDone(d) : true))
+    .filter((d) => !state.stage || d.status === state.stage)
+    .filter((d) => !state.q || norm([d.brandName, d.title, d.product, d.notes].join(' ')).includes(norm(state.q)))
+    .sort((a, b) => (isDone(a) - isDone(b)) || (nextDeadline(a)?.date || '9').localeCompare(nextDeadline(b)?.date || '9'));
+  root.append(page({
+    kicker: 'Marcas',
+    title: 'Campanhas',
+    subtitle: 'UGC, publis e TikTok Shop: etapas, entregáveis, prazos e pagamentos.',
+    actions: [
+      btn('Prazos no Calendário', () => { const evs = deadlines(open); if (!evs.length) return toast('Sem prazos em aberto.', 'error'); data.downloadIcs(evs, 'prazos-marcas'); }, { iconName: 'calendar', kind: 'ghost', id: 'all-ics' }),
+      btn('Nova campanha', chooseNewDeal, { kind: 'primary', iconName: 'plus', id: 'new-deal' }),
+    ],
+    children: [
+      h('div', { class: 'grid cols-4 kpis' },
+        kpi({ label: 'Atrasados', value: String(lateIds.size), tone: lateIds.size ? 'danger' : '', hint: 'campanhas com prazo vencido' }),
+        kpi({ label: 'Próximos 7 dias', value: String([...soonIds].filter((id) => !lateIds.has(id)).length), hint: 'campanhas com prazo chegando' }),
+        kpi({ label: 'Em andamento', value: String(open.length), hint: Object.entries(DEAL_TYPES).map(([k, t]) => `${open.filter((d) => d.type === k).length} ${t.label}`).join(' · ') }),
+        kpi({ label: 'A receber', value: money(fin.toReceive), tone: fin.overdue ? 'danger' : '', hint: fin.overdue ? `${money(fin.overdue)} atrasado` : 'nada atrasado' }),
+      ),
+      h('div', { class: 'section' },
+        tabs([{ value: 'abertas', label: 'Em aberto' }, { value: 'concluidas', label: 'Concluídas' }, { value: 'todas', label: 'Todas' }], state.show, (v) => { state.show = v; rerender(); }, 'Mostrar'),
+        h('div', { class: 'filters' },
+          searchBox(state.q, (v) => { state.q = v; rerender(); }, 'Buscar marca ou campanha'),
+          filterSelect('Tipo', Object.entries(DEAL_TYPES).map(([value, t]) => ({ value, label: t.label })), state.type, (v) => { state.type = v; rerender(); }),
+          filterSelect('Etapa', stageOptions(), state.stage, (v) => { state.stage = v; rerender(); })),
+        !all.length
+          ? emptyNote('Nenhuma campanha ainda', 'Registre um UGC, uma publi ou um produto do TikTok Shop para acompanhar prazos e pagamentos.', btn('Nova campanha', chooseNewDeal, { kind: 'primary' }))
+          : card({ flush: true, children: campaignsTable(list, td) })),
+    ],
+  }));
 }
 
-const stat = (label, value, tone = '') => h('div', { class: `widget stat${tone ? ` tone-${tone}` : ''}` }, h('p', { class: 'w-label' }, label), h('p', { class: 'w-value' }, value));
-
 // ---------- Financeiro ----------
-function money2() {
+export function renderFinance(root) {
   const td = today();
   state.month ||= td.slice(0, 7);
   const deals = data.all('deals');
@@ -232,31 +267,72 @@ function money2() {
   const monthName = monthRaw.charAt(0).toUpperCase() + monthRaw.slice(1);
   const open = deals.filter((d) => d.status !== 'cancelado' && Number(d.value) > 0 && !['pago', 'permuta'].includes(d.paymentStatus || 'pendente')).sort((a, b) => (a.paymentDue || '9').localeCompare(b.paymentDue || '9'));
   const paid = deals.filter((d) => d.paymentStatus === 'pago' && (d.paidAt || '').startsWith(state.month));
-  return [
-    h('div', { class: 'week-switch' },
-      h('button', { type: 'button', class: 'nav-btn', onclick: () => shift(-1), 'aria-label': 'Mês anterior' }, '‹'),
-      h('span', { class: 'month-label' }, monthName),
-      h('button', { type: 'button', class: 'nav-btn', onclick: () => shift(1), 'aria-label': 'Próximo mês' }, '›')),
-    h('div', { class: 'widgets four' },
-      stat('Recebido no mês', money(f.receivedMonth)),
-      stat('A receber', money(f.toReceive)),
-      stat('Atrasado', money(f.overdue), f.overdue ? 'red' : ''),
-      stat('Fechado no mês', money(f.closedMonth)),
-    ),
-    group({ header: 'Recebido no mês por tipo', children: Object.entries(DEAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }),
-    open.length > 0 && group({ header: 'A receber', children: open.map((d) => cell({ emoji: '💰', color: d.paymentDue && d.paymentDue < td ? 'red' : 'green', title: d.brandName, subtitle: `${DEAL_TYPES[d.type]?.label} · ${d.paymentDue ? `vence ${fmtDay(d.paymentDue, { day: 'numeric', month: 'short' })}` : 'sem vencimento'}`, detail: money(d.value), chevron: true, onClick: () => openDeal(d) })) }),
-    paid.length > 0 && group({ header: 'Recebidos', children: paid.map((d) => cell({ emoji: d.invoice ? '🧾' : '⚠️', color: d.invoice ? 'green' : 'orange', title: d.brandName, subtitle: d.invoice ? 'NF emitida' : 'NF não emitida', detail: money(d.value), chevron: true, onClick: () => openDeal(d) })) }),
-    group({ header: 'TikTok Shop (total)', footer: 'Números que você anotou em cada produto.', children: [
-      cell({ title: 'Vendas', detail: String(f.ttsSales) }),
-      cell({ title: 'GMV', detail: money(f.ttsGmv) }),
-      cell({ title: 'Comissões recebidas', detail: money(f.ttsCommission) }),
-    ] }),
-    f.noInvoice > 0 && h('p', { class: 'data-note' }, `⚠️ ${f.noInvoice} pagamento(s) recebido(s) sem nota fiscal marcada.`),
-    group({ children: [h('button', { type: 'button', class: 'cell tappable tint', onclick: () => data.exportDealsCsv() }, '📄 Exportar planilha de campanhas (CSV)')] }),
-  ];
+  // Recebido por mês (6 meses até o mês selecionado)
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(y, m - 1 - (5 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const chart = barChart({
+    label: 'Recebido por mês',
+    fmt: (v) => (v >= 1000 ? `R$ ${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : `R$ ${Math.round(v)}`),
+    data: months.map((mm, i) => {
+      const [yy, mo] = mm.split('-').map(Number);
+      const lbl = new Date(yy, mo - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      return { label: lbl, tip: new Date(yy, mo - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }), value: finance(deals, mm, td).receivedMonth, hl: i === months.length - 1 };
+    }),
+  });
+  root.append(page({
+    kicker: 'Marcas',
+    title: 'Financeiro',
+    subtitle: 'O que entrou, o que falta receber e as comissões do TikTok Shop.',
+    actions: [
+      h('div', { class: 'btn-group' }, btn('', () => shift(-1), { iconName: 'back', title: 'Mês anterior' }), h('span', { class: 'btn month-label', 'aria-live': 'polite' }, monthName), btn('', () => shift(1), { iconName: 'chevron', title: 'Próximo mês' })),
+      btn('Exportar CSV', () => data.exportDealsCsv(), { iconName: 'download', kind: 'ghost' }),
+    ],
+    children: [
+      h('div', { class: 'grid cols-4 kpis' },
+        kpi({ label: 'Recebido no mês', value: money(f.receivedMonth), id: 'kpi-received' }),
+        kpi({ label: 'A receber', value: money(f.toReceive), hint: `${open.length} pagamento(s) em aberto`, id: 'kpi-to-receive' }),
+        kpi({ label: 'Atrasado', value: money(f.overdue), tone: f.overdue ? 'danger' : '', hint: f.overdueCount ? `${f.overdueCount} vencido(s)` : 'nada vencido' }),
+        kpi({ label: 'Fechado no mês', value: money(f.closedMonth), hint: 'valor das campanhas fechadas' }),
+      ),
+      f.noInvoice > 0 && h('p', { class: 'data-note warn-note' }, `⚠️ ${f.noInvoice} pagamento(s) recebido(s) sem nota fiscal marcada.`),
+      h('div', { class: 'grid cols-main section' },
+        h('div', { class: 'stack' },
+          card({ title: 'Recebido por mês', subtitle: 'Últimos 6 meses', children: chart }),
+          card({ title: 'A receber', flush: true, children: table({
+            caption: 'A receber', rows: open, onRowClick: (d) => openDeal(d), empty: 'Nada a receber.',
+            columns: [
+              { label: 'Marca', main: true, render: (d) => h('span', { class: 'td-title' }, d.brandName) },
+              { label: 'Tipo', render: (d) => DEAL_TYPES[d.type]?.label },
+              { label: 'Vencimento', render: (d) => (d.paymentDue ? h('span', { class: d.paymentDue < td ? 'deadline late' : '' }, fmtDay(d.paymentDue, { day: 'numeric', month: 'short' })) : h('span', { class: 'subtle' }, 'sem data')) },
+              { label: 'Valor', cls: 'right', render: (d) => h('span', { class: 'num' }, money(d.value)) },
+            ],
+          }) }),
+          card({ title: `Recebidos em ${monthName.toLowerCase()}`, flush: true, children: table({
+            caption: 'Recebidos', rows: paid, onRowClick: (d) => openDeal(d), empty: 'Nenhum pagamento recebido neste mês.',
+            columns: [
+              { label: 'Marca', main: true, render: (d) => h('span', { class: 'td-title' }, d.brandName) },
+              { label: 'Pago em', render: (d) => fmtDay(d.paidAt, { day: 'numeric', month: 'short' }) },
+              { label: 'Nota fiscal', render: (d) => (d.invoice ? tag('Emitida', 'ok') : tag('Não emitida', 'warn')) },
+              { label: 'Valor', cls: 'right', render: (d) => h('span', { class: 'num' }, money(d.value)) },
+            ],
+          }) }),
+        ),
+        h('div', { class: 'stack' },
+          card({ title: 'Recebido no mês por tipo', flush: true, children: group({ children: Object.entries(DEAL_TYPES).map(([k, t]) => cell({ emoji: t.emoji, color: t.color, title: t.label, detail: money(f.byType[k]) })) }) }),
+          card({ title: 'TikTok Shop', subtitle: 'Total anotado em todos os produtos', flush: true, children: group({ children: [
+            cell({ title: 'Vendas', detail: String(f.ttsSales) }),
+            cell({ title: 'GMV', detail: money(f.ttsGmv) }),
+            cell({ title: 'Comissões recebidas', detail: money(f.ttsCommission) }),
+          ] }) }),
+        ),
+      ),
+    ],
+  }));
 }
 
-// ---------- Marcas (contatos) ----------
+// ---------- Contatos ----------
 export function editBrand(b = {}) {
   const f = formGroups([
     { fields: [{ name: 'name', label: 'Marca', placeholder: 'Nome' }, { name: 'handle', label: '@ ou site', placeholder: '@marca' }, { name: 'status', label: 'Etapa', type: 'select', options: BRAND_STATUS, placeholder: false }] },
@@ -281,43 +357,41 @@ export function editBrand(b = {}) {
   });
 }
 
-function contacts() {
-  const list = data.all('brands');
+export function renderContacts(root) {
+  const list = data.all('brands').filter((b) => !state.brandStatus || (b.status || 'quero') === state.brandStatus);
   const portfolio = data.all('contents').filter((c) => c.portfolio);
-  return [
-    list.length
-      ? BRAND_STATUS.map((s) => {
-        const items = list.filter((b) => (b.status || 'quero') === s.value);
-        return items.length ? group({ header: s.label, children: items.map((b) => cell({ emoji: s.emoji, color: s.color, title: b.name, subtitle: b.next || b.notes || '', chevron: true, onClick: () => editBrand(b) })) }) : null;
-      })
-      : emptyNote('Nenhuma marca na lista', 'Anote marcas com quem quer trabalhar: quero → contatei → conversando.'),
-    group({ children: [cell({ emoji: '➕', color: 'gray', title: 'Adicionar marca', chevron: true, onClick: () => editBrand(), id: 'new-brand' })] }),
-    group({
-      header: `Portfólio UGC (${portfolio.length})`,
-      footer: 'Ative "Usar no portfólio UGC" num conteúdo para ele entrar aqui. Copie a lista e mande para marcas.',
-      children: [
-        ...portfolio.map((c) => cell({ emoji: '🎬', color: 'indigo', title: c.title, subtitle: c.link || 'sem link ainda', chevron: true, onClick: () => openContent(c) })),
-        portfolio.length > 0 && h('button', { type: 'button', class: 'cell tappable tint', onclick: async () => {
+  const deals = data.all('deals');
+  root.append(page({
+    kicker: 'Marcas',
+    title: 'Contatos',
+    subtitle: 'Marcas com quem você quer trabalhar ou já trabalhou, e seu portfólio UGC.',
+    actions: btn('Adicionar marca', () => editBrand(), { kind: 'primary', iconName: 'plus', id: 'new-brand' }),
+    children: h('div', { class: 'grid cols-main' },
+      h('div', { class: 'stack' },
+        h('div', { class: 'filters' }, chips(BRAND_STATUS.map((s) => ({ value: s.value, label: s.label })), state.brandStatus, (v) => { state.brandStatus = v; rerender(); })),
+        card({ flush: true, children: table({
+          caption: 'Marcas', rows: list, rowId: (b) => `brand-${b.id}`, onRowClick: (b) => editBrand(b),
+          empty: 'Nenhuma marca na lista. Anote marcas com quem quer trabalhar: quero → contatei → conversando.',
+          columns: [
+            { label: 'Marca', main: true, render: (b) => h('div', {}, h('div', { class: 'td-title' }, b.name), b.handle && h('div', { class: 'td-sub' }, b.handle)) },
+            { label: 'Etapa', render: (b) => { const s = BRAND_STATUS.find((x) => x.value === (b.status || 'quero')); return tag(s?.label, s?.value === 'fechado' ? 'ok' : s?.value === 'conversando' ? 't-butter' : s?.value === 'contatei' ? 'info' : ''); } },
+            { label: 'Próximo passo', render: (b) => h('span', { class: 'clamp-2' }, b.next || '—') },
+            { label: 'Campanhas', cls: 'right', render: (b) => h('span', { class: 'num' }, String(deals.filter((d) => norm(d.brandName) === norm(b.name)).length)) },
+          ],
+        }) }),
+      ),
+      card({
+        title: `Portfólio UGC (${portfolio.length})`, subtitle: 'Conteúdos marcados para portfólio', flush: true,
+        actions: portfolio.length > 0 && btn('Copiar links', async () => {
           const text = portfolio.map((c) => `• ${c.title}${c.link ? ` — ${c.link}` : ''}`).join('\n');
           toast((await copyText(text)) ? 'Lista copiada' : 'Não consegui copiar', 'ok');
-        } }, 'Copiar lista de links'),
-      ],
-    }),
-  ];
-}
-
-export function render(root) {
-  const tabs = [{ value: 'entregas', label: 'Entregas' }, { value: 'financeiro', label: 'Financeiro' }, { value: 'marcas', label: 'Contatos' }];
-  root.append(page({
-    title: 'Marcas',
-    subtitle: 'UGC, publis e TikTok Shop',
-    right: navButton('', async () => {
-      const t = await actionSheet({ title: 'Nova campanha', actions: Object.entries(DEAL_TYPES).map(([value, t]) => ({ label: `${t.emoji} ${t.label}`, value, id: `new-${value}` })) });
-      if (t) newDeal(t);
-    }, { iconName: 'plus', id: 'new-deal' }),
-    children: [
-      h('div', { class: 'pad-x' }, segmented(tabs, state.tab, (v) => { state.tab = v; rerender(); }, 'Seções')),
-      state.tab === 'entregas' ? deliveries() : state.tab === 'financeiro' ? money2() : contacts(),
-    ],
+        }, { small: true, iconName: 'link' }),
+        children: portfolio.length
+          ? group({ children: portfolio.map((c) => cell({ emoji: '🎬', color: 'indigo', title: c.title, subtitle: c.link || 'sem link ainda', chevron: true, onClick: () => openContent(c) })) })
+          : emptyNote('Nenhum conteúdo no portfólio', 'Ative "Usar no portfólio UGC" ao editar um conteúdo.'),
+      }),
+    ),
   }));
 }
+
+export const render = renderCampaigns;
