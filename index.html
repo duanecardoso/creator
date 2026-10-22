@@ -900,6 +900,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       });
       window.addEventListener('unhandledrejection', function (e) {
         erros.push(String((e && e.reason && (e.reason.message || e.reason)) || 'Erro'));
+        mostrar('O site não conseguiu abrir');
       });
       setTimeout(function () { mostrar('O site está demorando para abrir'); }, 8000);
     })();
@@ -2349,7 +2350,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     store = new Store(storage);
     store.load();
     try {
-      persistent = await ((_b = (_a = navigator.storage) == null ? void 0 : _a.persist) == null ? void 0 : _b.call(_a)) || false;
+      Promise.resolve((_b = (_a = navigator.storage) == null ? void 0 : _a.persist) == null ? void 0 : _b.call(_a)).then((v) => {
+        persistent = Boolean(v);
+      }).catch(() => {
+        persistent = false;
+      });
     } catch (e) {
       persistent = false;
     }
@@ -6276,10 +6281,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   async function start() {
     var _a;
-    window.__creatorStarted = true;
     try {
       await init();
     } catch (err) {
+      window.__creatorStarted = true;
       put(clear(main), h("div", { class: "empty" }, h("p", { class: "empty-title" }, "N\xE3o consegui salvar dados aqui"), h("p", {}, err.message)));
       return;
     }
@@ -6288,6 +6293,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     document.addEventListener("pending-ai", () => current && drawTopbar());
     window.addEventListener("hashchange", route);
     route();
+    window.__creatorStarted = true;
     if ((_a = document.fonts) == null ? void 0 : _a.load) {
       Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load("".concat(w, " 40px Montserrat")))).then(() => {
         if (main.querySelector("canvas")) draw();

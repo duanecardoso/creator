@@ -44,6 +44,7 @@
       });
       window.addEventListener('unhandledrejection', function (e) {
         erros.push(String((e && e.reason && (e.reason.message || e.reason)) || 'Erro'));
+        mostrar('O site não conseguiu abrir');
       });
       setTimeout(function () { mostrar('O site está demorando para abrir'); }, 8000);
     })();

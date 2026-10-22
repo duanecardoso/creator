@@ -23,8 +23,12 @@ export async function init() {
   }
   store = new Store(storage);
   store.load();
+  // Pede para o navegador não apagar os dados, sem esperar a resposta:
+  // em alguns celulares essa resposta nunca chega e o site ficava travado em "Carregando…".
   try {
-    persistent = (await navigator.storage?.persist?.()) || false;
+    Promise.resolve(navigator.storage?.persist?.())
+      .then((v) => { persistent = Boolean(v); })
+      .catch(() => { persistent = false; });
   } catch {
     persistent = false;
   }

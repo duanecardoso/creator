@@ -107,10 +107,10 @@ function route() {
 }
 
 async function start() {
-  window.__creatorStarted = true;
   try {
     await data.init();
   } catch (err) {
+    window.__creatorStarted = true;
     put(clear(main), h('div', { class: 'empty' }, h('p', { class: 'empty-title' }, 'Não consegui salvar dados aqui'), h('p', {}, err.message)));
     return;
   }
@@ -119,6 +119,8 @@ async function start() {
   document.addEventListener('pending-ai', () => current && drawTopbar());
   window.addEventListener('hashchange', route);
   route();
+  // A página apareceu: a partir daqui o aviso de "não conseguiu abrir" não é mais necessário.
+  window.__creatorStarted = true;
   // As artes usam a Montserrat do portfólio: quando a fonte termina de baixar, redesenha as telas na página.
   if (document.fonts?.load) {
     Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 40px Montserrat`)))
