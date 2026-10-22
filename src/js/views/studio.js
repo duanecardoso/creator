@@ -3,7 +3,7 @@ import * as data from '../data.js';
 import { h, page, card, btn, go, fmtDay, emptyNote, tag, chips } from '../ui.js';
 import { TYPES, formatById } from '../lib/formats.js';
 import { drawSlide } from '../lib/render.js';
-import { buildDesigner, missingPhotos } from './designer.js';
+import { buildDesigner, missingPhotos, imagesFor, opts } from './designer.js';
 import { openContent } from './content-sheet.js';
 
 const state = { filter: '' };
@@ -11,8 +11,7 @@ const rerender = () => document.dispatchEvent(new Event('rerender'));
 
 function thumb(c) {
   const cv = h('canvas', { class: 'thumb-canvas', 'aria-hidden': 'true' });
-  const p = data.profile();
-  if (c.slides?.length) queueMicrotask(() => drawSlide(cv, c.slides[0], { palette: p.palette, dark: c.designDark ?? p.designDark, handle: '', index: 0, total: c.slides.length, preview: true }));
+  if (c.slides?.length) imagesFor(c.slides[0]).then((imgs) => drawSlide(cv, c.slides[0], { ...opts(c, 0, c.slides.length, true), images: imgs }));
   return cv;
 }
 

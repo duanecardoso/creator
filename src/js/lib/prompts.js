@@ -97,13 +97,14 @@ export function parseIdeas(text) {
 }
 
 // ---------- Semana inteira ----------
+const SLIDE_HINT = { capa: 'capa: título curto e forte', grade: 'grade de 4 fotos: título de 1 palavra e to do list opcional', notas: 'nota do iPhone: texto de cima curto + nota', baloes: 'balões: título + frases bem curtas em "items"', lista: 'to do list em "items"', imessage: 'conversa em "messages"', foto: 'foto: legenda curta', cta: 'final: frase curta em "title" e outra em "body"' };
 const FUNNEL_LABEL = { seguidores: 'topo (crescer)', comunidade: 'meio (conectar)', marcas: 'fundo (marcas)' };
 const TYPE_LABEL = { video: 'vídeo', carrossel: 'carrossel', estatico: 'post estático', stories: 'stories' };
 
 export function weekPrompt({ profile, items, formats }) {
   const list = items.map((c, i) => {
     const f = formats.find((x) => x.id === c.formatId);
-    const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${s.layout}${s.photo ? ', tem foto minha' : ''})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(' / ')}` : ''}`).join('\n');
+    const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${SLIDE_HINT[s.layout] || s.layout}${s.photo ? ', tem foto minha' : ''})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(' / ')}` : ''}${s.items?.length ? `: ${s.items.length} item(ns)` : ''}`).join('\n');
     return `${i + 1}. ${c.date} · ${TYPE_LABEL[c.type] || c.type} · funil ${FUNNEL_LABEL[c.goal] || '—'} · formato ${f?.name || 'livre'}
    Tema: ${c.theme || c.title}
    Estrutura do formato: ${(f?.structure || c.steps || []).join(' → ')}${slides ? `\n${slides}` : ''}`;
@@ -115,7 +116,7 @@ Este é o meu plano de conteúdo da semana. Para cada item, escreva o conteúdo 
 ${list}
 
 Para vídeos: gancho, roteiro em passos com as falas, legenda e CTA.
-Para carrossel/estático: os textos de cada tela na mesma ordem (title e body; "items" para listas; "cells" para widgets com label e value; "messages" para conversas com me=true quando sou eu). Telas de foto: só um título curto ou vazio.
+Para carrossel/estático: os textos de cada tela na mesma ordem (title e body; "items" para balões e listas; "messages" para conversas com me=true quando sou eu). Textos curtos, do meu jeito. No título, *palavra* entre asteriscos sai em destaque. Telas de foto: só um título curto ou vazio.
 
 Responda SOMENTE com este JSON:
 {"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}`;
@@ -154,7 +155,7 @@ export function mergeSlides(slides = [], incoming = []) {
     if (t.title && s.layout !== 'foto') out.title = t.title;
     else if (t.title && s.layout === 'foto') out.title = t.title.slice(0, 80);
     if (t.body && ['notas', 'capa', 'cta'].includes(s.layout)) out.body = t.body;
-    if (s.layout === 'lista' && t.items.length) out.items = t.items.map((text, k) => ({ text, done: s.items?.[k]?.done || false }));
+    if (['lista', 'baloes', 'grade'].includes(s.layout) && t.items.length) out.items = t.items.map((text, k) => ({ text, done: s.items?.[k]?.done ?? true }));
     if (s.layout === 'widgets' && t.cells.length) out.cells = (s.cells || []).map((c, k) => ({ label: t.cells[k]?.label || c.label, value: t.cells[k]?.value || c.value }));
     if (s.layout === 'imessage' && t.messages.length) out.messages = t.messages;
     return out;

@@ -396,7 +396,7 @@ try {
   const jpg = readFileSync(await dl1.path());
   if (jpg[0] !== 0xff || jpg[1] !== 0xd8 || jpg.length < 20000) throw new Error('Exportação não gerou JPG');
   await snap('06-estudio', sp);
-  ok('Estúdio em página inteira: texto editado ao vivo (sem perder o foco) e imagem 1080×1350 exportada');
+  ok('Estúdio em página inteira: texto editado ao vivo (sem perder o foco) e imagem 1080×1440 exportada');
 
   await sp.click('[data-id="new-content"]');
   await drawer(sp).locator('input[name="title"]').fill('Minha opinião sincera sobre o protetor da minha mãe');

@@ -50,7 +50,7 @@ A partir de sábado, **na primeira vez que você abrir o site**, ele monta o pla
 
 ## Design de carrossel e estático
 
-Cada carrossel ou estático do plano já vem com as telas montadas (1080×1350, formato 4:5 do feed) com a identidade do portfólio: Montserrat, fundo claro pontilhado, título com ponto rosa, rótulo com o quadradinho manteiga e detalhes de iPhone (Notas, Lembretes, iMessage, widgets, foto com legenda, capa e tela final). A cor aparece só nos detalhes. Ajuste as cores em Configurações → Estilo das artes, com prévia ao vivo.
+Cada carrossel ou estático do plano já vem com as telas montadas (1080×1440, formato 3:4 do feed) no estilo dos seus posts: sua foto como fundo (ou grade de 4 fotos), título grande creme misturando fino e pesado (use *palavra* para destacar) e elementos do iPhone por cima: nota com menu Copiar/Colar, to do list com clipe, balões do iMessage, barra de busca, etiqueta de local, pasta, card de perfil, estrelas cromadas, polaroids e papel rasgado. Telas sem foto usam fundo lavado (lilás, azul-céu, creme ou rosa). Escolha o fundo padrão em Configurações → Estilo das artes.
 
 - **Quando precisa de foto sua**, o site pede (por exemplo: "📷 Você segurando o produto, luz natural, fundo neutro"). O pedido aparece na Visão geral e no Estúdio.
 - As fotos ficam guardadas só no aparelho e **não entram no backup**.

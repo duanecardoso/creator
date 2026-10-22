@@ -121,9 +121,9 @@ async function start() {
   route();
   // A página apareceu: a partir daqui o aviso de "não conseguiu abrir" não é mais necessário.
   window.__creatorStarted = true;
-  // As artes usam a Montserrat do portfólio: quando a fonte termina de baixar, redesenha as telas na página.
+  // As artes usam Nunito (títulos) e Montserrat: quando a fonte termina de baixar, redesenha as telas na página.
   if (document.fonts?.load) {
-    Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 40px Montserrat`)))
+    Promise.all([...[400, 500, 600, 700, 800].map((w) => document.fonts.load(`${w} 40px Montserrat`)), ...[400, 900].map((w) => document.fonts.load(`${w} 40px Nunito`))])
       .then(() => { if (main.querySelector('canvas')) draw(); })
       .catch(() => {});
   }

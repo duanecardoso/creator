@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { slidesFor, needsPhoto, emptyFields } from '../../src/js/lib/designs.js';
+import { slidesFor, needsPhoto, emptyFields, missingIn, photoSlots } from '../../src/js/lib/designs.js';
 import { wrap } from '../../src/js/lib/render.js';
 import { weekPrompt, parseWeek, mergeSlides } from '../../src/js/lib/prompts.js';
 import { FORMATS } from '../../src/js/lib/formats.js';
@@ -32,17 +32,25 @@ test('quebra de linha respeita a largura e o limite', () => {
   assert.ok(cut[1].endsWith('…'));
 });
 
+test('grade usa 4 fotos e conta as que faltam', () => {
+  const s = slidesFor('testei-7-dias', 'carrossel', { title: 'T' });
+  const g = s.find((x) => x.layout === 'grade');
+  assert.equal(photoSlots(g), 4);
+  assert.equal(missingIn(g), 4);
+  assert.equal(missingIn({ ...g, photoIds: ['a', null, 'c'] }), 2);
+  assert.equal(missingIn({ ...s[0], photoId: 'x' }), 0);
+});
+
 test('semana com o Claude: prompt, leitura e junção das telas', () => {
   const items = [{ date: '2026-10-26', type: 'carrossel', goal: 'marcas', formatId: 'review-honesto', theme: 'protetor', slides: slidesFor('review-honesto', 'carrossel', { title: 'T' }) }];
   const p = weekPrompt({ profile: defaultProfile(), items, formats: FORMATS });
-  assert.match(p, /tela 1 \(capa, tem foto minha\)/);
-  assert.match(p, /widgets Gostei/);
-  const parsed = parseWeek('```json\n{"days":[{"n":1,"title":"Novo","hook":"g","slides":[{"title":"Capa nova"},{"cells":[{"label":"Gostei","value":"leve"}]},{"body":"vale"}]}]}\n```');
+  assert.match(p, /tela 1 \(capa: título curto e forte, tem foto minha\)/);
+  assert.match(p, /tela 2 \(balões.*: 4 item\(ns\)/);
+  const parsed = parseWeek('```json\n{"days":[{"n":1,"title":"Novo","hook":"g","slides":[{"title":"Capa nova"},{"items":["leve","cheiro forte"]},{"body":"vale"}]}]}\n```');
   const merged = mergeSlides(items[0].slides, parsed[0].slides);
   assert.equal(merged[0].title, 'Capa nova');
   assert.equal(merged[0].photo, true, 'mantém foto');
-  assert.equal(merged[1].cells[0].value, 'leve');
-  assert.equal(merged[1].cells[1].label, 'Não gostei', 'mantém rótulos que não vieram');
+  assert.deepEqual(merged[1].items.map((i) => i.text), ['leve', 'cheiro forte']);
   assert.equal(merged[2].body, 'vale');
   assert.throws(() => parseWeek('{}'), /days/);
 });

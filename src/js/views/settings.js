@@ -2,34 +2,29 @@
 import * as data from '../data.js';
 import { h, page, group, cell, sheet, formGroups, toast, actionSheet, fmtDay, card, btn } from '../ui.js';
 import { tokenStatus } from '../lib/instagram.js';
-import { DEFAULT_PALETTE, drawSlide } from '../lib/render.js';
+import { BACKGROUNDS, drawSlide } from '../lib/render.js';
 import { toggle } from '../ui.js';
 import { openGcSheet } from './portfolio.js';
 
-const SWATCHES = [
-  ['bg', 'Fundo'], ['card', 'Cartões'], ['ink', 'Texto'], ['accent', 'Destaque 1 (manteiga)'], ['accent2', 'Destaque 2 (rosa)'], ['accent3', 'Detalhes (marrom)'], ['accent4', 'Ponto final (rosa)'],
-];
-
 function paletteGroup(p) {
-  const pal = { ...DEFAULT_PALETTE, ...(p.palette || {}) };
   const preview = h('canvas', { class: 'palette-preview', 'aria-label': 'Prévia do estilo' });
-  const sample = { layout: 'notas', kicker: 'review honesto', title: 'Testei o protetor da minha mãe', body: 'Textura leve, não deixou branco.\nNo calor, precisei reaplicar.' };
-  const redraw = () => drawSlide(preview, sample, { palette: pal, dark: data.profile().designDark, handle: p.instagram ? `@${p.instagram.replace(/^@/, '')}` : '@voce', index: 0, total: 3 });
+  const sample = { layout: 'notas', title: 'Hoje eu quero criar *diferente*.', body: 'Quero mostrar processo, bastidores, tentativas, acertos e dias em que a única coisa que deu certo foi o café.' };
+  const redraw = () => {
+    const q = data.profile();
+    drawSlide(preview, sample, { preview: true, bg: q.artBg || 'lilas', profile: { name: q.name, handle: q.instagram } });
+  };
   queueMicrotask(redraw);
-  const rows = SWATCHES.map(([k, label]) => {
-    const inp = h('input', { type: 'color', value: pal[k], 'aria-label': label, class: 'swatch' });
-    inp.addEventListener('input', () => { pal[k] = inp.value; redraw(); });
-    inp.addEventListener('change', () => data.saveProfile({ palette: { ...pal } }));
-    return h('label', { class: 'cell field' }, h('span', { class: 'cell-title' }, label), inp);
-  });
+  const bg = h('select', { class: 'inline-select', 'aria-label': 'Fundo padrão', 'data-id': 'art-bg', onchange: (e) => { data.saveProfile({ artBg: e.target.value }); redraw(); } },
+    Object.entries(BACKGROUNDS).map(([k, v]) => h('option', { value: k, selected: k === (p.artBg || 'lilas') }, v.label)));
+  const bio = h('input', { type: 'text', class: 'input', value: p.artBio || '', placeholder: 'ex.: beleza, rotina & coisas que amo', 'aria-label': 'Bio no card de perfil' });
+  bio.addEventListener('change', () => data.saveProfile({ artBio: bio.value.trim() }));
   return group({
     header: 'Estilo das artes',
-    footer: 'Mesma paleta e fonte do seu portfólio: base clara e cor só nos detalhes. Vale para carrosséis e estáticos.',
+    footer: 'Sua foto como fundo, título creme e elementos do iPhone por cima. O fundo padrão vale para as telas sem foto; dá para trocar em cada tela no Estúdio.',
     children: [
       h('div', { class: 'cell palette-cell' }, preview),
-      ...rows,
-      cell({ title: 'Artes no tema escuro', accessory: toggle(Boolean(p.designDark), (v) => { data.saveProfile({ designDark: v }); }, 'Tema escuro') }),
-      h('button', { type: 'button', class: 'cell tappable tint', onclick: () => { data.saveProfile({ palette: {} }); toast('Paleta original restaurada'); } }, 'Restaurar paleta original'),
+      cell({ title: 'Fundo padrão (telas sem foto)', accessory: bg }),
+      h('label', { class: 'cell field' }, h('span', { class: 'cell-title' }, 'Bio no card de perfil (tela final)'), bio),
     ],
   });
 }

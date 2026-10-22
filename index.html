@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400..800&family=Nunito:wght@300..1000&display=swap" rel="stylesheet">
   <style>
 /* Creator — plataforma web com a identidade do portfólio: Montserrat, branco, manteiga, rosa e marrom. Tema claro. */
 :root {
@@ -482,7 +482,7 @@ input::placeholder, textarea::placeholder { color: #b3b3af; }
 /* Estúdio */
 .designer { gap: 0; }
 .slide-strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 14px; }
-.slide-thumb { position: relative; flex: 0 0 auto; width: 210px; aspect-ratio: 4 / 5; padding: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--line-2); box-shadow: var(--shadow); }
+.slide-thumb { position: relative; flex: 0 0 auto; width: 210px; aspect-ratio: 3 / 4; padding: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--line-2); box-shadow: var(--shadow); }
 .slide-thumb.sel { outline: 3px solid var(--butter-strong); outline-offset: 2px; }
 .slide-canvas { width: 100%; height: 100%; display: block; }
 .slide-n { position: absolute; top: 6px; left: 6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--r-xs); background: rgba(22, 22, 22, 0.7); color: #fff; font-size: 12px; font-weight: 600; line-height: 22px; text-align: center; }
@@ -513,7 +513,7 @@ input::placeholder, textarea::placeholder { color: #b3b3af; }
 .deadline.late { color: var(--danger); font-weight: 600; }
 .deadline.today { color: var(--warn); font-weight: 600; }
 .palette-cell { justify-content: center; padding: 16px; }
-.palette-preview { width: 180px; aspect-ratio: 4 / 5; border-radius: var(--r); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.palette-preview { width: 180px; aspect-ratio: 3 / 4; border-radius: var(--r); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .swatch { width: 44px !important; height: 30px !important; min-height: 0 !important; padding: 2px !important; cursor: pointer; }
 .static { position: static; }
 @media (max-width: 760px) {
@@ -558,7 +558,7 @@ input::placeholder, textarea::placeholder { color: #b3b3af; }
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; }
 .studio-stage { display: grid; gap: 10px; min-width: 0; }
 .big-wrap { background: repeating-linear-gradient(45deg, var(--surface-2) 0 12px, var(--bg) 12px 24px); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; display: grid; place-items: center; }
-.big-canvas { width: min(100%, 440px); aspect-ratio: 4 / 5; border-radius: var(--r-sm); box-shadow: var(--shadow-lg); background: var(--surface); }
+.big-canvas { width: min(100%, 440px); aspect-ratio: 3 / 4; border-radius: var(--r-sm); box-shadow: var(--shadow-lg); background: var(--surface); }
 .studio .slide-thumb { width: 116px; }
 .studio-panel { display: grid; gap: 16px; position: sticky; top: 72px; }
 .studio-panel .card-body { display: grid; gap: 8px; }
@@ -568,7 +568,7 @@ input::placeholder, textarea::placeholder { color: #b3b3af; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .gallery-item { display: grid; gap: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); text-align: left; color: var(--ink); overflow: hidden; box-shadow: var(--shadow); }
 .gallery-item:hover { border-color: #d6d6d2; }
-.gallery-thumb { display: block; aspect-ratio: 4 / 5; background: var(--line-2); }
+.gallery-thumb { display: block; aspect-ratio: 3 / 4; background: var(--line-2); }
 .thumb-canvas { width: 100%; height: 100%; display: block; }
 .gallery-empty { display: grid; place-items: center; height: 100%; color: var(--ink-3); font-size: 13px; }
 .gallery-meta { display: grid; gap: 4px; padding: 10px 12px 12px; }
@@ -891,6 +891,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 .before-post { margin: 0 0 16px; padding: 4px 14px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
 .before-post summary { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; cursor: pointer; }
 .before-post ol { margin: 4px 0 8px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
+
+.cell.tappable.need { background: var(--butter-soft); }
 
 </style>
 </head>
@@ -1857,8 +1859,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 
   // src/js/lib/themes.js
   function nichesFromProfile(profile2) {
-    const text2 = String((profile2 == null ? void 0 : profile2.niches) || "");
-    const keys = Object.entries(NICHE_KEYS).filter(([, re]) => re.test(text2)).map(([k]) => k);
+    const text = String((profile2 == null ? void 0 : profile2.niches) || "");
+    const keys = Object.entries(NICHE_KEYS).filter(([, re]) => re.test(text)).map(([k]) => k);
     if (!keys.includes("ugc")) keys.push("ugc");
     return keys.length ? keys : ["lifestyle", "ugc"];
   }
@@ -1951,107 +1953,113 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 
   // src/js/lib/designs.js
   function slidesFor(formatId, type, { title = "", goal = "" } = {}) {
-    const capa = (extra = {}) => ({ layout: "capa", kicker: "", title, ...extra });
     if (type === "estatico") {
-      if (formatId === "lembretes-lista") return [{ layout: "lista", title, items: empty(5), hint: "4 a 7 itens curtos e espec\xEDficos" }];
-      if (formatId === "opiniao-impopular") return [{ layout: "notas", kicker: "opini\xE3o impopular", title, body: "", hint: "Sua opini\xE3o em 3 a 5 frases curtas, com um motivo real" }];
-      return [{ layout: "notas", title, body: "", hint: "Escreva como se fosse uma nota s\xF3 para voc\xEA" }];
+      if (formatId === "lembretes-lista") return [{ layout: "lista", title, items: [{ text: "", done: false }], photo: true, photoHint: "Foto sua num momento da rotina", hint: "4 a 7 itens curtos e espec\xEDficos" }];
+      if (formatId === "opiniao-impopular") return [nota("opini\xE3o impopular:", "Sua opini\xE3o em 3 a 5 frases curtas, com um motivo real", { body: "" })];
+      return [nota(title, "Escreva como se fosse uma nota s\xF3 para voc\xEA")];
     }
     if (type !== "carrossel") return [];
     switch (formatId) {
       case "review-honesto":
         return [
-          capa({ kicker: "review honesto", photo: true, photoHint: "Voc\xEA segurando o produto, luz natural, fundo neutro" }),
-          { layout: "widgets", title: "Depois de usar de verdade", cells: [{ label: "Gostei", value: "" }, { label: "N\xE3o gostei", value: "" }, { label: "Pra quem \xE9", value: "" }, { label: "Pra quem n\xE3o \xE9", value: "" }] },
-          { layout: "notas", title: "Veredito", body: "", hint: "Sua opini\xE3o final em 2 ou 3 frases" },
-          cta(goal)
+          capa(title, { photoHint: "Voc\xEA segurando o produto, luz natural" }),
+          baloes("depois de usar *de verdade*", 4, "Gostei, n\xE3o gostei, pra quem \xE9, pra quem n\xE3o \xE9"),
+          nota("meu veredito", "Sua opini\xE3o final em 2 ou 3 frases"),
+          final(goal)
         ];
       case "testei-7-dias":
         return [
-          capa({ kicker: "7 dias testando", photo: true, photoHint: "Foto sua com o produto no dia 1" }),
-          { layout: "widgets", title: "Di\xE1rio do teste", cells: [{ label: "Dia 1", value: "" }, { label: "Dia 3", value: "" }, { label: "Dia 5", value: "" }, { label: "Dia 7", value: "" }] },
-          { layout: "notas", title: "Veredito", body: "", hint: "Vale ou n\xE3o vale, e para quem" },
-          cta(goal)
+          capa(title, { photoHint: "Foto sua com o produto no dia 1" }),
+          grade("di\xE1rio do *teste*", "Uma foto por dia (1, 3, 5 e 7)", { items: todo(["dia 1", "dia 3", "dia 5", "dia 7"]) }),
+          nota("vale ou n\xE3o vale?", "Vale ou n\xE3o vale, e para quem"),
+          final(goal)
         ];
       case "uso-todo-dia":
       case "favoritos-mes":
         return [
-          capa({ kicker: formatId === "favoritos-mes" ? "favoritos do m\xEAs" : "uso todo dia", photo: true, photoHint: "Todos os itens juntos, vistos de cima" }),
-          foto("Item 1 em uso, na sua m\xE3o ou no seu espa\xE7o", { title: "" }),
-          foto("Item 2 em uso"),
-          foto("Item 3 em uso"),
-          cta(goal)
-        ];
-      case "a-vs-b":
-        return [
-          capa({ kicker: "comparei", photo: true, photoHint: "Os dois produtos lado a lado, mesma luz" }),
-          { layout: "widgets", title: "Lado a lado", cells: [{ label: "Primeiro", value: "" }, { label: "Segundo", value: "" }, { label: "Diferen\xE7a que vi", value: "" }, { label: "Eu escolho", value: "" }] },
-          { layout: "notas", title: "Para quem \xE9 cada um", body: "", hint: "Uma frase para cada" },
-          cta(goal)
-        ];
-      case "fotodump-historia":
-        return [foto("Foto 1: a mais forte (seu rosto ou um momento)"), foto("Foto 2: um detalhe"), foto("Foto 3: o ambiente"), foto("Foto 4: voc\xEA fazendo algo"), foto("Foto 5: um momento engra\xE7ado ou real")];
-      case "bastidores-ugc":
-        return [
-          capa({ kicker: "bastidores ugc", photo: true, photoHint: "Seu setup de grava\xE7\xE3o de longe (luz, trip\xE9, produto)" }),
-          foto("Print ou foto do v\xEDdeo final"),
-          { layout: "lista", title: "O que eu usei", items: empty(4), hint: "Equipamentos e truques reais" },
-          cta(goal)
+          capa(title, { kicker: formatId === "favoritos-mes" ? "favoritos do m\xEAs" : "o que eu uso de verdade", decor: "dourada" }),
+          grade("meus *favoritos*", "Fotos dos produtos ou de voc\xEA usando"),
+          baloes("por que *ficaram*", 4, "Um motivo curto para cada um"),
+          final(goal)
         ];
       case "expectativa-realidade":
-        return [foto("A vers\xE3o idealizada (expectativa)", { kicker: "expectativa" }), foto("A sua vers\xE3o real", { kicker: "realidade" })];
+        return [capa(title), foto("expectativa", "", 'A foto "como eu achava que seria"'), foto("realidade", "", 'A foto "como \xE9 de verdade"'), nota("o que eu aprendi", "O que mudou na sua cabe\xE7a")];
+      case "a-vs-b":
+        return [capa(title), foto("op\xE7\xE3o A", "", "Foto da primeira op\xE7\xE3o"), foto("op\xE7\xE3o B", "", "Foto da segunda op\xE7\xE3o"), nota("meu veredito", "Qual voc\xEA escolheria e por qu\xEA")];
+      case "bastidores-ugc":
+        return [
+          capa(title, { kicker: "bastidores de um UGC" }),
+          grade("por *tr\xE1s*", "Fotos do processo: briefing, set, grava\xE7\xE3o, edi\xE7\xE3o", { items: todo(["ler o briefing", "roteiro", "gravar", "editar e entregar"]) }),
+          nota("o que ningu\xE9m v\xEA", "Um detalhe real do processo que pouca gente imagina"),
+          final(goal)
+        ];
+      case "fotodump-historia":
+        return [
+          capa(title, { kicker: "um pouco da rotina", decor: "dourada" }),
+          grade("segunda", "Fotos reais do dia", { kicker: "" }),
+          grade("ter\xE7a", "Fotos reais do dia"),
+          nota("", "O que esses dias tiveram de especial")
+        ];
       case "conversa-imessage":
         return [
-          capa({ kicker: "a conversa" }),
-          { layout: "imessage", messages: [{ me: false, text: "" }, { me: true, text: "" }, { me: false, text: "" }], hint: "Mensagens reais ou recriadas, sem expor ningu\xE9m" },
-          { layout: "imessage", messages: [{ me: true, text: "" }, { me: false, text: "" }] },
-          { layout: "notas", title: "Desfecho", body: "", hint: "O que aconteceu depois" }
+          capa(title, { kicker: "a conversa" }),
+          { layout: "imessage", contact: "", messages: [{ me: false, text: "" }, { me: true, text: "" }, { me: false, text: "" }], hint: "Mensagens reais ou recriadas, sem expor ningu\xE9m" },
+          { layout: "imessage", contact: "", messages: [{ me: true, text: "" }, { me: false, text: "" }] },
+          nota("e a\xED?", "O que aconteceu depois")
         ];
-      case "carrossel-storytelling": {
-        const parte = (t, hint2) => ({ layout: "notas", title: t, body: "", hint: hint2 });
+      case "carrossel-storytelling":
         return [
-          capa({ kicker: "uma hist\xF3ria" }),
-          parte("", 'Contexto: "Durante muito tempo eu\u2026"'),
-          parte("", 'Conflito: "S\xF3 que tinha uma coisa acontecendo\u2026"'),
-          parte("", "A situa\xE7\xE3o espec\xEDfica, com um detalhe real"),
-          parte("Foi a\xED que eu percebi", "O momento da virada"),
-          parte("", "O que mudou no que voc\xEA faz ou pensa"),
-          parte("", "Reflex\xE3o que tamb\xE9m serve para quem est\xE1 lendo"),
-          { layout: "cta", title: "", body: "voc\xEA tamb\xE9m est\xE1 nessa fase?", hint: "Frase final forte; a pergunta convida para os coment\xE1rios" }
+          capa(title, { kicker: "uma hist\xF3ria" }),
+          nota("", 'Contexto: "Durante muito tempo eu\u2026"'),
+          nota("", 'Conflito: "S\xF3 que tinha uma coisa acontecendo\u2026"'),
+          nota("", "A situa\xE7\xE3o espec\xEDfica, com um detalhe real"),
+          nota("foi a\xED que eu percebi", "O momento da virada"),
+          nota("", "O que mudou no que voc\xEA faz ou pensa"),
+          nota("", "Reflex\xE3o que tamb\xE9m serve para quem est\xE1 lendo"),
+          { layout: "cta", title: "", body: "voc\xEA tamb\xE9m est\xE1 nessa fase?", photo: true, photoHint: "Foto sua sorrindo", hint: "Frase final forte; a pergunta convida para os coment\xE1rios" }
         ];
-      }
       default:
-        return [capa(), { layout: "notas", title: "", body: "", hint: "Primeira parte" }, { layout: "notas", title: "", body: "", hint: "Segunda parte" }, cta(goal)];
+        return [capa(title), nota("", "Primeira parte"), nota("", "Segunda parte"), final(goal)];
     }
   }
   function emptyFields(slide) {
     const out = [];
     if (slide.layout === "notas" && !slide.body) out.push("texto");
-    if (slide.layout === "lista" && !(slide.items || []).some((i) => i.text)) out.push("itens");
+    if (["lista", "baloes"].includes(slide.layout) && !(slide.items || []).some((i) => i.text)) out.push("itens");
     if (slide.layout === "widgets" && (slide.cells || []).some((c) => !c.value)) out.push("widgets");
     if (slide.layout === "imessage" && (slide.messages || []).some((m) => !m.text)) out.push("mensagens");
-    if (slide.layout === "capa" && !slide.title) out.push("t\xEDtulo");
+    if (["capa", "grade"].includes(slide.layout) && !slide.title) out.push("t\xEDtulo");
     return out;
   }
-  var LAYOUTS, cta, foto, empty, needsPhoto;
+  var LAYOUTS, capa, nota, baloes, grade, foto, todo, final, photoSlots, photoIdsOf, missingIn, needsPhoto;
   var init_designs = __esm({
     "src/js/lib/designs.js"() {
       LAYOUTS = {
-        capa: "Capa",
-        notas: "Notas",
-        lista: "Lembretes",
-        imessage: "iMessage",
-        widgets: "Widgets",
-        foto: "Foto",
-        cta: "Final"
+        capa: "Capa com foto",
+        grade: "Grade de 4 fotos",
+        notas: "Nota do iPhone",
+        baloes: "Bal\xF5es",
+        lista: "To do list",
+        imessage: "Conversa",
+        foto: "Foto + local",
+        cta: "Final com perfil"
       };
-      cta = (goal) => ({
+      capa = (title, extra = {}) => ({ layout: "capa", title, kicker: "", photo: true, photoHint: "Foto sua, luz natural", decor: "estrelas", ...extra });
+      nota = (title, hint, extra = {}) => ({ layout: "notas", title, body: "", hint, ...extra });
+      baloes = (title, n2, hint) => ({ layout: "baloes", title, items: Array.from({ length: n2 }, () => ({ text: "" })), photo: true, photoHint: "Foto sua de corpo inteiro ou meio corpo", hint });
+      grade = (title, hint, extra = {}) => ({ layout: "grade", title, kicker: "", photo: true, photoHint: hint, items: [], ...extra });
+      foto = (title, kicker, hint) => ({ layout: "foto", title, kicker, photo: true, photoHint: hint });
+      todo = (items) => items.map((text) => ({ text, done: true }));
+      final = (goal) => ({
         layout: "cta",
-        title: goal === "marcas" ? "Fa\xE7o esse tipo de conte\xFAdo para marcas" : goal === "comunidade" ? "E voc\xEA, como faz?" : "Salva para ver depois",
-        body: goal === "marcas" ? "contato na bio" : goal === "comunidade" ? "me conta nos coment\xE1rios" : ""
+        title: goal === "marcas" ? "gostou desse tipo de conte\xFAdo?" : "agora que voc\xEA j\xE1 sabe um pouco sobre mim\u2026",
+        body: goal === "marcas" ? "fa\xE7o isso para marcas tamb\xE9m \u2728" : "acho que podemos ser amigas",
+        photo: true,
+        photoHint: "Foto sua sorrindo"
       });
-      foto = (hint2, extra = {}) => ({ layout: "foto", photo: true, photoHint: hint2, title: "", ...extra });
-      empty = (n2) => Array.from({ length: n2 }, () => ({ text: "", done: false }));
+      photoSlots = (s) => !(s == null ? void 0 : s.photo) ? 0 : s.layout === "grade" ? 4 : 1;
+      photoIdsOf = (s) => s.layout === "grade" ? (s.photoIds || []).slice(0, 4) : [s.photoId].filter(Boolean);
+      missingIn = (s) => Math.max(0, photoSlots(s) - photoIdsOf(s).filter(Boolean).length);
       needsPhoto = (slides = []) => slides.some((s) => s.photo);
     }
   });
@@ -2859,14 +2867,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       foot && h("footer", { class: "card-foot" }, foot)
     );
   }
-  function kpi({ label: label2, value, hint: hint2, tone = "", meter = null, id }) {
+  function kpi({ label, value, hint, tone = "", meter = null, id }) {
     return h(
       "div",
       { class: "card kpi".concat(tone ? " tone-".concat(tone) : ""), "data-id": id },
-      h("p", { class: "kpi-label" }, label2),
+      h("p", { class: "kpi-label" }, label),
       h("p", { class: "kpi-value" }, value),
       meter !== null && h("div", { class: "meter", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(meter * 100)) }, h("span", { style: { width: "".concat(Math.min(100, Math.round(meter * 100)), "%") } })),
-      hint2 && h("p", { class: "kpi-hint" }, hint2)
+      hint && h("p", { class: "kpi-hint" }, hint)
     );
   }
   function group({ header, footer, children, cls = "" }) {
@@ -2889,8 +2897,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     ];
     return onClick ? h("button", { type: "button", class: "cell tappable ".concat(cls), onclick: onClick, "data-id": id }, content) : h("div", { class: "cell ".concat(cls), "data-id": id }, content);
   }
-  function table({ columns, rows, onRowClick, rowId, rowCls, empty: empty2 = "Nada por aqui.", caption }) {
-    if (!rows.length) return emptyNote(empty2);
+  function table({ columns, rows, onRowClick, rowId, rowCls, empty = "Nada por aqui.", caption }) {
+    if (!rows.length) return emptyNote(empty);
     return h(
       "div",
       { class: "table-wrap" },
@@ -2911,15 +2919,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       )
     );
   }
-  function toggle(checked, onChange2, label2) {
-    const input = h("input", { type: "checkbox", role: "switch", class: "switch", checked: Boolean(checked), "aria-label": label2 });
+  function toggle(checked, onChange2, label) {
+    const input = h("input", { type: "checkbox", role: "switch", class: "switch", checked: Boolean(checked), "aria-label": label });
     input.addEventListener("change", () => onChange2(input.checked));
     return input;
   }
-  function segmented(options, value, onChange2, label2 = "Se\xE7\xF5es") {
+  function segmented(options, value, onChange2, label = "Se\xE7\xF5es") {
     return h(
       "div",
-      { class: "segmented", role: "tablist", "aria-label": label2 },
+      { class: "segmented", role: "tablist", "aria-label": label },
       options.map((o) => h("button", {
         type: "button",
         role: "tab",
@@ -2936,11 +2944,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       options.map((o) => h("button", { type: "button", class: "chip".concat(o.value === value ? " on" : ""), "aria-pressed": String(o.value === value), onclick: () => onChange2(o.value === value ? "" : o.value) }, o.label))
     );
   }
-  function filterSelect(label2, options, value, onChange2) {
+  function filterSelect(label, options, value, onChange2) {
     const sel = h(
       "select",
-      { class: "filter-select".concat(value ? " active" : ""), "aria-label": label2, onchange: (e) => onChange2(e.target.value) },
-      h("option", { value: "" }, label2),
+      { class: "filter-select".concat(value ? " active" : ""), "aria-label": label, onchange: (e) => onChange2(e.target.value) },
+      h("option", { value: "" }, label),
       options.map((o) => h("option", { value: o.value, selected: o.value === value }, o.label))
     );
     return sel;
@@ -3081,7 +3089,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       read: () => Object.fromEntries(Object.entries(getters).map(([k, g]) => [k, g()]))
     };
   }
-  function barChart({ data, height = 180, fmt = (v) => String(v), refValue = null, refLabel = "", label: label2 = "Gr\xE1fico" }) {
+  function barChart({ data, height = 180, fmt = (v) => String(v), refValue = null, refLabel = "", label = "Gr\xE1fico" }) {
     const W2 = 600;
     const H2 = height;
     const pad = { t: 22, r: 8, b: 26, l: 8 };
@@ -3089,17 +3097,17 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const band = (W2 - pad.l - pad.r) / Math.max(1, data.length);
     const bw = Math.min(24, band * 0.55);
     const y = (v) => pad.t + (H2 - pad.t - pad.b) * (1 - v / max);
-    const wrap2 = h("div", { class: "chart", role: "group", "aria-label": label2 });
+    const wrap2 = h("div", { class: "chart", role: "group", "aria-label": label });
     const tip = h("div", { class: "chart-tip", hidden: true });
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 ".concat(W2, " ").concat(H2));
     svg.setAttribute("role", "img");
-    svg.setAttribute("aria-label", label2);
-    const el = (tagName, attrs, text2) => {
+    svg.setAttribute("aria-label", label);
+    const el = (tagName, attrs, text) => {
       const e = document.createElementNS(ns, tagName);
       for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-      if (text2 !== void 0) e.textContent = text2;
+      if (text !== void 0) e.textContent = text;
       svg.append(e);
       return e;
     };
@@ -3144,9 +3152,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     );
     return wrap2;
   }
-  async function copyText(text2) {
+  async function copyText(text) {
     try {
-      await navigator.clipboard.writeText(text2);
+      await navigator.clipboard.writeText(text);
       return true;
     } catch (e) {
       return false;
@@ -3190,12 +3198,12 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       };
       icon = (name, cls = "ic") => h("span", { class: cls, "aria-hidden": "true", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.concat(ICONS[name] || ICONS.plus, "</svg>") });
       badge = (emoji, color = "gray") => h("span", { class: "badge c-".concat(color), "aria-hidden": "true" }, emoji);
-      tag = (text2, tone = "") => text2 ? h("span", { class: "tag ".concat(tone) }, text2) : null;
-      btn = (label2, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: "btn".concat(kind ? " btn-".concat(kind) : "").concat(small ? " btn-sm" : ""), onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label2 && h("span", { class: "btn-label" }, label2));
+      tag = (text, tone = "") => text ? h("span", { class: "tag ".concat(tone) }, text) : null;
+      btn = (label, onClick, { kind = "", iconName, id, small = false, title } = {}) => h("button", { type: "button", class: "btn".concat(kind ? " btn-".concat(kind) : "").concat(small ? " btn-sm" : ""), onclick: onClick, "data-id": id, title }, iconName && icon(iconName), label && h("span", { class: "btn-label" }, label));
       tabs = segmented;
       confirmDelete = (what) => actionSheet({ title: "Apagar", message: "Apagar ".concat(what, "? N\xE3o d\xE1 para desfazer."), actions: [{ label: "Apagar", destructive: true, value: true, id: "confirm-delete" }] }).then((v) => v === true);
-      hbar = (value, max, text2) => value === null || value === void 0 ? h("span", { class: "subtle" }, "\u2014") : h("span", { class: "bar-cell" }, h("span", { class: "hbar", style: { width: "".concat(Math.max(2, Math.round(value / (max || 1) * 120)), "px") } }), h("span", { class: "num" }, text2));
-      emptyNote = (title, text2, action) => h("div", { class: "empty" }, h("p", { class: "empty-title" }, title), text2 && h("p", {}, text2), action && h("p", { style: { marginTop: "12px" } }, action));
+      hbar = (value, max, text) => value === null || value === void 0 ? h("span", { class: "subtle" }, "\u2014") : h("span", { class: "bar-cell" }, h("span", { class: "hbar", style: { width: "".concat(Math.max(2, Math.round(value / (max || 1) * 120)), "px") } }), h("span", { class: "num" }, text));
+      emptyNote = (title, text, action) => h("div", { class: "empty" }, h("p", { class: "empty-title" }, title), text && h("p", {}, text), action && h("p", { style: { marginTop: "12px" } }, action));
     }
   });
 
@@ -3226,11 +3234,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     if (!pending) return;
     const ta = h("textarea", { rows: 8, placeholder: "Ou cole aqui a resposta do Claude\u2026", "aria-label": "Resposta do Claude" });
     const err = h("p", { class: "form-error", role: "alert" });
-    const use = async (text2, close) => {
+    const use = async (text, close) => {
       const fn = handlers[pending.kind];
       if (!fn) return;
       try {
-        await fn(text2, pending.context || {});
+        await fn(text, pending.context || {});
         setPendingAi(null);
         close();
       } catch (e) {
@@ -3244,10 +3252,10 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       "data-id": "paste-clipboard",
       onclick: async () => {
         try {
-          const text2 = await navigator.clipboard.readText();
-          if (!text2.trim()) throw new Error("vazio");
-          ta.value = text2;
-          use(text2, closeRef);
+          const text = await navigator.clipboard.readText();
+          if (!text.trim()) throw new Error("vazio");
+          ta.value = text;
+          use(text, closeRef);
         } catch (e) {
           err.textContent = "N\xE3o consegui ler a \xE1rea de transfer\xEAncia. Cole no campo abaixo (Ctrl+V / Cmd+V, ou toque e segure no celular).";
           ta.focus();
@@ -3292,17 +3300,21 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   });
 
   // src/js/lib/render.js
-  function tracking(ctx, size, weight) {
-    if ("letterSpacing" in ctx) ctx.letterSpacing = weight >= 700 && size >= 56 ? "".concat(-Math.round(size * 0.04), "px") : weight >= 700 ? "".concat(-Math.round(size * 0.015), "px") : "0px";
+  function palette(p = {}) {
+    return { ...DEFAULT_PALETTE, ...p };
   }
-  function palette(p = {}, dark = false) {
-    const base = { ...DEFAULT_PALETTE, ...p };
-    if (!dark) return base;
-    return { ...base, bg: "#161616", card: "#232323", ink: "#FAFAF9", muted: "#A3A3A0", bubbleIn: "#2C2C2C" };
+  function rng2(seed) {
+    let h2 = 2166136261;
+    for (const ch of String(seed)) h2 = Math.imul(h2 ^ ch.charCodeAt(0), 16777619);
+    return () => {
+      h2 = Math.imul(h2 ^ h2 >>> 15, 2246822507);
+      h2 = Math.imul(h2 ^ h2 >>> 13, 3266489909);
+      return ((h2 ^= h2 >>> 16) >>> 0) / 4294967296;
+    };
   }
-  function wrap(measure, text2, maxWidth, maxLines = Infinity) {
+  function wrap(measure, text, maxWidth, maxLines = Infinity) {
     const lines = [];
-    for (const para of String(text2 || "").split("\n")) {
+    for (const para of String(text || "").split("\n")) {
       if (!para.trim()) {
         lines.push("");
         continue;
@@ -3326,356 +3338,884 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     return lines;
   }
   function rr(ctx, x, y, w, h2, r) {
+    const rad = Math.min(r, w / 2, h2 / 2);
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h2, r);
-    ctx.arcTo(x + w, y + h2, x, y + h2, r);
-    ctx.arcTo(x, y + h2, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
+    ctx.moveTo(x + rad, y);
+    ctx.arcTo(x + w, y, x + w, y + h2, rad);
+    ctx.arcTo(x + w, y + h2, x, y + h2, rad);
+    ctx.arcTo(x, y + h2, x, y, rad);
+    ctx.arcTo(x, y, x + w, y, rad);
     ctx.closePath();
   }
-  function text(ctx, str2, x, y, { size = 44, weight = 400, color, maxWidth = 900, lh = 1.3, maxLines, align = "left", dot = null }) {
-    ctx.font = font(weight, size);
-    tracking(ctx, size, weight);
+  function shadow(ctx, blur = 30, y = 12, a = 0.18) {
+    ctx.shadowColor = "rgba(0,0,0,".concat(a, ")");
+    ctx.shadowBlur = blur;
+    ctx.shadowOffsetY = y;
+    ctx.shadowOffsetX = 0;
+  }
+  function textLines(ctx, str2, x, y, { size = 36, weight = 500, color = "#2B2B2B", maxWidth = 800, lh = 1.35, maxLines, align = "left", fam = UI } = {}) {
+    tracking(ctx, 0);
+    ctx.font = font(weight, size, fam);
     ctx.fillStyle = color;
     ctx.textAlign = align;
     ctx.textBaseline = "top";
     const lines = wrap((s) => ctx.measureText(s).width, str2, maxWidth, maxLines);
     lines.forEach((l, i) => ctx.fillText(l, x, y + i * size * lh));
-    if (dot && lines.length && !/[.!?…:;]$/.test(lines[lines.length - 1])) {
-      const last = lines[lines.length - 1];
-      const lw = ctx.measureText(last).width;
-      const lx = align === "center" ? x + lw / 2 : x + lw;
-      ctx.textAlign = "left";
-      ctx.fillStyle = dot;
-      ctx.fillText(".", lx, y + (lines.length - 1) * size * lh);
-    }
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
     return y + lines.length * size * lh;
   }
-  function drawImageCover(ctx, img, x, y, w, h2, r) {
+  function titleTokens(str2) {
+    const s = String(str2 || "");
+    if (!s.includes("*")) return s.split(/\s+/).filter(Boolean).map((t) => ({ t, heavy: true }));
+    const out = [];
+    s.split("*").forEach((part, i) => part.split(/\s+/).filter(Boolean).forEach((t) => out.push({ t, heavy: i % 2 === 1 })));
+    return out;
+  }
+  function measureTitle(ctx, tokens, size) {
+    const space = size * 0.24;
+    const out = tokens.map((k) => {
+      ctx.font = font(k.heavy ? 900 : 400, size, TITLE);
+      tracking(ctx, k.heavy ? -size * 0.03 : -size * 0.01);
+      return { ...k, w: ctx.measureText(k.t).width, space };
+    });
+    tracking(ctx, 0);
+    return out;
+  }
+  function layoutTitle(ctx, str2, size, maxWidth) {
+    const toks = measureTitle(ctx, titleTokens(str2), size);
+    const lines = [];
+    let cur = [];
+    let w = 0;
+    for (const k of toks) {
+      const add = (cur.length ? k.space : 0) + k.w;
+      if (cur.length && w + add > maxWidth) {
+        lines.push({ toks: cur, w });
+        cur = [k];
+        w = k.w;
+      } else {
+        cur.push(k);
+        w += add;
+      }
+    }
+    if (cur.length) lines.push({ toks: cur, w });
+    return lines;
+  }
+  function drawTitle(ctx, str2, cx, y, { size = 150, minSize = 70, maxWidth = 900, maxLines = 3, align = "center", color = CREAM, lh = 0.98, glow = true } = {}) {
+    if (!String(str2 || "").trim()) return { top: y, bottom: y, endX: cx, lastY: y, size };
+    let s = size;
+    let lines = layoutTitle(ctx, str2, s, maxWidth);
+    while ((lines.length > maxLines || lines.some((l) => l.w > maxWidth)) && s > minSize) {
+      s -= 8;
+      lines = layoutTitle(ctx, str2, s, maxWidth);
+    }
+    ctx.save();
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.fillStyle = color;
+    if (glow) shadow(ctx, 26, 4, 0.32);
+    let endX = cx;
+    let lastY = y;
+    lines.forEach((ln, i) => {
+      const base = y + s * 0.9 + i * s * lh;
+      let x = align === "center" ? cx - ln.w / 2 : cx;
+      ln.toks.forEach((k, j) => {
+        if (j) x += k.space;
+        ctx.font = font(k.heavy ? 900 : 400, s, TITLE);
+        tracking(ctx, k.heavy ? -s * 0.03 : -s * 0.01);
+        ctx.fillText(k.t, x, base);
+        x += k.w;
+      });
+      endX = x;
+      lastY = base;
+    });
+    tracking(ctx, 0);
+    ctx.restore();
+    return { top: y, bottom: y + lines.length * s * lh + s * 0.15, endX, lastY, size: s };
+  }
+  function washed(ctx, key, seed) {
+    const bg = BACKGROUNDS[key] || BACKGROUNDS.lilas;
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, bg.stops[0]);
+    g.addColorStop(0.55, bg.stops[1]);
+    g.addColorStop(1, bg.stops[2]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    const r = rng2("bg:".concat(seed));
+    for (let i = 0; i < 4; i++) {
+      const x = r() * W;
+      const y = r() * H;
+      const rad = 260 + r() * 360;
+      const rg = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      rg.addColorStop(0, "rgba(255,255,255,".concat(0.18 + r() * 0.12, ")"));
+      rg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, W, H);
+    }
+    for (let i = 0; i < 2600; i++) {
+      ctx.fillStyle = r() > 0.5 ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.05)";
+      ctx.fillRect(r() * W, r() * H, 2, 2);
+    }
+  }
+  function tornEdge(ctx, seed) {
+    const r = rng2("torn:".concat(seed));
+    const pts = [];
+    for (let y = -10; y <= H + 10; y += 22) pts.push([34 + r() * 26, y]);
+    ctx.save();
+    shadow(ctx, 18, 0, 0.18);
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    pts.forEach(([x, y]) => ctx.lineTo(x, y));
+    ctx.lineTo(0, H + 10);
+    ctx.closePath();
+    ctx.fillStyle = "#F7F5F1";
+    ctx.fill();
+    noShadow(ctx);
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    pts.forEach(([x, y]) => ctx.lineTo(x - 14 - r() * 6, y));
+    ctx.lineTo(0, H + 10);
+    ctx.closePath();
+    ctx.fillStyle = "#D9D6D1";
+    ctx.fill();
+    ctx.restore();
+  }
+  function photoFill(ctx, img, x, y, w, h2, r, { hint = "", preview = false } = {}) {
     ctx.save();
     rr(ctx, x, y, w, h2, r);
     ctx.clip();
-    const s = Math.max(w / img.width, h2 / img.height);
-    const iw = img.width * s;
-    const ih = img.height * s;
-    ctx.drawImage(img, x + (w - iw) / 2, y + (h2 - ih) / 2, iw, ih);
-    ctx.restore();
-  }
-  function photoSlot(ctx, x, y, w, h2, r, P, slide, img, preview) {
-    if (img) return drawImageCover(ctx, img, x, y, w, h2, r);
-    rr(ctx, x, y, w, h2, r);
-    ctx.fillStyle = P.dark ? "#2C2C2C" : "#F3F3F2";
-    ctx.fill();
-    if (preview) {
-      text(ctx, "\u{1F4F7}", x + w / 2, y + h2 / 2 - 90, { size: 72, color: P.muted, align: "center" });
-      text(ctx, slide.photoHint || "Foto sua aqui", x + w / 2, y + h2 / 2 + 10, { size: 34, weight: 500, color: P.muted, align: "center", maxWidth: w - 120, maxLines: 3 });
-    }
-  }
-  function hint(ctx, slide, x, y, P, preview, maxWidth = 860) {
-    if (preview && slide.hint) text(ctx, "\u270F\uFE0E ".concat(slide.hint), x, y, { size: 36, color: P.muted, maxWidth, maxLines: 3 });
-  }
-  function chrome(ctx, P, { index, total, handle, dark }) {
-    ctx.font = font(700, 30);
-    ctx.fillStyle = P.ink;
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "left";
-    ctx.fillText("9:41", 72, 64);
-    ctx.strokeStyle = P.ink;
-    ctx.lineWidth = 3;
-    rr(ctx, W - 132, 52, 56, 26, 8);
-    ctx.stroke();
-    rr(ctx, W - 127, 57, 40, 16, 4);
-    ctx.fillStyle = P.ink;
-    ctx.fill();
-    for (let i = 0; i < 4; i++) {
-      rr(ctx, W - 230 + i * 14, 72 - (i + 1) * 6, 9, (i + 1) * 6, 2);
-      ctx.fill();
-    }
-    if (handle) {
-      ctx.font = font(700, 28);
-      ctx.fillStyle = P.muted;
-      ctx.textAlign = "left";
-      ctx.fillText(handle, 72, H - 64);
-    }
-    if (total > 1) {
-      const gap = 26;
-      const startX = W / 2 - (total - 1) * gap / 2;
-      for (let i = 0; i < total; i++) {
-        ctx.beginPath();
-        ctx.arc(startX + i * gap, H - 64, 7, 0, Math.PI * 2);
-        ctx.fillStyle = i === index ? P.accent4 : dark ? "#4A4A4A" : "#D6D6D2";
-        ctx.fill();
+    if (img) {
+      const s = Math.max(w / img.width, h2 / img.height);
+      ctx.drawImage(img, x + (w - img.width * s) / 2, y + (h2 - img.height * s) / 2, img.width * s, img.height * s);
+    } else {
+      const g = ctx.createLinearGradient(x, y, x + w, y + h2);
+      g.addColorStop(0, "#D8D4CF");
+      g.addColorStop(1, "#C7C2BC");
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, w, h2);
+      if (preview) {
+        const cy = h2 >= H * 0.9 ? y + 230 : y + h2 / 2;
+        ctx.fillStyle = "rgba(255,255,255,.85)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = font(400, Math.min(110, w / 5));
+        ctx.fillText("\u{1F4F7}", x + w / 2, cy - Math.min(70, h2 / 8));
+        if (hint) textLines(ctx, hint, x + w / 2, cy + Math.min(10, h2 / 40), { size: Math.min(34, w / 16), weight: 600, color: "rgba(60,60,60,.85)", maxWidth: w - 80, align: "center", maxLines: 3 });
       }
     }
+    ctx.restore();
   }
-  function label(ctx, str2, x, y, P, { color } = {}) {
-    if (!str2) return y;
-    rr(ctx, x + 2, y + 6, 26, 26, 8);
-    ctx.fillStyle = P.accent;
-    ctx.fill();
-    ctx.strokeStyle = P.accent4;
-    ctx.globalAlpha = 0.55;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.font = font(700, 30);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "2.4px";
-    ctx.fillStyle = color || (P.dark ? P.accent2 : "#B23A5C");
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "left";
-    ctx.fillText(str2.toUpperCase(), x + 46, y + 20);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
-    return y + 40;
+  function scrim(ctx, y0, y1, a = 0.38) {
+    const g = ctx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(0.5, "rgba(0,0,0,".concat(a, ")"));
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y0, W, y1 - y0);
   }
-  function pill(ctx, label2, x, y, P, { bg = P.accent, color = P.ink } = {}) {
-    if (!label2) return y;
-    ctx.font = font(700, 28);
-    const w = ctx.measureText(label2.toUpperCase()).width + 48;
-    rr(ctx, x, y, w, 56, 28);
-    ctx.fillStyle = bg;
+  function bubble(ctx, text, x, y, { maxW = 560, style = "white", tail = "left", size = 34, anchor = "left" } = {}) {
+    if (!String(text || "").trim()) return { w: 0, h: 0 };
+    tracking(ctx, 0);
+    ctx.font = font(500, size);
+    const lines = wrap((s) => ctx.measureText(s).width, text, maxW - 56, 5);
+    const w = Math.min(maxW, Math.max(...lines.map((l) => ctx.measureText(l).width)) + 56);
+    const h2 = lines.length * size * 1.28 + 36;
+    const bx = anchor === "right" ? x - w : x;
+    const fill2 = style === "blue" ? IMSG_BLUE : style === "gray" ? "rgba(88,92,104,.82)" : "#FFFFFF";
+    const color = style === "white" ? "#1C1C1E" : "#FFFFFF";
+    ctx.save();
+    shadow(ctx, 22, 8, style === "white" ? 0.14 : 0.1);
+    ctx.fillStyle = fill2;
+    rr(ctx, bx, y, w, h2, 34);
     ctx.fill();
+    if (tail) {
+      const tx2 = tail === "left" ? bx + 18 : bx + w - 18;
+      const dir = tail === "left" ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(tx2, y + h2 - 30);
+      ctx.quadraticCurveTo(tx2 + dir * 6, y + h2 + 2, tx2 + dir * 26, y + h2 + 6);
+      ctx.quadraticCurveTo(tx2 - dir * 2, y + h2 + 4, tx2 - dir * 18, y + h2 - 10);
+      ctx.closePath();
+      ctx.fill();
+    }
+    noShadow(ctx);
     ctx.fillStyle = color;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    lines.forEach((l, i) => ctx.fillText(l, bx + 28, y + 18 + i * size * 1.28));
+    ctx.restore();
+    return { w, h: h2, x: bx };
+  }
+  function notesCard(ctx, x, y, w, text, { preview = false, hint = "" } = {}) {
+    ctx.font = font(400, 40);
+    const body = String(text || "").trim() || (preview ? hint || "Escreva sua nota\u2026" : "");
+    const lines = wrap((s) => ctx.measureText(s).width, body, w - 104, 12);
+    const h2 = 150 + lines.length * 40 * 1.45 + 50;
+    ctx.save();
+    shadow(ctx, 40, 16, 0.16);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, x, y, w, h2, 56);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.strokeStyle = IOS_YELLOW;
+    ctx.fillStyle = IOS_YELLOW;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x + 66, y + 62);
+    ctx.lineTo(x + 50, y + 80);
+    ctx.lineTo(x + 66, y + 98);
+    ctx.stroke();
+    ctx.font = font(500, 38);
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
-    ctx.fillText(label2.toUpperCase(), x + 24, y + 29);
-    return y + 56;
+    ctx.fillText("Notes", x + 84, y + 81);
+    const sx = x + w - 170;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(sx, y + 70, 34, 36);
+    ctx.beginPath();
+    ctx.moveTo(sx + 17, y + 88);
+    ctx.lineTo(sx + 17, y + 52);
+    ctx.moveTo(sx + 6, y + 62);
+    ctx.lineTo(sx + 17, y + 50);
+    ctx.lineTo(sx + 28, y + 62);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + w - 80, y + 82, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.arc(x + w - 80 + i * 10, y + 82, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.font = font(400, 40);
+    ctx.fillStyle = String(text || "").trim() ? "#3A3A3C" : "#A0A0A5";
+    ctx.textBaseline = "top";
+    lines.forEach((l, i) => ctx.fillText(l, x + 52, y + 150 + i * 40 * 1.45));
+    ctx.restore();
+    return h2;
+  }
+  function contextMenu(ctx, x, y) {
+    const items = ["Cut", "Copy", "Paste", "Replace\u2026"];
+    ctx.save();
+    ctx.font = font(500, 26);
+    const pads = items.map((t) => ctx.measureText(t).width + 40);
+    const w = pads.reduce((a, b) => a + b, 0) + 50;
+    shadow(ctx, 20, 6, 0.25);
+    ctx.fillStyle = "rgba(44,44,46,.96)";
+    rr(ctx, x, y, w, 62, 14);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2 - 12, y + 62);
+    ctx.lineTo(x + w / 2, y + 76);
+    ctx.lineTo(x + w / 2 + 12, y + 62);
+    ctx.fill();
+    let cx = x;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    items.forEach((t, i) => {
+      ctx.fillText(t, cx + pads[i] / 2, y + 32);
+      cx += pads[i];
+      ctx.fillStyle = "rgba(255,255,255,.25)";
+      ctx.fillRect(cx, y + 12, 2, 38);
+      ctx.fillStyle = "#FFFFFF";
+    });
+    ctx.beginPath();
+    ctx.moveTo(cx + 18, y + 20);
+    ctx.lineTo(cx + 34, y + 31);
+    ctx.lineTo(cx + 18, y + 42);
+    ctx.fill();
+    ctx.restore();
+  }
+  function sparkle(ctx, cx, cy, s, color = "#FFD54A") {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s);
+    ctx.quadraticCurveTo(cx + s * 0.12, cy - s * 0.12, cx + s, cy);
+    ctx.quadraticCurveTo(cx + s * 0.12, cy + s * 0.12, cx, cy + s);
+    ctx.quadraticCurveTo(cx - s * 0.12, cy + s * 0.12, cx - s, cy);
+    ctx.quadraticCurveTo(cx - s * 0.12, cy - s * 0.12, cx, cy - s);
+    ctx.fill();
+    ctx.restore();
+  }
+  function sparkles(ctx, x, y, s = 40) {
+    sparkle(ctx, x, y, s);
+    sparkle(ctx, x + s * 1.1, y - s * 0.9, s * 0.55);
+    sparkle(ctx, x + s * 1.2, y + s * 0.5, s * 0.38);
+  }
+  function heart(ctx, cx, cy, s, rot = -0.25) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    const g = ctx.createLinearGradient(-s, -s, s, s);
+    g.addColorStop(0, "#FF8FC0");
+    g.addColorStop(1, "#E2397A");
+    ctx.fillStyle = g;
+    shadow(ctx, 14, 4, 0.2);
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.9);
+    ctx.bezierCurveTo(-s * 1.4, -s * 0.1, -s * 0.6, -s * 1.1, 0, -s * 0.35);
+    ctx.bezierCurveTo(s * 0.6, -s * 1.1, s * 1.4, -s * 0.1, 0, s * 0.9);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.42, -s * 0.38, s * 0.18, s * 0.1, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function starPath(ctx, r, inner = 0.48, round = 0.18) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const rad = i % 2 ? r * inner : r;
+      pts.push([Math.cos(a) * rad, Math.sin(a) * rad]);
+    }
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const [x0, y0] = pts[(i + 9) % 10];
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[(i + 1) % 10];
+      const ax = x1 + (x0 - x1) * round;
+      const ay = y1 + (y0 - y1) * round;
+      const bx = x1 + (x2 - x1) * round;
+      const by = y1 + (y2 - y1) * round;
+      if (i === 0) ctx.moveTo(ax, ay);
+      else ctx.lineTo(ax, ay);
+      ctx.quadraticCurveTo(x1, y1, bx, by);
+    }
+    ctx.closePath();
+  }
+  function chromeStar(ctx, cx, cy, r, rot = 0) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    shadow(ctx, 24, 10, 0.22);
+    starPath(ctx, r);
+    const g = ctx.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.05, 0, 0, r * 1.05);
+    g.addColorStop(0, "#FFFFFF");
+    g.addColorStop(0.35, "#DCE9F8");
+    g.addColorStop(0.7, "#8FB1DA");
+    g.addColorStop(1, "#5E83B8");
+    ctx.fillStyle = g;
+    ctx.fill();
+    noShadow(ctx);
+    ctx.strokeStyle = "rgba(255,255,255,.9)";
+    ctx.lineWidth = Math.max(2, r * 0.05);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.18, -r * 0.32, r * 0.16, r * 0.07, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function goldStar(ctx, cx, cy, r, rot = 0.2, seed = "") {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    shadow(ctx, 24, 10, 0.2);
+    starPath(ctx, r, 0.5, 0.22);
+    const g = ctx.createRadialGradient(-r * 0.2, -r * 0.25, r * 0.05, 0, 0, r);
+    g.addColorStop(0, "#FFF6DE");
+    g.addColorStop(0.5, "#E9CB8E");
+    g.addColorStop(1, "#BE9150");
+    ctx.fillStyle = g;
+    ctx.fill();
+    noShadow(ctx);
+    ctx.clip();
+    const rnd = rng2("gold:".concat(seed));
+    for (let i = 0; i < 260; i++) {
+      ctx.fillStyle = rnd() > 0.5 ? "rgba(255,255,255,.75)" : "rgba(150,105,40,.35)";
+      ctx.fillRect((rnd() - 0.5) * 2 * r, (rnd() - 0.5) * 2 * r, 3, 3);
+    }
+    ctx.restore();
+  }
+  function polaroid(ctx, x, y, w, rot, img) {
+    const h2 = w * 1.18;
+    ctx.save();
+    ctx.translate(x + w / 2, y + h2 / 2);
+    ctx.rotate(rot);
+    shadow(ctx, 20, 8, 0.22);
+    ctx.fillStyle = "#FBFBF9";
+    ctx.fillRect(-w / 2, -h2 / 2, w, h2);
+    noShadow(ctx);
+    photoFill(ctx, img, -w / 2 + w * 0.07, -h2 / 2 + w * 0.07, w * 0.86, w * 0.86, 2);
+    ctx.restore();
+  }
+  function clapper(ctx, x, y, w, rot = -0.12) {
+    const h2 = w * 0.62;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    shadow(ctx, 22, 8, 0.25);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, -10, -h2 * 0.34 - 10, w + 20, h2 + h2 * 0.34 + 20, 18);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.fillStyle = "#151515";
+    rr(ctx, 0, 0, w, h2, 10);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(0, -4);
+    ctx.rotate(-0.1);
+    ctx.fillStyle = "#151515";
+    ctx.fillRect(0, -h2 * 0.3, w, h2 * 0.26);
+    ctx.beginPath();
+    ctx.rect(0, -h2 * 0.3, w, h2 * 0.26);
+    ctx.clip();
+    ctx.fillStyle = "#FFFFFF";
+    for (let i = -2; i < 10; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * w * 0.14, -h2 * 0.3);
+      ctx.lineTo(i * w * 0.14 + w * 0.07, -h2 * 0.3);
+      ctx.lineTo(i * w * 0.14 + w * 0.12, -h2 * 0.04);
+      ctx.lineTo(i * w * 0.14 + w * 0.05, -h2 * 0.04);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = font(700, w * 0.085);
+    tracking(ctx, 1);
+    ctx.fillText("YOU ARE", w / 2, h2 * 0.27);
+    ctx.fillText("THE MAIN CHARACTER", w / 2, h2 * 0.47);
+    tracking(ctx, 0);
+    ctx.fillRect(w * 0.06, h2 * 0.62, w * 0.88, 2);
+    ctx.font = font(700, w * 0.08);
+    ["1", "'26", "6"].forEach((t, i) => ctx.fillText(t, w * (0.2 + i * 0.3), h2 * 0.8));
+    ctx.restore();
+  }
+  function paperclip(ctx, x, y, s, rot = 0.25) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.strokeStyle = "#9EA3AA";
+    ctx.lineWidth = s * 0.09;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(s * 0.18, s * 0.9);
+    ctx.lineTo(s * 0.18, -s * 0.6);
+    ctx.arc(0, -s * 0.6, s * 0.18, 0, Math.PI, true);
+    ctx.lineTo(-s * 0.18, s * 1.05);
+    ctx.arc(0.02 * s, s * 1.05, s * 0.2, Math.PI, 0, true);
+    ctx.lineTo(s * 0.22, -s * 0.2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function todoCard(ctx, x, y, w, items, { title = "To do list", rot = -0.05, preview = false } = {}) {
+    const list = (items || []).filter((i) => i.text || preview).slice(0, 7);
+    const rows = list.length ? list : [{ text: preview ? "item\u2026" : "", done: true }];
+    const h2 = 140 + rows.length * 64 + 30;
+    ctx.save();
+    ctx.translate(x + w / 2, y + h2 / 2);
+    ctx.rotate(rot);
+    ctx.translate(-w / 2, -h2 / 2);
+    shadow(ctx, 30, 12, 0.18);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, 0, 0, w, h2, 40);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.font = font(800, 50);
+    const tw = ctx.measureText(title).width;
+    ctx.fillStyle = "rgba(247,215,116,.85)";
+    ctx.fillRect(40, 70, tw + 20, 34);
+    ctx.fillStyle = CHECK_YELLOW;
+    ctx.beginPath();
+    ctx.arc(44, 60, 9, 0, Math.PI * 2);
+    ctx.arc(tw + 58, 108, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1C1C1E";
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.fillText(title, 50, 104);
+    sparkles(ctx, tw + 100, 70, 18);
+    rows.forEach((it, i) => {
+      const cy = 150 + i * 64 + 22;
+      ctx.fillStyle = CHECK_YELLOW;
+      ctx.beginPath();
+      ctx.arc(66, cy, 18, 0, Math.PI * 2);
+      ctx.fill();
+      if (it.done !== false) {
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(57, cy);
+        ctx.lineTo(64, cy + 7);
+        ctx.lineTo(76, cy - 7);
+        ctx.stroke();
+      }
+      ctx.font = font(500, 36);
+      ctx.fillStyle = it.text ? "#2C2C2E" : "#A0A0A5";
+      ctx.textBaseline = "middle";
+      ctx.fillText(wrap((s) => ctx.measureText(s).width, it.text || "item\u2026", w - 150, 1)[0], 102, cy + 2);
+    });
+    paperclip(ctx, w - 70, -20, 80);
+    ctx.restore();
+    return h2;
+  }
+  function searchPill(ctx, cx, cy, w, text, rot = -0.04) {
+    if (!String(text || "").trim()) return;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    ctx.font = font(500, 38);
+    const tw = Math.min(ctx.measureText(text).width, w - 150);
+    const pw = tw + 150;
+    shadow(ctx, 20, 6, 0.16);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, -pw / 2, -44, pw, 88, 44);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.strokeStyle = "#3A3A3C";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(-pw / 2 + 52, -4, 14, 0, Math.PI * 2);
+    ctx.moveTo(-pw / 2 + 62, 6);
+    ctx.lineTo(-pw / 2 + 74, 18);
+    ctx.stroke();
+    ctx.fillStyle = "#2C2C2E";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(wrap((s) => ctx.measureText(s).width, text, w - 150, 1)[0], -pw / 2 + 96, 2);
+    ctx.fillStyle = CHECK_YELLOW;
+    ctx.fillRect(-pw / 2 + 102 + tw, -22, 4, 44);
+    ctx.beginPath();
+    ctx.arc(-pw / 2 + 104 + tw, -24, 7, 0, Math.PI * 2);
+    ctx.arc(-pw / 2 + 104 + tw, 24, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  function pinkPill(ctx, cx, y, text) {
+    if (!String(text || "").trim()) return y;
+    ctx.save();
+    ctx.font = font(900, 56, TITLE);
+    tracking(ctx, 1);
+    const t = text.toUpperCase();
+    const w = ctx.measureText(t).width + 70;
+    shadow(ctx, 16, 6, 0.15);
+    ctx.fillStyle = "#F59BB7";
+    rr(ctx, cx - w / 2, y, w, 92, 24);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.fillStyle = CREAM;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(t, cx, y + 48);
+    tracking(ctx, 0);
+    ctx.restore();
+    return y + 92;
+  }
+  function locationTag(ctx, x, y, text, P) {
+    if (!String(text || "").trim()) return;
+    ctx.save();
+    ctx.font = font(500, 40);
+    const t = text.toUpperCase();
+    const w = Math.min(W - x - 40, ctx.measureText(t).width + 110);
+    shadow(ctx, 14, 6, 0.15);
+    ctx.fillStyle = P.accent || "#F6E7A6";
+    rr(ctx, x, y, w, 84, 26);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.strokeStyle = "#4B3F1A";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x + 46, y + 36, 13, Math.PI * 0.85, Math.PI * 0.15);
+    ctx.lineTo(x + 46, y + 64);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 46, y + 36, 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#4B3F1A";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(wrap((s) => ctx.measureText(s).width, t, w - 100, 1)[0], x + 80, y + 44);
+    ctx.restore();
+  }
+  function folder(ctx, x, y, s, label) {
+    ctx.save();
+    shadow(ctx, 14, 6, 0.18);
+    ctx.fillStyle = "#5DB2EE";
+    rr(ctx, x, y, s * 0.45, s * 0.2, s * 0.05);
+    ctx.fill();
+    const g = ctx.createLinearGradient(0, y + s * 0.1, 0, y + s * 0.78);
+    g.addColorStop(0, "#8ED0FA");
+    g.addColorStop(1, "#4FA8EA");
+    ctx.fillStyle = g;
+    rr(ctx, x, y + s * 0.12, s, s * 0.66, s * 0.06);
+    ctx.fill();
+    noShadow(ctx);
+    if (label) {
+      ctx.fillStyle = "#FFFFFF";
+      shadow(ctx, 8, 2, 0.35);
+      ctx.font = font(500, s * 0.2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(label, x + s / 2, y + s * 0.86);
+    }
+    ctx.restore();
+  }
+  function photoCard(ctx, x, y, w, h2, img, label, opts2) {
+    ctx.save();
+    shadow(ctx, 36, 14, 0.2);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, x, y, w, h2, 40);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.fillStyle = "#1C1C1E";
+    ctx.beginPath();
+    ctx.arc(x + 50, y + 48, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = font(800, 24);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("@", x + 50, y + 49);
+    ctx.fillStyle = "#1C1C1E";
+    ctx.font = font(600, 30);
+    ctx.textAlign = "left";
+    ctx.fillText(label || "", x + 88, y + 50);
+    photoFill(ctx, img, x + 14, y + 96, w - 28, h2 - 110, 30, opts2);
+    ctx.restore();
+  }
+  function profileCard(ctx, x, y, w, prof = {}, img) {
+    const h2 = 330;
+    ctx.save();
+    shadow(ctx, 30, 12, 0.2);
+    ctx.fillStyle = "#FFFFFF";
+    rr(ctx, x, y, w, h2, 36);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.fillStyle = "#1C1C1E";
+    ctx.font = font(700, 32);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("\u2039  ".concat(prof.handle || "@voce"), x + 30, y + 52);
+    ctx.fillText("\xB7\xB7\xB7", x + w - 80, y + 46);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + 90, y + 150, 58, 0, Math.PI * 2);
+    ctx.clip();
+    photoFill(ctx, img, x + 32, y + 92, 116, 116, 0);
+    ctx.restore();
+    ctx.font = font(700, 32);
+    ctx.fillText(prof.name || "Seu nome", x + 176, y + 128);
+    ctx.font = font(500, 26);
+    ctx.fillStyle = "#6B6B70";
+    textLines(ctx, prof.bio || "", x + 176, y + 152, { size: 26, color: "#6B6B70", maxWidth: w - 210, maxLines: 2 });
+    const bw = (w - 80) / 2;
+    ctx.fillStyle = "#4C6EF5";
+    rr(ctx, x + 30, y + 244, bw, 58, 14);
+    ctx.fill();
+    ctx.fillStyle = "#EFEFF4";
+    rr(ctx, x + 50 + bw, y + 244, bw, 58, 14);
+    ctx.fill();
+    ctx.font = font(700, 28);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText("Seguir", x + 30 + bw / 2, y + 274);
+    ctx.fillStyle = "#1C1C1E";
+    ctx.fillText("Mensagem", x + 50 + bw * 1.5, y + 274);
+    ctx.restore();
+  }
+  function decorate(ctx, kind, spots, seed, images = []) {
+    if (kind === "nenhum" || !(spots == null ? void 0 : spots.length)) return;
+    const r = rng2("decor:".concat(seed));
+    if (kind === "dourada") {
+      const [a, b] = spots;
+      goldStar(ctx, a[0], a[1], 110, 0.25, seed);
+      if (b) {
+        polaroid(ctx, b[0] - 90, b[1] - 60, 150, -0.18, images[1] || null);
+        polaroid(ctx, b[0] - 20, b[1] - 110, 150, 0.12, images[2] || null);
+      }
+      return;
+    }
+    if (kind === "brilhos") {
+      spots.slice(0, 2).forEach(([x, y], i) => i ? heart(ctx, x, y, 44) : sparkles(ctx, x, y, 46));
+      return;
+    }
+    spots.slice(0, 2).forEach(([x, y], i) => {
+      chromeStar(ctx, x, y, i ? 62 : 96, (r() - 0.5) * 0.6);
+      chromeStar(ctx, x + (i ? 70 : -110), y + (i ? -70 : 80), i ? 36 : 54, (r() - 0.5) * 0.8);
+    });
   }
   function drawSlide(canvas, slide, opts2 = {}) {
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext("2d");
-    const P = { ...palette(opts2.palette, opts2.dark), dark: Boolean(opts2.dark) };
-    ctx.fillStyle = P.bg;
+    const images = opts2.images || (opts2.image ? [opts2.image] : []);
+    const o = { ...opts2, images, P: palette(opts2.palette), preview: Boolean(opts2.preview), bg: opts2.bg || "lilas", decor: opts2.decor || "estrelas" };
+    ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = P.dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.07)";
-    for (let y = 27; y < H; y += 54) for (let x = 27; x < W; x += 54) ctx.fillRect(x, y, 3, 3);
-    (LAYOUTS2[slide.layout] || LAYOUTS2.notas)(ctx, slide, P, opts2.image || null, Boolean(opts2.preview));
-    if (slide.layout !== "foto") chrome(ctx, P, opts2);
-    else if ((opts2.total || 1) > 1) chrome(ctx, { ...P, ink: "#FFFFFF", muted: "rgba(255,255,255,.8)" }, { ...opts2, handle: "" });
+    tracking(ctx, 0);
+    (LAYOUTS2[slide.layout] || LAYOUTS2.notas)(ctx, slide, o);
     return canvas;
   }
-  var W, H, FONT, font, DEFAULT_PALETTE, LAYOUTS2;
+  var W, H, TITLE, UI, font, DEFAULT_PALETTE, BACKGROUNDS, inkOn, DECOR, CREAM, IOS_YELLOW, CHECK_YELLOW, IMSG_BLUE, tracking, noShadow, LAYOUTS2;
   var init_render = __esm({
     "src/js/lib/render.js"() {
       W = 1080;
-      H = 1350;
-      FONT = 'Montserrat, system-ui, "Segoe UI", Roboto, Arial, sans-serif';
-      font = (weight, size) => "".concat(weight, " ").concat(size, "px ").concat(FONT);
+      H = 1440;
+      TITLE = 'Nunito, "Arial Rounded MT Bold", Montserrat, system-ui, sans-serif';
+      UI = '-apple-system, "SF Pro Text", "Helvetica Neue", Montserrat, Arial, sans-serif';
+      font = (weight, size, fam = UI) => "".concat(weight, " ").concat(size, "px ").concat(fam);
       DEFAULT_PALETTE = {
         bg: "#FAFAF9",
-        // fundo
         card: "#FFFFFF",
         ink: "#161616",
         muted: "#6B6B6B",
         accent: "#F8E7A2",
-        // manteiga
         accent2: "#F6E4E8",
-        // rosa suave
         accent3: "#6B4537",
-        // marrom
         accent4: "#D74F73"
-        // rosa (ponto final e detalhes)
+      };
+      BACKGROUNDS = {
+        lilas: { label: "Lil\xE1s", stops: ["#B9AED0", "#D9C7DC", "#C3BEDF"], ink: "#FFFFFF" },
+        ceu: { label: "Azul-c\xE9u", stops: ["#9FC4EC", "#CFE2F6", "#B7D2F0"], ink: "#FFFFFF" },
+        creme: { label: "Creme", stops: ["#E6DACA", "#F4ECE0", "#E9DECF"], ink: "#6B4537" },
+        rosa: { label: "Rosa", stops: ["#E7B7C6", "#F4D9E1", "#E3BCCB"], ink: "#FFFFFF" }
+      };
+      inkOn = (key) => (BACKGROUNDS[key] || BACKGROUNDS.lilas).ink;
+      DECOR = { estrelas: "Estrelas cromadas", dourada: "Estrela dourada e polaroids", brilhos: "Brilhos e cora\xE7\xE3o", nenhum: "Sem enfeites" };
+      CREAM = "#F8EEDC";
+      IOS_YELLOW = "#E2A824";
+      CHECK_YELLOW = "#F2B630";
+      IMSG_BLUE = "#3B82F6";
+      tracking = (ctx, px) => {
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "".concat(px, "px");
+      };
+      noShadow = (ctx) => {
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
       };
       LAYOUTS2 = {
-        capa(ctx, s, P, img, preview) {
-          if (s.photo) {
-            photoSlot(ctx, 60, 120, W - 120, 740, 56, P, s, img, preview);
-            const y2 = s.kicker ? label(ctx, s.kicker, 72, 900, P) + 22 : 910;
-            text(ctx, s.title || (preview ? "T\xEDtulo da capa" : ""), 72, y2, { size: 66, weight: 800, color: s.title ? P.ink : P.muted, maxWidth: W - 144, lh: 1.05, maxLines: s.kicker ? 3 : 4, dot: s.title ? P.accent4 : null });
-            return;
+        // Capa: foto de fundo, título grande creme, barra de busca e enfeites.
+        capa(ctx, s, o) {
+          const img = o.images[0];
+          if (s.photo || img) photoFill(ctx, img, 0, 0, W, H, 0, { hint: s.photoHint, preview: o.preview });
+          else {
+            washed(ctx, s.bg || o.bg, s.title);
+            tornEdge(ctx, s.title);
           }
-          ctx.save();
-          ctx.translate(W - 210, 300);
-          ctx.rotate(-0.07);
-          rr(ctx, -110, -90, 220, 180, 26);
-          ctx.fillStyle = P.accent;
-          ctx.shadowColor = "rgba(0,0,0,.12)";
-          ctx.shadowBlur = 30;
-          ctx.shadowOffsetY = 12;
-          ctx.fill();
-          ctx.restore();
-          ctx.beginPath();
-          ctx.arc(W - 128, 214, 22, 0, Math.PI * 2);
-          ctx.fillStyle = P.accent4;
-          ctx.fill();
-          const y = s.kicker ? label(ctx, s.kicker, 72, 440, P) : 440;
-          const end = text(ctx, s.title || (preview ? "T\xEDtulo da capa" : ""), 72, y + 34, { size: 104, weight: 800, color: s.title ? P.ink : P.muted, maxWidth: W - 144, lh: 1, maxLines: 5, dot: s.title ? P.accent4 : null });
-          if (s.body) text(ctx, s.body, 72, end + 36, { size: 40, color: P.muted, maxWidth: W - 144, maxLines: 3 });
+          const low = s.pos === "baixo";
+          const y = low ? 860 : 470;
+          if (s.photo || img) scrim(ctx, y - 220, y + 520, 0.36);
+          const onPhoto = Boolean(s.photo || img);
+          const t = drawTitle(ctx, s.title || (o.preview ? "T\xEDtulo da *capa*" : ""), W / 2, y, { size: 168, maxLines: 3, maxWidth: 920, color: onPhoto ? CREAM : inkOn(s.bg || o.bg), glow: onPhoto || inkOn(s.bg || o.bg) === "#FFFFFF" });
+          if (s.kicker) searchPill(ctx, W / 2, t.bottom + 90, 820, s.kicker);
+          if (s.title && (s.decor || o.decor) !== "nenhum") sparkles(ctx, Math.min(W - 70, t.endX + 30), t.lastY - t.size * 0.75, 34);
+          decorate(ctx, s.decor || o.decor, low ? [[880, 240], [180, 300]] : [[890, 210], [170, 1190]], s.title, o.images);
         },
-        notas(ctx, s, P, img, preview) {
-          ctx.save();
-          ctx.shadowColor = "rgba(0,0,0,.08)";
-          ctx.shadowBlur = 50;
-          ctx.shadowOffsetY = 18;
-          rr(ctx, 60, 130, W - 120, 1080, 56);
-          ctx.fillStyle = P.card;
-          ctx.fill();
-          ctx.restore();
-          ctx.font = font(700, 32);
-          ctx.fillStyle = P.accent4;
-          ctx.textBaseline = "middle";
-          ctx.textAlign = "left";
-          ctx.fillText("\u2039 Notas", 108, 200);
-          const today4 = (/* @__PURE__ */ new Date()).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
-          ctx.font = font(600, 26);
-          ctx.fillStyle = P.muted;
-          ctx.textAlign = "right";
-          ctx.fillText(today4, W - 108, 200);
-          ctx.fillStyle = P.dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)";
-          ctx.fillRect(60, 262, W - 120, 2);
-          let y = 316;
-          if (s.kicker) y = label(ctx, s.kicker, 108, y, P) + 28;
-          y = text(ctx, s.title || "", 108, y, { size: 64, weight: 800, color: P.ink, maxWidth: W - 216, lh: 1.06, maxLines: 3, dot: s.title ? P.accent4 : null });
-          if (s.body) text(ctx, s.body, 108, y + 28, { size: 42, color: P.ink, maxWidth: W - 216, lh: 1.38, maxLines: Math.max(3, Math.floor((1150 - y) / 58)) });
-          else hint(ctx, s, 108, y + 28, P, preview, W - 216);
+        // Grade 2x2 de fotos com título na emenda (ex.: "segunda"), etiqueta rosa e to do list.
+        grade(ctx, s, o) {
+          const hw = W / 2;
+          const hh = H / 2;
+          [0, 1, 2, 3].forEach((i) => photoFill(ctx, o.images[i], i % 2 * hw, Math.floor(i / 2) * hh, hw, hh, 0, { hint: i === 0 ? s.photoHint : "", preview: o.preview }));
+          scrim(ctx, hh - 260, hh + 260, 0.25);
+          const t = drawTitle(ctx, s.title || (o.preview ? "segunda" : ""), W / 2, hh - 150, { size: 200, maxLines: 2, maxWidth: 980 });
+          if (s.title) sparkles(ctx, Math.min(W - 60, t.endX + 26), t.lastY - t.size * 0.7, 38);
+          let bottom = t.bottom;
+          if (s.kicker) bottom = pinkPill(ctx, W / 2, t.bottom + 10, s.kicker) + 20;
+          const its = (s.items || []).filter((i) => i.text).slice(0, 7);
+          if (its.length) todoCard(ctx, 570, Math.max(bottom + 40, H - (170 + its.length * 64) - 70), 450, its, { preview: o.preview });
         },
-        lista(ctx, s, P, img, preview) {
-          text(ctx, s.title || (preview ? "Lista" : ""), 72, 170, { size: 78, weight: 800, color: P.ink, maxWidth: W - 144, lh: 1.02, maxLines: 2, dot: s.title ? P.accent4 : null });
-          let y = 400;
-          const items = (s.items || []).filter((i) => i.text || preview);
-          if (!items.some((i) => i.text)) hint(ctx, s, 72, 340, P, preview);
-          for (const it of items.slice(0, 8)) {
-            ctx.beginPath();
-            ctx.arc(102, y + 30, 26, 0, Math.PI * 2);
-            if (it.done) {
-              ctx.fillStyle = P.accent4;
-              ctx.fill();
-              ctx.strokeStyle = "#fff";
-              ctx.lineWidth = 6;
-              ctx.beginPath();
-              ctx.moveTo(90, y + 30);
-              ctx.lineTo(100, y + 40);
-              ctx.lineTo(116, y + 20);
-              ctx.stroke();
-            } else {
-              ctx.strokeStyle = P.muted;
-              ctx.lineWidth = 4;
-              ctx.stroke();
-            }
-            const end = text(ctx, it.text || (preview ? "item\u2026" : ""), 160, y + 6, { size: 42, weight: 600, color: it.done ? P.muted : P.ink, maxWidth: W - 240, maxLines: 2 });
-            y = Math.max(end, y + 60) + 26;
-            ctx.fillStyle = P.dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)";
-            ctx.fillRect(160, y - 14, W - 232, 2);
-          }
+        // Fundo lavado + papel rasgado + texto de cima + nota do iPhone com menu Copiar/Colar.
+        notas(ctx, s, o) {
+          washed(ctx, s.bg || o.bg, "".concat(s.title).concat(s.body));
+          tornEdge(ctx, s.body || s.title);
+          let y = 170;
+          if (s.title) y = textLines(ctx, s.title, W / 2, y, { size: 42, weight: 700, color: inkOn(s.bg || o.bg), maxWidth: 820, align: "center", lh: 1.4, maxLines: 7 }) + 70;
+          else y = 300;
+          const hNote = notesCard(ctx, 140, y, 820, s.body, { preview: o.preview, hint: s.hint });
+          if (s.body) contextMenu(ctx, 300, y + hNote - 30);
+          if ((s.decor || o.decor) !== "nenhum") clapper(ctx, 760, Math.min(H - 200, y + hNote + 40), 230, -0.14);
         },
-        imessage(ctx, s, P, img, preview) {
-          ctx.beginPath();
-          ctx.arc(W / 2, 190, 52, 0, Math.PI * 2);
-          ctx.fillStyle = P.accent;
-          ctx.fill();
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = P.accent4;
-          ctx.stroke();
-          text(ctx, s.contact || "Conversa", W / 2, 256, { size: 30, weight: 500, color: P.muted, align: "center" });
-          let y = 360;
-          const msgs = s.messages || [];
-          if (!msgs.some((m) => m.text)) hint(ctx, s, 72, 330, P, preview);
-          for (const m of msgs) {
-            if (!m.text && !preview) continue;
-            ctx.font = font(500, 40);
-            const lines = wrap((t) => ctx.measureText(t).width, m.text || "\u2026", 640, 6);
-            const w = Math.min(720, Math.max(...lines.map((l) => ctx.measureText(l).width)) + 64);
-            const h2 = lines.length * 54 + 40;
-            const x = m.me ? W - 60 - w : 60;
-            rr(ctx, x, y, w, h2, 44);
-            ctx.fillStyle = m.me ? P.ink : P.dark ? P.bubbleIn : P.card;
-            ctx.fill();
-            lines.forEach((l, i) => {
-              ctx.fillStyle = m.me ? P.dark ? "#161616" : "#FFFFFF" : P.ink;
-              ctx.textAlign = "left";
-              ctx.textBaseline = "top";
-              ctx.fillText(l, x + 32, y + 22 + i * 54);
-            });
-            y += h2 + 22;
-            if (y > H - 200) break;
-          }
-        },
-        widgets(ctx, s, P, img, preview) {
-          text(ctx, s.title || "", 72, 170, { size: 68, weight: 800, color: P.ink, maxWidth: W - 144, lh: 1.04, maxLines: 2, dot: s.title ? P.accent4 : null });
-          const cells = (s.cells || []).slice(0, 4);
-          const gw = (W - 144 - 30) / 2;
-          const gh = 420;
-          cells.forEach((c, i) => {
-            const x = 72 + i % 2 * (gw + 30);
-            const y = 360 + Math.floor(i / 2) * (gh + 30);
-            const hl = i === 0;
-            ctx.save();
-            ctx.shadowColor = "rgba(0,0,0,.07)";
-            ctx.shadowBlur = 40;
-            ctx.shadowOffsetY = 14;
-            rr(ctx, x, y, gw, gh, 48);
-            ctx.fillStyle = hl ? P.accent : P.card;
-            ctx.fill();
-            ctx.restore();
-            rr(ctx, x + 36, y + 36, 30, 30, 9);
-            ctx.fillStyle = hl ? P.card : i % 2 ? P.accent2 : P.accent;
-            ctx.fill();
-            text(ctx, (c.label || "").toUpperCase(), x + 80, y + 36, { size: 26, weight: 700, color: hl ? P.accent3 : P.muted, maxWidth: gw - 110, maxLines: 1 });
-            text(ctx, c.value || (preview ? "\u2026" : ""), x + 36, y + 104, { size: 42, weight: 700, color: c.value ? hl ? P.accent3 : P.ink : P.muted, maxWidth: gw - 72, lh: 1.18, maxLines: 6 });
+        // Foto de fundo + título no topo + balões curtos espalhados (ex.: "motivos pra me seguir").
+        baloes(ctx, s, o) {
+          const img = o.images[0];
+          if (s.photo || img) photoFill(ctx, img, 0, 0, W, H, 0, { hint: s.photoHint, preview: o.preview });
+          else washed(ctx, s.bg || o.bg, s.title);
+          if (s.photo || img) scrim(ctx, 0, 520, 0.45);
+          const onPhoto = Boolean(s.photo || img);
+          const t = drawTitle(ctx, s.title || (o.preview ? "motivos pra me seguir *(ou n\xE3o)*" : ""), W / 2, 70, { size: 120, maxLines: 2, maxWidth: 940, color: onPhoto ? CREAM : inkOn(s.bg || o.bg), glow: onPhoto || inkOn(s.bg || o.bg) === "#FFFFFF" });
+          const items = (s.items || []).filter((i) => i.text).slice(0, 12);
+          const list = items.length ? items : o.preview ? [{ text: "um bal\xE3o\u2026" }, { text: "outro bal\xE3o\u2026" }] : [];
+          const top = t.bottom + 50;
+          const step = Math.max(96, (H - top - 80) / Math.max(1, Math.ceil(list.length / 2)));
+          list.forEach((it, i) => {
+            const right = i % 2 === 1;
+            const y = top + Math.floor(i / 2) * step + (right ? step * 0.45 : 0);
+            bubble(ctx, it.text, right ? W - 30 : 30, Math.min(y, H - 130), { maxW: 500, anchor: right ? "right" : "left", tail: right ? "left" : "right", size: 32 });
           });
         },
-        foto(ctx, s, P, img, preview) {
-          photoSlot(ctx, 0, 0, W, H, 0, P, s, img, preview);
-          if (s.kicker) {
-            ctx.save();
-            ctx.globalAlpha = 0.92;
-            pill(ctx, s.kicker, 72, 120, P, { bg: P.card, color: P.ink });
-            ctx.restore();
+        // Foto de fundo (ou fundo lavado) + to do list.
+        lista(ctx, s, o) {
+          const img = o.images[0];
+          if (s.photo || img) photoFill(ctx, img, 0, 0, W, H, 0, { hint: s.photoHint, preview: o.preview });
+          else {
+            washed(ctx, s.bg || o.bg, s.title);
+            tornEdge(ctx, s.title);
           }
+          let y = 150;
           if (s.title) {
-            ctx.font = font(700, 42);
-            const lines = wrap((t) => ctx.measureText(t).width, s.title, W - 240, 3);
-            const h2 = lines.length * 54 + 56;
-            ctx.save();
-            ctx.globalAlpha = 0.9;
-            rr(ctx, 60, H - 150 - h2, W - 120, h2, 40);
-            ctx.fillStyle = P.card;
-            ctx.fill();
-            ctx.restore();
-            text(ctx, s.title, 108, H - 150 - h2 + 28, { size: 42, weight: 700, color: P.ink, maxWidth: W - 240, maxLines: 3, lh: 1.28 });
+            if (s.photo || img) scrim(ctx, 0, 560, 0.4);
+            const onPhoto = Boolean(s.photo || img);
+            y = drawTitle(ctx, s.title, W / 2, 110, { size: 130, maxLines: 3, color: onPhoto ? CREAM : inkOn(s.bg || o.bg), glow: onPhoto || inkOn(s.bg || o.bg) === "#FFFFFF" }).bottom + 60;
+          }
+          todoCard(ctx, 170, Math.max(y, 520), 740, s.items, { title: s.kicker || "To do list", preview: o.preview });
+          decorate(ctx, s.decor || o.decor, [[900, 1250], [160, 1230]], s.title, o.images);
+        },
+        // Conversa: balões cinza/azul sobre fundo lavado, com foto em card no meio (opcional).
+        imessage(ctx, s, o) {
+          var _a;
+          washed(ctx, s.bg || o.bg, JSON.stringify(s.messages || []));
+          tornEdge(ctx, s.contact || "msg");
+          const img = o.images[0];
+          const msgs = (s.messages || []).filter((m) => m.text || o.preview);
+          let y = 150;
+          const draw2 = (m) => {
+            const b = bubble(ctx, m.text || "\u2026", m.me ? W - 90 : 150, y, { maxW: 600, style: m.me ? "blue" : "gray", anchor: m.me ? "right" : "left", tail: m.me ? "right" : "left", size: 38 });
+            y += b.h + 34;
+          };
+          if (s.photo || img) {
+            if (msgs[0]) draw2(msgs[0]);
+            const cardY = y + 10;
+            photoCard(ctx, 200, cardY, 680, 820, img, ((_a = o.profile) == null ? void 0 : _a.handle) || s.contact || "", { hint: s.photoHint, preview: o.preview });
+            y = cardY + 40;
+            msgs.slice(1).forEach(draw2);
+            decorate(ctx, s.decor || o.decor, [[920, H - 190]], s.contact, o.images);
+          } else {
+            msgs.forEach(draw2);
+            decorate(ctx, s.decor || o.decor, [[900, H - 200], [170, H - 220]], s.contact, o.images);
           }
         },
-        cta(ctx, s, P) {
-          const end = text(ctx, s.title || "", W / 2, 470, { size: 86, weight: 800, color: P.ink, maxWidth: W - 200, align: "center", lh: 1.02, maxLines: 4, dot: s.title ? P.accent4 : null });
-          if (s.body) text(ctx, s.body, W / 2, end + 24, { size: 40, color: P.muted, align: "center", maxWidth: W - 200 });
-          const cy = 980;
-          const xs = [W / 2 - 170, W / 2, W / 2 + 170];
-          xs.forEach((x, i) => {
-            ctx.beginPath();
-            ctx.arc(x, cy, 66, 0, Math.PI * 2);
-            ctx.fillStyle = i === 2 ? P.accent : P.card;
-            ctx.fill();
-            if (i === 2) {
-              ctx.lineWidth = 6;
-              ctx.strokeStyle = P.accent4;
-              ctx.stroke();
-            }
-            ctx.strokeStyle = P.ink;
-            ctx.lineWidth = 6;
-            ctx.lineJoin = "round";
-            ctx.beginPath();
-            if (i === 0) {
-              ctx.moveTo(x, cy + 22);
-              ctx.bezierCurveTo(x - 46, cy - 6, x - 30, cy - 40, x, cy - 18);
-              ctx.bezierCurveTo(x + 30, cy - 40, x + 46, cy - 6, x, cy + 22);
-            } else if (i === 1) {
-              ctx.arc(x, cy - 2, 28, 0.6, Math.PI * 2 + 0.1);
-              ctx.lineTo(x + 30, cy + 26);
-              ctx.closePath();
-            } else {
-              ctx.moveTo(x - 20, cy - 30);
-              ctx.lineTo(x + 20, cy - 30);
-              ctx.lineTo(x + 20, cy + 30);
-              ctx.lineTo(x, cy + 14);
-              ctx.lineTo(x - 20, cy + 30);
-              ctx.closePath();
-            }
-            ctx.stroke();
-          });
+        // Foto inteira + etiqueta de local + balão (ex.: "date w/ my love").
+        foto(ctx, s, o) {
+          photoFill(ctx, o.images[0], 0, 0, W, H, 0, { hint: s.photoHint, preview: o.preview });
+          if (s.kicker) locationTag(ctx, 60, 640, s.kicker, o.P);
+          if (s.title) bubble(ctx, s.title, 60, H - 330, { maxW: 640, size: 38, tail: "left" });
+          decorate(ctx, s.decor || o.decor, [[910, 200]], s.title || s.kicker, o.images);
+          if (s.folder) folder(ctx, 820, 980, 180, s.folder);
+        },
+        // Final: balão cinza, card com foto, balão azul e card de perfil.
+        cta(ctx, s, o) {
+          var _a;
+          washed(ctx, s.bg || o.bg, "".concat(s.title).concat(s.body));
+          tornEdge(ctx, s.body || "cta");
+          const img = o.images[0];
+          let y = 110;
+          if (s.title) y += bubble(ctx, s.title, W - 120, y, { maxW: 620, style: "gray", anchor: "right", tail: "right", size: 38 }).h + 40;
+          if (s.photo || img) photoCard(ctx, 210, y, 640, 840, img, ((_a = o.profile) == null ? void 0 : _a.handle) || "", { hint: s.photoHint, preview: o.preview });
+          if (s.body) bubble(ctx, s.body, W - 60, y + 30, { maxW: 520, style: "blue", anchor: "right", tail: "right", size: 38 });
+          profileCard(ctx, 70, Math.min(H - 380, y + 640), 560, o.profile, img);
+          decorate(ctx, s.decor || o.decor, [[900, H - 260]], s.body || s.title, o.images);
         }
       };
+      LAYOUTS2.widgets = (ctx, s, o) => LAYOUTS2.baloes(ctx, { ...s, items: (s.cells || []).map((c) => ({ text: c.value ? "".concat(c.label, ": ").concat(c.value) : c.label })) }, o);
     }
   });
 
@@ -3744,13 +4284,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   });
 
   // src/js/views/designer.js
-  async function imageFor(slide) {
-    if (!slide.photoId) return null;
-    if (imgCache.has(slide.photoId)) return imgCache.get(slide.photoId);
-    const blob = await getPhoto(slide.photoId);
+  async function loadId(id) {
+    if (!id) return null;
+    if (imgCache.has(id)) return imgCache.get(id);
+    const blob = await getPhoto(id);
     if (!blob) return null;
     const img = await loadImage(blob);
-    imgCache.set(slide.photoId, img);
+    imgCache.set(id, img);
     return img;
   }
   async function deleteDesign(contentId) {
@@ -3758,9 +4298,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     if (!c) return false;
     if (!await confirmDelete("o design deste conte\xFAdo (as telas e as fotos usadas nelas; o conte\xFAdo continua)")) return false;
     for (const s of c.slides || []) {
-      if (s.photoId) {
-        imgCache.delete(s.photoId);
-        await deletePhoto(s.photoId).catch(() => {
+      for (const id of [s.photoId, ...s.photoIds || []].filter(Boolean)) {
+        imgCache.delete(id);
+        await deletePhoto(id).catch(() => {
         });
       }
     }
@@ -3776,7 +4316,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     go("conteudo/estudio", { id: contentId });
   }
   function buildDesigner(contentId) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     let c = get2("contents", contentId);
     if (!c) return null;
     if (!((_a = c.slides) == null ? void 0 : _a.length)) {
@@ -3784,15 +4324,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       c = update("contents", c.id, { slides: slides2, needsPhoto: needsPhoto(slides2) }, { silent: true });
     }
     let slides = clone(c.slides);
-    let dark = (_c = (_b = c.designDark) != null ? _b : profile().designDark) != null ? _c : false;
     if (studio.id !== contentId) Object.assign(studio, { id: contentId, sel: 0 });
-    let sel = Math.min(studio.sel, Math.max(0, (((_d = c.slides) == null ? void 0 : _d.length) || 1) - 1));
+    let sel = Math.min(studio.sel, Math.max(0, (((_b = c.slides) == null ? void 0 : _b.length) || 1) - 1));
     const big = h("canvas", { class: "big-canvas", "aria-label": "Pr\xE9via da tela selecionada" });
-    const drawBig = () => imageFor(slides[sel]).then((img) => drawSlide(big, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
+    const drawBig = () => imagesFor(slides[sel]).then((imgs) => drawSlide(big, slides[sel], { ...opts(c, sel, slides.length, true), images: imgs }));
     const strip = h("div", { class: "slide-strip", role: "listbox", "aria-label": "Telas" });
     const editor = h("div", { class: "slide-editor" });
     const persist = () => {
-      c = update("contents", c.id, { slides, needsPhoto: needsPhoto(slides), designDark: dark, touched: true }, { silent: true });
+      c = update("contents", c.id, { slides, needsPhoto: needsPhoto(slides), touched: true }, { silent: true });
       studio.sel = sel;
     };
     async function drawStrip() {
@@ -3808,9 +4347,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           } },
           cv,
           h("span", { class: "slide-n" }, "".concat(i + 1)),
-          s.photo && !s.photoId ? h("span", { class: "need-photo" }, "\u{1F4F7}") : null
+          missingIn(s) ? h("span", { class: "need-photo" }, "\u{1F4F7}".concat(missingIn(s) > 1 ? " ".concat(missingIn(s)) : "")) : null
         );
-        imageFor(s).then((img) => drawSlide(cv, s, { ...opts({ ...c, designDark: dark }, i, slides.length, true), image: img }));
+        imagesFor(s).then((imgs) => drawSlide(cv, s, { ...opts(c, i, slides.length, true), images: imgs }));
         return b;
       }));
       drawBig();
@@ -3818,84 +4357,134 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const redrawCurrent = () => {
       drawBig();
       const cv = strip.querySelector('[data-slide="'.concat(sel, '"] canvas'));
-      if (cv) imageFor(slides[sel]).then((img) => drawSlide(cv, slides[sel], { ...opts({ ...c, designDark: dark }, sel, slides.length, true), image: img }));
+      if (cv) imagesFor(slides[sel]).then((imgs) => drawSlide(cv, slides[sel], { ...opts(c, sel, slides.length, true), images: imgs }));
     };
     const change = (patch) => {
       slides[sel] = { ...slides[sel], ...patch };
       redrawCurrent();
       persist();
     };
-    const input = (label2, value, onInput, { area = false, rows = 3, name } = {}) => {
-      const el = h(area ? "textarea" : "input", { "aria-label": label2, placeholder: label2, rows: area ? rows : null, name });
+    const input = (label, value, onInput, { area = false, rows = 3, name } = {}) => {
+      const el = h(area ? "textarea" : "input", { "aria-label": label, placeholder: label, rows: area ? rows : null, name });
       el.value = value || "";
       el.addEventListener("input", () => onInput(el.value));
-      return h("label", { class: "cell ".concat(area ? "field-area" : "field") }, h("span", { class: area ? "field-label" : "cell-title" }, label2), el);
+      return h("label", { class: "cell ".concat(area ? "field-area" : "field") }, h("span", { class: area ? "field-label" : "cell-title" }, label), el);
     };
+    function photoButton(s, slot) {
+      var _a2;
+      const file = h("input", { type: "file", accept: "image/*", hidden: true, "data-id": s.layout === "grade" ? "photo-input-".concat(slot) : "photo-input" });
+      file.addEventListener("change", async () => {
+        var _a3;
+        const f = (_a3 = file.files) == null ? void 0 : _a3[0];
+        if (!f) return;
+        try {
+          const blob = await shrink(f);
+          const cur = slides[sel];
+          if (cur.layout === "grade") {
+            const ids = [0, 1, 2, 3].map((i) => {
+              var _a4;
+              return ((_a4 = cur.photoIds) == null ? void 0 : _a4[i]) || null;
+            });
+            const id = ids[slot] || newPhotoId();
+            await putPhoto(id, blob);
+            imgCache.delete(id);
+            ids[slot] = id;
+            change({ photoIds: ids });
+          } else {
+            const id = cur.photoId || newPhotoId();
+            await putPhoto(id, blob);
+            imgCache.delete(id);
+            change({ photoId: id });
+          }
+          drawStrip();
+          drawEditor();
+          toast("Foto adicionada");
+        } catch (e) {
+          toast(e.message, "error");
+        }
+      });
+      const has = s.layout === "grade" ? Boolean((_a2 = s.photoIds) == null ? void 0 : _a2[slot]) : Boolean(s.photoId);
+      const label = s.layout === "grade" ? "".concat(has ? "\u{1F504}" : "\u{1F4F7}", " Foto ").concat(slot + 1) : has ? "\u{1F504} Trocar foto" : "\u{1F4F7} Adicionar foto";
+      return [h("button", { type: "button", class: "cell tappable tint".concat(has ? "" : " need"), "data-id": s.layout === "grade" ? "add-photo-".concat(slot) : "add-photo", onclick: () => file.click() }, label), file];
+    }
+    const select = (label, options, value, onChange2, id) => cell({ title: label, accessory: (() => {
+      const sl = h("select", { "aria-label": label, class: "inline-select", "data-id": id }, options.map(([k, v]) => h("option", { value: k, selected: k === value }, v)));
+      sl.addEventListener("change", () => onChange2(sl.value));
+      return sl;
+    })() });
+    const itemsText = (items) => (items || []).map((i) => "".concat(i.done === false ? "o " : "").concat(i.text)).join("\n");
+    const parseItems = (v, check) => v.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => check && /^o\s/i.test(l) ? { text: l.slice(2).trim(), done: false } : { text: l, done: true });
     function drawEditor() {
       const s = slides[sel];
       if (!s) return editor.replaceChildren();
       const rows = [];
       if (s.photo) {
-        const file = h("input", { type: "file", accept: "image/*", hidden: true, "data-id": "photo-input" });
-        file.addEventListener("change", async () => {
-          var _a2;
-          const f = (_a2 = file.files) == null ? void 0 : _a2[0];
-          if (!f) return;
-          try {
-            const blob = await shrink(f);
-            const id = s.photoId || newPhotoId();
-            await putPhoto(id, blob);
-            imgCache.delete(id);
-            change({ photoId: id });
-            drawStrip();
-            toast("Foto adicionada");
-          } catch (e) {
-            toast(e.message, "error");
-          }
-        });
-        rows.push(group({ header: "Foto sua", footer: s.photoHint ? "Pedido: ".concat(s.photoHint) : null, children: [
-          h("button", { type: "button", class: "cell tappable tint", "data-id": "add-photo", onclick: () => file.click() }, s.photoId ? "\u{1F504} Trocar foto" : "\u{1F4F7} Adicionar foto"),
-          file
-        ] }));
+        const n2 = s.layout === "grade" ? 4 : 1;
+        rows.push(group({ header: n2 > 1 ? "Fotos suas (4)" : "Foto sua", footer: s.photoHint ? "Pedido: ".concat(s.photoHint) : null, children: Array.from({ length: n2 }, (_, k) => photoButton(s, k)).flat() }));
       }
       const fields = [];
-      if (["capa", "notas", "foto"].includes(s.layout)) fields.push(input("Etiqueta (opcional)", s.kicker, (v) => change({ kicker: v })));
-      if (s.layout !== "imessage") fields.push(input(s.layout === "foto" ? "Legenda na foto (opcional)" : "T\xEDtulo", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
-      if (["notas", "capa", "cta"].includes(s.layout)) fields.push(input(s.layout === "notas" ? "Texto" : "Subt\xEDtulo", s.body, (v) => change({ body: v }), { area: true, rows: s.layout === "notas" ? 6 : 2, name: "slide-body" }));
-      if (s.layout === "lista") fields.push(input('Itens (um por linha; comece com "x " para marcar como feito)', (s.items || []).map((i) => "".concat(i.done ? "x " : "").concat(i.text)).join("\n"), (v) => change({ items: v.split("\n").map((l) => ({ done: /^x\s/i.test(l), text: l.replace(/^x\s/i, "").trim() })).filter((i) => i.text) }), { area: true, rows: 6, name: "slide-items" }));
-      if (s.layout === "imessage") {
-        fields.push(input("Nome no topo", s.contact, (v) => change({ contact: v })));
+      const L = s.layout;
+      if (L === "capa") {
+        fields.push(input("T\xEDtulo (use *palavra* para destacar)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Barra de busca (opcional)", s.kicker, (v) => change({ kicker: v })));
+      }
+      if (L === "grade") {
+        fields.push(input("T\xEDtulo (ex.: segunda)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Etiqueta rosa (opcional)", s.kicker, (v) => change({ kicker: v })));
+        fields.push(input('To do list (opcional, um item por linha; "o " no come\xE7o = n\xE3o feito)', itemsText(s.items), (v) => change({ items: parseItems(v, true) }), { area: true, rows: 4, name: "slide-items" }));
+      }
+      if (L === "notas") {
+        fields.push(input("Texto de cima (opcional)", s.title, (v) => change({ title: v }), { area: true, rows: 3, name: "slide-title" }));
+        fields.push(input("Texto da nota", s.body, (v) => change({ body: v }), { area: true, rows: 6, name: "slide-body" }));
+      }
+      if (L === "baloes") {
+        fields.push(input("T\xEDtulo (use *palavra* para destacar)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Bal\xF5es (um por linha, frases curtas)", itemsText(s.items), (v) => change({ items: parseItems(v, false) }), { area: true, rows: 8, name: "slide-items" }));
+      }
+      if (L === "lista") {
+        fields.push(input("T\xEDtulo (opcional)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Nome da lista", s.kicker, (v) => change({ kicker: v })));
+        fields.push(input('Itens (um por linha; "o " no come\xE7o = n\xE3o feito)', itemsText(s.items), (v) => change({ items: parseItems(v, true) }), { area: true, rows: 6, name: "slide-items" }));
+      }
+      if (L === "imessage") {
         fields.push(input('Mensagens (uma por linha; "eu:" para as suas)', (s.messages || []).map((m) => "".concat(m.me ? "eu: " : "").concat(m.text)).join("\n"), (v) => change({ messages: v.split("\n").filter((l) => l.trim()).map((l) => ({ me: /^eu:/i.test(l.trim()), text: l.trim().replace(/^eu:\s*/i, "") })) }), { area: true, rows: 6, name: "slide-messages" }));
       }
-      if (s.layout === "widgets") {
-        (s.cells || []).forEach((cl, k) => fields.push(input(cl.label || "Widget ".concat(k + 1), cl.value, (v) => change({ cells: slides[sel].cells.map((x, j) => j === k ? { ...x, value: v } : x) }), { area: true, rows: 2, name: "cell-".concat(k) })));
+      if (L === "foto") {
+        fields.push(input("Local (opcional)", s.kicker, (v) => change({ kicker: v })));
+        fields.push(input("Bal\xE3o na foto (opcional)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Pasta azul (opcional, ex.: photodump)", s.folder, (v) => change({ folder: v })));
+      }
+      if (L === "cta") {
+        fields.push(input("Bal\xE3o cinza (em cima)", s.title, (v) => change({ title: v }), { area: true, rows: 2, name: "slide-title" }));
+        fields.push(input("Bal\xE3o azul", s.body, (v) => change({ body: v }), { area: true, rows: 2, name: "slide-body" }));
+      }
+      if (L === "widgets") {
+        (s.cells || []).forEach((cl, k) => fields.push(input(cl.label || "Item ".concat(k + 1), cl.value, (v) => change({ cells: slides[sel].cells.map((x, j) => j === k ? { ...x, value: v } : x) }), { area: true, rows: 2, name: "cell-".concat(k) })));
       }
       if (s.hint) rows.unshift(h("p", { class: "hint-line" }, "\u270F\uFE0E ".concat(s.hint)));
-      rows.push(group({ header: "Tela ".concat(sel + 1, " \xB7 ").concat(LAYOUTS[s.layout]), children: fields }));
+      rows.push(group({ header: "Tela ".concat(sel + 1, " \xB7 ").concat(LAYOUTS[L] || "Bal\xF5es"), children: fields }));
+      const washedLayouts = ["notas", "imessage", "cta"].includes(L) || ["capa", "baloes", "lista"].includes(L) && !s.photo;
       rows.push(group({ children: [
-        cell({ title: "Layout", accessory: (() => {
-          const sl = h("select", { "aria-label": "Layout", class: "inline-select" }, Object.entries(LAYOUTS).map(([k, v]) => h("option", { value: k, selected: k === s.layout }, v)));
-          sl.addEventListener("change", () => {
-            const lay = sl.value;
-            const base = { layout: lay, title: s.title, kicker: s.kicker };
-            if (lay === "foto") Object.assign(base, { photo: true, photoId: s.photoId, photoHint: s.photoHint || "Foto sua" });
-            if (lay === "capa") Object.assign(base, { photo: s.photo, photoId: s.photoId, photoHint: s.photoHint });
-            if (lay === "lista") base.items = s.items || [{ text: "", done: false }];
-            if (lay === "widgets") base.cells = s.cells || [{ label: "Um", value: "" }, { label: "Dois", value: "" }, { label: "Tr\xEAs", value: "" }, { label: "Quatro", value: "" }];
-            if (lay === "imessage") base.messages = s.messages || [{ me: false, text: "" }, { me: true, text: "" }];
-            if (lay === "notas" || lay === "cta") base.body = s.body || "";
-            slides[sel] = base;
-            persist();
-            drawStrip();
-            drawEditor();
-          });
-          return sl;
-        })() }),
-        s.layout === "capa" && cell({ title: "Capa com foto", accessory: toggle(Boolean(s.photo), (v) => {
-          change({ photo: v, photoHint: s.photoHint || "Foto sua com o produto" });
+        select("Tipo de tela", Object.entries(LAYOUTS), L, (lay) => {
+          const base = { layout: lay, title: s.title, kicker: s.kicker, bg: s.bg, decor: s.decor };
+          const wantsPhoto = ["capa", "grade", "foto", "baloes", "cta"].includes(lay);
+          if (wantsPhoto) Object.assign(base, { photo: true, photoId: s.photoId, photoIds: s.photoIds, photoHint: s.photoHint || "Foto sua" });
+          if (["lista", "baloes", "grade"].includes(lay)) base.items = s.items || (s.cells || []).map((x) => ({ text: x.value ? "".concat(x.label, ": ").concat(x.value) : x.label, done: true }));
+          if (lay === "imessage") base.messages = s.messages || [{ me: false, text: "" }, { me: true, text: "" }];
+          if (lay === "notas" || lay === "cta") base.body = s.body || "";
+          slides[sel] = base;
+          persist();
           drawStrip();
           drawEditor();
-        }, "Capa com foto") }),
+        }, "layout-select"),
+        ["capa", "baloes", "lista", "imessage"].includes(L) && cell({ title: "Com foto minha", accessory: toggle(Boolean(s.photo), (v) => {
+          change({ photo: v, photoHint: s.photoHint || "Foto sua" });
+          drawStrip();
+          drawEditor();
+        }, "Com foto") }),
+        L === "capa" && select("Posi\xE7\xE3o do t\xEDtulo", [["meio", "No meio"], ["baixo", "Embaixo"]], s.pos || "meio", (v) => change({ pos: v })),
+        washedLayouts && select("Fundo", Object.entries(BACKGROUNDS).map(([k, v]) => [k, v.label]), s.bg || profile().artBg || "lilas", (v) => change({ bg: v }), "bg-select"),
+        L !== "grade" && select("Enfeites", Object.entries(DECOR), s.decor || "estrelas", (v) => change({ decor: v }), "decor-select"),
         h(
           "div",
           { class: "cell tool-row" },
@@ -3903,7 +4492,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           h("button", { type: "button", class: "tool", disabled: sel === slides.length - 1, onclick: () => move(1), "aria-label": "Mover para a direita" }, "\u203A"),
           h("button", { type: "button", class: "tool", "data-id": "add-slide", onclick: addSlide }, "+ Tela"),
           h("button", { type: "button", class: "tool", onclick: () => {
-            slides.splice(sel + 1, 0, clone({ ...slides[sel], photoId: null }));
+            slides.splice(sel + 1, 0, clone({ ...slides[sel], photoId: null, photoIds: [] }));
             sel++;
             persist();
             drawStrip();
@@ -3929,12 +4518,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       drawEditor();
     };
     async function addSlide() {
-      const lay = await actionSheet({ title: "Nova tela", actions: Object.entries(LAYOUTS).map(([value, label2]) => ({ label: label2, value })) });
+      const lay = await actionSheet({ title: "Nova tela", actions: Object.entries(LAYOUTS).map(([value, label]) => ({ label, value })) });
       if (!lay) return;
       const base = { layout: lay, title: "", body: "" };
-      if (lay === "foto") Object.assign(base, { photo: true, photoHint: "Foto sua" });
-      if (lay === "lista") base.items = [{ text: "", done: false }];
-      if (lay === "widgets") base.cells = [{ label: "Um", value: "" }, { label: "Dois", value: "" }, { label: "Tr\xEAs", value: "" }, { label: "Quatro", value: "" }];
+      if (["capa", "grade", "foto", "baloes", "cta"].includes(lay)) Object.assign(base, { photo: true, photoHint: "Foto sua" });
+      if (["lista", "baloes", "grade"].includes(lay)) base.items = lay === "grade" ? [] : [{ text: "", done: true }];
       if (lay === "imessage") base.messages = [{ me: false, text: "" }, { me: true, text: "" }];
       slides.splice(sel + 1, 0, base);
       sel++;
@@ -3944,7 +4532,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
     async function exportAll() {
       var _a2;
-      const missing = slides.filter((s) => s.photo && !s.photoId).length;
+      const missing = slides.reduce((a, s) => a + missingIn(s), 0);
       const empties = slides.map(emptyFields).filter((x) => x.length).length;
       if (missing || empties) {
         const go2 = await actionSheet({ title: "Ainda falta", message: [missing && "".concat(missing, " foto(s) sua(s)"), empties && "texto em ".concat(empties, " tela(s)")].filter(Boolean).join(" e ") + ". Exportar mesmo assim?", actions: [{ label: "Exportar assim", value: true, id: "export-anyway" }] });
@@ -3953,7 +4541,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       const files = [];
       for (let i = 0; i < slides.length; i++) {
         const cv = document.createElement("canvas");
-        drawSlide(cv, slides[i], { ...opts({ ...c, designDark: dark }, i, slides.length, false), image: await imageFor(slides[i]) });
+        drawSlide(cv, slides[i], { ...opts(c, i, slides.length, false), images: await imagesFor(slides[i]) });
         const blob = await new Promise((r) => cv.toBlob(r, "image/jpeg", 0.93));
         const name = "".concat((c.title || "post").replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40), "-").concat(String(i + 1).padStart(2, "0"), ".jpg");
         files.push(new File([blob], name, { type: "image/jpeg" }));
@@ -3979,7 +4567,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     }
     drawStrip();
     drawEditor();
-    const miss = slides.filter((x) => x.photo && !x.photoId).length;
+    const miss = slides.reduce((a, x) => a + missingIn(x), 0);
     return h(
       "div",
       { class: "studio" },
@@ -3987,7 +4575,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         "div",
         { class: "studio-stage" },
         h("div", { class: "big-wrap" }, big),
-        h("p", { class: "subtle small" }, "Pr\xE9via 1080\xD71350 (4:5 do feed). As dicas \u270F\uFE0E e os espa\xE7os de foto n\xE3o aparecem na imagem exportada."),
+        h("p", { class: "subtle small" }, "Pr\xE9via 1080\xD71440 (3:4, o tamanho do feed). As dicas \u270F\uFE0E e os avisos de foto n\xE3o aparecem na imagem salva."),
         strip
       ),
       h(
@@ -3997,11 +4585,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           h(
             "div",
             { class: "design-actions" },
-            h("label", { class: "mini-toggle" }, toggle(dark, (v) => {
-              dark = v;
-              persist();
-              drawStrip();
-            }, "Tema escuro"), "Tema escuro"),
+            h("span", { class: "subtle small" }, "Use *palavra* no t\xEDtulo para deix\xE1-la pesada."),
             h("button", { type: "button", class: "btn btn-primary", "data-id": "export-design", onclick: exportAll }, icon("download"), "Salvar imagens")
           ),
           miss > 0 && h("p", { class: "hint-line" }, "Faltam ".concat(miss, " foto(s) sua(s). Escolha a tela marcada com \u{1F4F7}.")),
@@ -4013,21 +4597,26 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       )
     );
   }
-  var imgCache, opts, missingPhotos, studio;
+  var imgCache, imagesFor, opts, missingPhotos, studio;
   var init_designer = __esm({
     "src/js/views/designer.js"() {
       init_data();
       init_ui();
       init_render();
       init_designs();
+      init_render();
       init_media();
       imgCache = /* @__PURE__ */ new Map();
-      opts = (c, i, total, preview) => {
+      imagesFor = (slide) => Promise.all((slide.layout === "grade" ? [0, 1, 2, 3].map((i) => {
         var _a;
+        return (_a = slide.photoIds) == null ? void 0 : _a[i];
+      }) : [slide.photoId]).map(loadId));
+      opts = (c, i, total, preview) => {
         const p = profile();
-        return { palette: p.palette, dark: (_a = c.designDark) != null ? _a : p.designDark, handle: p.instagram ? "@".concat(p.instagram.replace(/^@/, "")) : "", index: i, total, preview };
+        const handle = p.instagram ? "@".concat(p.instagram.replace(/^@/, "")) : "";
+        return { palette: p.palette, index: i, total, preview, bg: p.artBg || "lilas", decor: "estrelas", profile: { name: p.name || "", handle: handle.replace(/^@/, ""), bio: p.artBio || "" } };
       };
-      missingPhotos = (c) => (c.slides || []).filter((s) => s.photo && !s.photoId).length;
+      missingPhotos = (c) => (c.slides || []).reduce((a, s) => a + missingIn(s), 0);
       studio = { id: null, sel: 0 };
     }
   });
@@ -4044,8 +4633,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const list = FORMATS.map((f) => "".concat(f.id, ": ").concat(f.name)).join("\n");
     return "".concat(profileBlock(profile2), "\n\nMe d\xEA ").concat(count, " ideias de conte\xFAdo ").concat(goal ? "para a etapa ".concat(goal, " do funil") : "variando entre topo (crescer), meio (conectar) e fundo (marcas)").concat(topic ? " sobre: ".concat(topic) : "", ".\nIdeias espec\xEDficas, que s\xF3 fariam sentido vindo de mim (uma situa\xE7\xE3o, opini\xE3o ou hist\xF3ria minha), nada que qualquer criadora poderia postar.\nUse formatos DIFERENTES entre si, escolhidos desta lista (use o id):\n").concat(list, "\n").concat(hits2.length ? "\nConte\xFAdos meus que funcionaram: ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"ideas": [{"title": "t\xEDtulo", "formatId": "id da lista", "goal": "seguidores (topo), comunidade (meio) ou marcas (fundo)", "hook": "gancho", "why": "por que serve ao meu objetivo, em 1 frase"}]}');
   }
-  function extractJson(text2) {
-    const raw = String(text2 || "").trim();
+  function extractJson(text) {
+    const raw = String(text || "").trim();
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
     const body = fenced ? fenced[1] : raw;
     const a = body.indexOf("{");
@@ -4057,8 +4646,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return null;
     }
   }
-  function parseContent(text2) {
-    const raw = String(text2 || "").trim();
+  function parseContent(text) {
+    const raw = String(text || "").trim();
     if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
     const d = extractJson(raw);
     if (!d) {
@@ -4076,8 +4665,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       loose: false
     };
   }
-  function parseIdeas(text2) {
-    const raw = String(text2 || "").trim();
+  function parseIdeas(text) {
+    const raw = String(text || "").trim();
     if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
     const d = extractJson(raw);
     if (!d || !Array.isArray(d.ideas)) throw new Error("N\xE3o encontrei a lista de ideias na resposta. Copie a resposta inteira do Claude.");
@@ -4087,13 +4676,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function weekPrompt({ profile: profile2, items, formats }) {
     const list = items.map((c, i) => {
       const f = formats.find((x) => x.id === c.formatId);
-      const slides = (c.slides || []).map((s, k) => "   tela ".concat(k + 1, " (").concat(s.layout).concat(s.photo ? ", tem foto minha" : "", ")").concat(s.cells ? ": widgets ".concat(s.cells.map((x) => x.label).join(" / ")) : "")).join("\n");
+      const slides = (c.slides || []).map((s, k) => {
+        var _a;
+        return "   tela ".concat(k + 1, " (").concat(SLIDE_HINT[s.layout] || s.layout).concat(s.photo ? ", tem foto minha" : "", ")").concat(s.cells ? ": widgets ".concat(s.cells.map((x) => x.label).join(" / ")) : "").concat(((_a = s.items) == null ? void 0 : _a.length) ? ": ".concat(s.items.length, " item(ns)") : "");
+      }).join("\n");
       return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 funil ").concat(FUNNEL_LABEL[c.goal] || "\u2014", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
     }).join("\n");
-    return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para listas; "cells" para widgets com label e value; "messages" para conversas com me=true quando sou eu). Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
+    return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para bal\xF5es e listas; "messages" para conversas com me=true quando sou eu). Textos curtos, do meu jeito. No t\xEDtulo, *palavra* entre asteriscos sai em destaque. Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
   }
-  function parseWeek(text2) {
-    const raw = String(text2 || "").trim();
+  function parseWeek(text) {
+    const raw = String(text || "").trim();
     if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
     const d = extractJson(raw);
     if (!d || !Array.isArray(d.days)) throw new Error('N\xE3o encontrei "days" na resposta. Copie a resposta inteira do Claude.');
@@ -4123,9 +4715,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       if (t.title && s.layout !== "foto") out.title = t.title;
       else if (t.title && s.layout === "foto") out.title = t.title.slice(0, 80);
       if (t.body && ["notas", "capa", "cta"].includes(s.layout)) out.body = t.body;
-      if (s.layout === "lista" && t.items.length) out.items = t.items.map((text2, k) => {
-        var _a, _b;
-        return { text: text2, done: ((_b = (_a = s.items) == null ? void 0 : _a[k]) == null ? void 0 : _b.done) || false };
+      if (["lista", "baloes", "grade"].includes(s.layout) && t.items.length) out.items = t.items.map((text, k) => {
+        var _a, _b, _c;
+        return { text, done: (_c = (_b = (_a = s.items) == null ? void 0 : _a[k]) == null ? void 0 : _b.done) != null ? _c : true };
       });
       if (s.layout === "widgets" && t.cells.length) out.cells = (s.cells || []).map((c, k) => {
         var _a, _b;
@@ -4147,8 +4739,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const prev = ((_a = previous == null ? void 0 : previous.top3) == null ? void 0 : _a.length) ? "\nNa an\xE1lise anterior (".concat(previous.date, "), as prioridades eram: ").concat(previous.top3.join(" | "), ". Diga o que melhorou e o que continua igual.") : "";
     return "Aja como a gerente de marketing de uma marca m\xE9dia de beleza que contrata criadoras UGC. Voc\xEA recebeu o portf\xF3lio abaixo e precisa decidir se chamaria essa criadora.\n\nPortf\xF3lio: ".concat(url2, "\nAbra o link e analise o portf\xF3lio inteiro (textos, servi\xE7os, marcas, n\xFAmeros, depoimentos, lista de v\xEDdeos, contato). Se n\xE3o conseguir abrir o link, diga isso na primeira linha e n\xE3o invente o conte\xFAdo. Voc\xEA n\xE3o consegue assistir aos v\xEDdeos: avalie t\xEDtulos, marcas, capas, ordem e variedade.\n\nSobre a criadora: ").concat(profile2.about || "\u2014", "\nNichos: ").concat(profile2.niches || "\u2014", "\n\n").concat(statsBlock(stats, days)).concat(prev, "\n\nAvalie cada \xE1rea de 0 a 10, com o que funciona e o que mudar de forma concreta (o que escrever, tirar, mover ou acrescentar). Use os n\xFAmeros reais para apontar onde as marcas desistem. Seja direta como uma marca seria, sem elogio vazio. N\xE3o invente dados: se algo n\xE3o aparece no portf\xF3lio, diga que n\xE3o aparece.\n\n\xC1reas: ").concat(REVIEW_AREAS.map((a, i) => "".concat(i + 1, ") ").concat(a)).join(" "), '\n\nResponda APENAS com JSON neste formato:\n{"nota": 0, "contrataria": "sim, talvez ou n\xE3o, e por qu\xEA em uma frase", "primeira_impressao": "o que uma marca entende nos primeiros 5 segundos", "itens": [{"area": "nome da \xE1rea", "nota": 0, "bom": "o que funciona", "melhorar": "o que mudar, concreto"}], "top3": ["mudan\xE7a mais importante", "segunda", "terceira"], "processo": "uma dica para o processo de trabalho dela (prospec\xE7\xE3o, prazos, entrega)"}');
   }
-  function parseReview(text2) {
-    const raw = String(text2 || "").trim();
+  function parseReview(text) {
+    const raw = String(text || "").trim();
     if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
     const d = extractJson(raw);
     const n2 = (v) => Number.isFinite(Number(v)) && v !== "" && v !== null ? Math.max(0, Math.min(10, Number(v))) : null;
@@ -4164,13 +4756,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       loose: false
     };
   }
-  var formatBlock, str, arr, FUNNEL_LABEL, TYPE_LABEL, REVIEW_AREAS, pct;
+  var formatBlock, str, arr, SLIDE_HINT, FUNNEL_LABEL, TYPE_LABEL, REVIEW_AREAS, pct;
   var init_prompts = __esm({
     "src/js/lib/prompts.js"() {
       init_formats();
       formatBlock = (f) => "Formato: ".concat(f.name, "\nPor que funciona: ").concat(f.why, "\nEstrutura: ").concat(f.structure.map((s, i) => "".concat(i + 1, ") ").concat(s)).join(" "), "\nGanchos-modelo: ").concat(f.hooks.join(" | "));
       str = (v) => typeof v === "string" ? v.trim() : v == null ? "" : String(v);
       arr = (v) => Array.isArray(v) ? v.map(str).filter(Boolean) : v ? [str(v)] : [];
+      SLIDE_HINT = { capa: "capa: t\xEDtulo curto e forte", grade: "grade de 4 fotos: t\xEDtulo de 1 palavra e to do list opcional", notas: "nota do iPhone: texto de cima curto + nota", baloes: 'bal\xF5es: t\xEDtulo + frases bem curtas em "items"', lista: 'to do list em "items"', imessage: 'conversa em "messages"', foto: "foto: legenda curta", cta: 'final: frase curta em "title" e outra em "body"' };
       FUNNEL_LABEL = { seguidores: "topo (crescer)", comunidade: "meio (conectar)", marcas: "fundo (marcas)" };
       TYPE_LABEL = { video: "v\xEDdeo", carrossel: "carrossel", estatico: "post est\xE1tico", stories: "stories" };
       REVIEW_AREAS = [
@@ -4187,8 +4780,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   });
 
   // src/js/lib/hookcheck.js
-  function checkHook(text2) {
-    const t = String(text2 || "").trim();
+  function checkHook(text) {
+    const t = String(text || "").trim();
     if (!t) return [];
     const issues = RULES.filter((r) => r.re.test(t)).map((r) => r.msg);
     const words = t.split(/\s+/).length;
@@ -4248,7 +4841,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       drawStages();
       drawConditional();
     }));
-    const drawStages = () => stageBox.replaceChildren(...PIPELINES[type].map(([k, label2], i) => h("button", {
+    const drawStages = () => stageBox.replaceChildren(...PIPELINES[type].map(([k, label], i) => h("button", {
       type: "button",
       role: "radio",
       "aria-checked": String(k === status),
@@ -4258,7 +4851,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         status = k;
         drawStages();
       }
-    }, label2)));
+    }, label)));
     const drawDeliverables = () => delivBox.replaceChildren(group({
       header: "Entreg\xE1veis",
       footer: "Cada item com prazo aparece na Vis\xE3o geral e no Planejamento.",
@@ -4317,7 +4910,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       } else {
         sections.push({ header: "Pagamento", fields: [
           { name: "value", label: "Valor (R$)", type: "number" },
-          { name: "paymentStatus", label: "Status", type: "select", options: Object.entries(PAYMENT).map(([value, label2]) => ({ value, label: label2 })), placeholder: false },
+          { name: "paymentStatus", label: "Status", type: "select", options: Object.entries(PAYMENT).map(([value, label]) => ({ value, label })), placeholder: false },
           { name: "paymentDue", label: "Vencimento", type: "date" },
           { name: "paidAt", label: "Pago em", type: "date" },
           { name: "invoice", label: "Nota fiscal emitida", type: "toggle" }
@@ -4677,8 +5270,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           subtitle: "Conte\xFAdos marcados para portf\xF3lio",
           flush: true,
           actions: portfolio.length > 0 && btn("Copiar links", async () => {
-            const text2 = portfolio.map((c) => "\u2022 ".concat(c.title).concat(c.link ? " \u2014 ".concat(c.link) : "")).join("\n");
-            toast(await copyText(text2) ? "Lista copiada" : "N\xE3o consegui copiar", "ok");
+            const text = portfolio.map((c) => "\u2022 ".concat(c.title).concat(c.link ? " \u2014 ".concat(c.link) : "")).join("\n");
+            toast(await copyText(text) ? "Lista copiada" : "N\xE3o consegui copiar", "ok");
           }, { small: true, iconName: "link" }),
           children: portfolio.length ? group({ children: portfolio.map((c) => cell({ emoji: "\u{1F3AC}", color: "indigo", title: c.title, subtitle: c.link || "sem link ainda", chevron: true, onClick: () => openContent(c) })) }) : emptyNote("Nenhum conte\xFAdo no portf\xF3lio", 'Ative "Usar no portf\xF3lio UGC" ao editar um conte\xFAdo.')
         })
@@ -4704,7 +5297,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       stageOptions = () => {
         const seen = /* @__PURE__ */ new Map();
         for (const list of Object.values(PIPELINES)) for (const [k, l] of list) if (!seen.has(k)) seen.set(k, l);
-        return [...seen].map(([value, label2]) => ({ value, label: label2 }));
+        return [...seen].map(([value, label]) => ({ value, label }));
       };
       render = renderCampaigns;
     }
@@ -4931,8 +5524,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       init_hookcheck();
       formatOptions = () => [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: "".concat(f.emoji || "\u2022", " ").concat(f.name) }));
       today = () => iso(/* @__PURE__ */ new Date());
-      onClaudeResult("content", (text2, ctx) => {
-        const r = parseContent(text2);
+      onClaudeResult("content", (text, ctx) => {
+        const r = parseContent(text);
         const patch = {
           ...r.title ? { title: r.title } : {},
           ...r.hook ? { hook: r.hook } : {},
@@ -5586,15 +6179,15 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_brands();
   var state4 = { monday: null };
   var rerender4 = () => document.dispatchEvent(new Event("rerender"));
-  onClaudeResult("ideas", (text2) => {
-    const ideas = parseIdeas(text2);
+  onClaudeResult("ideas", (text) => {
+    const ideas = parseIdeas(text);
     if (!ideas.length) throw new Error("A resposta n\xE3o trouxe ideias.");
     for (const i of ideas) create("contents", { title: i.title, formatId: i.formatId, goal: i.goal || "", hook: i.hook, notes: i.why ? "Por qu\xEA: ".concat(i.why) : "", status: "ideia", date: "", type: "video", platforms: ["instagram", "tiktok"], source: "claude" });
     toast("".concat(ideas.length, " ideias guardadas"));
     location.hash = "#/conteudo/planejamento";
   });
-  onClaudeResult("week", (text2, ctx) => {
-    const days = parseWeek(text2);
+  onClaudeResult("week", (text, ctx) => {
+    const days = parseWeek(text);
     const items = planItems(ctx.monday);
     let n2 = 0;
     days.forEach((d) => {
@@ -5672,7 +6265,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const items = all("contents");
     const dls = deadlines(all("deals")).filter((d) => [...days, ...weekend].includes(d.date));
     const ideas = items.filter((c) => !c.date && c.status !== "postado").sort((a, b) => String(b.createdAt).localeCompare(a.createdAt));
-    const label2 = "".concat(fmtDay(monday, { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[days.length - 1], { day: "numeric", month: "short" }));
+    const label = "".concat(fmtDay(monday, { day: "numeric", month: "short" }), " \u2013 ").concat(fmtDay(days[days.length - 1], { day: "numeric", month: "short" }));
     const isNext = monday > weekStart(t);
     const isCurrent = monday === weekStart(t);
     const pItems = planItems(monday);
@@ -5729,7 +6322,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     root.append(page({
       kicker: "Conte\xFAdo",
       title: "Planejamento",
-      subtitle: "Semana de ".concat(label2).concat(isNext ? " \xB7 pr\xF3xima semana" : isCurrent ? " \xB7 esta semana" : ""),
+      subtitle: "Semana de ".concat(label).concat(isNext ? " \xB7 pr\xF3xima semana" : isCurrent ? " \xB7 esta semana" : ""),
       actions: [
         h(
           "div",
@@ -5935,9 +6528,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       ]
     });
   }
-  onClaudeResult("portfolio-review", (text2, ctx) => {
+  onClaudeResult("portfolio-review", (text, ctx) => {
     var _a;
-    const r = parseReview(text2);
+    const r = parseReview(text);
     const rec = create("reviews", { ...r, date: today3(), days: ctx.days || null, visits: (_a = ctx.visits) != null ? _a : null, url: ctx.url || "" });
     toast("An\xE1lise salva");
     go("analise/desempenho", { aba: "portfolio" });
@@ -6113,7 +6706,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           ["instagram", "Instagram", "\u{1F4F8}"],
           ["tiktok", "TikTok", "\u{1F3B5}"],
           ["youtube", "Abrir no YouTube", "\u25B6\uFE0F"]
-        ].map(([k, label2, emoji]) => cell({ emoji, color: "gray", title: label2, detail: fmtNum(s.clicks[k]) })).concat([
+        ].map(([k, label, emoji]) => cell({ emoji, color: "gray", title: label, detail: fmtNum(s.clicks[k]) })).concat([
           cell({ emoji: "\u{1F4DD}", color: "yellow", title: "Formul\xE1rio de contato", detail: fmtNum(s.forms.contato) }),
           cell({ emoji: "\u{1F4E6}", color: "yellow", title: "Formul\xE1rio do kit", detail: fmtNum(s.forms.kit) }),
           cell({ emoji: "\u{1F1FA}\u{1F1F8}", color: "gray", title: "Trocaram para ingl\xEAs", detail: fmtNum(s.english) })
@@ -6158,7 +6751,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       var _a, _b, _c, _d;
       const f = formatById(c.formatId, all("formats"));
       const s = scores(c);
-      const stat = (label2, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, "".concat(prefix).concat(fmtNum(v))), label2);
+      const stat = (label, v, prefix = "") => v === null || v === void 0 ? null : h("span", { class: "pg-stat" }, h("b", {}, "".concat(prefix).concat(fmtNum(v))), label);
       return h(
         "button",
         { type: "button", class: "post-card", "data-id": "post-".concat(c.id), onclick: () => openContent(c) },
@@ -6355,43 +6948,31 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   init_instagram();
   init_render();
   init_ui();
-  var SWATCHES = [
-    ["bg", "Fundo"],
-    ["card", "Cart\xF5es"],
-    ["ink", "Texto"],
-    ["accent", "Destaque 1 (manteiga)"],
-    ["accent2", "Destaque 2 (rosa)"],
-    ["accent3", "Detalhes (marrom)"],
-    ["accent4", "Ponto final (rosa)"]
-  ];
   function paletteGroup(p) {
-    const pal = { ...DEFAULT_PALETTE, ...p.palette || {} };
     const preview = h("canvas", { class: "palette-preview", "aria-label": "Pr\xE9via do estilo" });
-    const sample = { layout: "notas", kicker: "review honesto", title: "Testei o protetor da minha m\xE3e", body: "Textura leve, n\xE3o deixou branco.\nNo calor, precisei reaplicar." };
-    const redraw = () => drawSlide(preview, sample, { palette: pal, dark: profile().designDark, handle: p.instagram ? "@".concat(p.instagram.replace(/^@/, "")) : "@voce", index: 0, total: 3 });
+    const sample = { layout: "notas", title: "Hoje eu quero criar *diferente*.", body: "Quero mostrar processo, bastidores, tentativas, acertos e dias em que a \xFAnica coisa que deu certo foi o caf\xE9." };
+    const redraw = () => {
+      const q = profile();
+      drawSlide(preview, sample, { preview: true, bg: q.artBg || "lilas", profile: { name: q.name, handle: q.instagram } });
+    };
     queueMicrotask(redraw);
-    const rows = SWATCHES.map(([k, label2]) => {
-      const inp = h("input", { type: "color", value: pal[k], "aria-label": label2, class: "swatch" });
-      inp.addEventListener("input", () => {
-        pal[k] = inp.value;
+    const bg = h(
+      "select",
+      { class: "inline-select", "aria-label": "Fundo padr\xE3o", "data-id": "art-bg", onchange: (e) => {
+        saveProfile({ artBg: e.target.value });
         redraw();
-      });
-      inp.addEventListener("change", () => saveProfile({ palette: { ...pal } }));
-      return h("label", { class: "cell field" }, h("span", { class: "cell-title" }, label2), inp);
-    });
+      } },
+      Object.entries(BACKGROUNDS).map(([k, v]) => h("option", { value: k, selected: k === (p.artBg || "lilas") }, v.label))
+    );
+    const bio = h("input", { type: "text", class: "input", value: p.artBio || "", placeholder: "ex.: beleza, rotina & coisas que amo", "aria-label": "Bio no card de perfil" });
+    bio.addEventListener("change", () => saveProfile({ artBio: bio.value.trim() }));
     return group({
       header: "Estilo das artes",
-      footer: "Mesma paleta e fonte do seu portf\xF3lio: base clara e cor s\xF3 nos detalhes. Vale para carross\xE9is e est\xE1ticos.",
+      footer: "Sua foto como fundo, t\xEDtulo creme e elementos do iPhone por cima. O fundo padr\xE3o vale para as telas sem foto; d\xE1 para trocar em cada tela no Est\xFAdio.",
       children: [
         h("div", { class: "cell palette-cell" }, preview),
-        ...rows,
-        cell({ title: "Artes no tema escuro", accessory: toggle(Boolean(p.designDark), (v) => {
-          saveProfile({ designDark: v });
-        }, "Tema escuro") }),
-        h("button", { type: "button", class: "cell tappable tint", onclick: () => {
-          saveProfile({ palette: {} });
-          toast("Paleta original restaurada");
-        } }, "Restaurar paleta original")
+        cell({ title: "Fundo padr\xE3o (telas sem foto)", accessory: bg }),
+        h("label", { class: "cell field" }, h("span", { class: "cell-title" }, "Bio no card de perfil (tela final)"), bio)
       ]
     });
   }
@@ -6666,11 +7247,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   function thumb(c) {
     var _a;
     const cv = h("canvas", { class: "thumb-canvas", "aria-hidden": "true" });
-    const p = profile();
-    if ((_a = c.slides) == null ? void 0 : _a.length) queueMicrotask(() => {
-      var _a2;
-      return drawSlide(cv, c.slides[0], { palette: p.palette, dark: (_a2 = c.designDark) != null ? _a2 : p.designDark, handle: "", index: 0, total: c.slides.length, preview: true });
-    });
+    if ((_a = c.slides) == null ? void 0 : _a.length) imagesFor(c.slides[0]).then((imgs) => drawSlide(cv, c.slides[0], { ...opts(c, 0, c.slides.length, true), images: imgs }));
     return cv;
   }
   function gallery(root) {
@@ -7072,8 +7649,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
   }
   function openMenu() {
     sidebar.classList.add("open");
-    const scrim = h("div", { class: "scrim", onclick: closeMenu });
-    document.body.append(scrim);
+    const scrim2 = h("div", { class: "scrim", onclick: closeMenu });
+    document.body.append(scrim2);
   }
   function closeMenu() {
     var _a;
@@ -7128,7 +7705,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     route();
     window.__creatorStarted = true;
     if ((_a = document.fonts) == null ? void 0 : _a.load) {
-      Promise.all([400, 500, 600, 700, 800].map((w) => document.fonts.load("".concat(w, " 40px Montserrat")))).then(() => {
+      Promise.all([...[400, 500, 600, 700, 800].map((w) => document.fonts.load("".concat(w, " 40px Montserrat"))), ...[400, 900].map((w) => document.fonts.load("".concat(w, " 40px Nunito")))]).then(() => {
         if (main.querySelector("canvas")) draw();
       }).catch(() => {
       });
