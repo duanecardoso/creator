@@ -94,10 +94,6 @@ export function page({ kicker, title, subtitle, right, actions, children }) {
   );
 }
 
-// Botão de ação principal do cabeçalho (antes ficava na barra do iOS).
-export const navButton = (label, onClick, { iconName, id, kind = 'primary' } = {}) =>
-  btn(label || (iconName === 'plus' ? 'Novo' : ''), onClick, { kind, iconName, id });
-
 export function section({ title, actions, children, id }) {
   return h('section', { class: 'section', id },
     title && h('div', { class: 'section-title' }, h('h2', {}, title), actions),

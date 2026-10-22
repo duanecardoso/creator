@@ -129,7 +129,7 @@ export function openContent(c) {
   const formatCard = format && h('details', { class: 'format-help' },
     h('summary', {}, badge(format.emoji, format.color), h('span', {}, `Como fazer: ${format.name}`)),
     h('ol', {}, format.structure.map((s) => h('li', {}, s))),
-    h('p', { class: 'muted small' }, 'Toque num gancho para usar:'),
+    h('p', { class: 'muted small' }, 'Clique num gancho para usar:'),
     h('div', { class: 'hook-pills' }, [...(c.altHooks || []), ...format.hooks].map((t) => h('button', { type: 'button', class: 'hook-pill', onclick: () => { hookInput.value = t; updateWarn(); hookInput.focus(); } }, t))),
     format.tip && h('p', { class: 'tip' }, `💡 ${format.tip}`),
   );

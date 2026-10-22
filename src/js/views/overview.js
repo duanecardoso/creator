@@ -15,7 +15,7 @@ let shuffle = 0;
 // O botão diz a ação que você acabou de fazer.
 const ACTION = { roteiro: 'Roteirizar', gravado: 'Gravei', editado: 'Editei', postado: 'Postei' };
 
-// Avança a etapa com um toque (Roteiro → Gravado → Editado → Postado).
+// Avança a etapa com um clique (Roteiro → Gravado → Editado → Postado).
 function advance(c) {
   const i = statusIndex(c.status);
   if (i >= STATUSES.length - 1) return openContent(c);

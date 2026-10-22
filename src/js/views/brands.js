@@ -45,7 +45,7 @@ export function openDeal(d) {
   }, label)));
   const drawDeliverables = () => delivBox.replaceChildren(group({
     header: 'Entregáveis',
-    footer: 'Cada item com prazo aparece no Hoje e na Semana.',
+    footer: 'Cada item com prazo aparece na Visão geral e no Planejamento.',
     children: [
       ...deliverables.map((it, i) => {
         const cb = h('input', { type: 'checkbox', class: 'round-check', checked: Boolean(it.done), 'aria-label': 'Feito' });

@@ -115,6 +115,7 @@ async function start() {
   }
   data.onChange(draw);
   document.addEventListener('rerender', draw);
+  document.addEventListener('pending-ai', () => current && drawTopbar());
   window.addEventListener('hashchange', route);
   route();
   watchReturn();

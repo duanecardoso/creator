@@ -1,6 +1,6 @@
 // Planejamento: quadro de segunda a sexta (gerado sozinho a partir de sábado), prazos de marcas e ideias.
 import * as data from '../data.js';
-import { h, page, group, cell, navButton, actionSheet, toast, fmtDay, badge, emptyNote, btn, card } from '../ui.js';
+import { h, page, group, cell, actionSheet, toast, fmtDay, badge, emptyNote, btn, card } from '../ui.js';
 import { FORMATS, GOALS, TYPES, formatById } from '../lib/formats.js';
 import { addDays, weekStart, iso, statusIndex, STATUSES } from '../lib/insights.js';
 import { targetWeek, weekdays, generateWeek } from '../lib/planner.js';

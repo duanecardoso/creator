@@ -1,15 +1,23 @@
 {
   "name": "Creator",
   "short_name": "Creator",
-  "description": "O que gravar hoje, formatos que funcionam, planejamento e resultados.",
+  "description": "Plataforma de criação de conteúdo, planejamento, entregas para marcas e métricas.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F2F2F7",
-  "theme_color": "#F2F2F7",
+  "background_color": "#FAF7F1",
+  "theme_color": "#FAF7F1",
   "lang": "pt-BR",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

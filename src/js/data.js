@@ -143,6 +143,7 @@ const PENDING_KEY = 'creator:pending-ai';
 export function setPendingAi(p) {
   if (p) sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ...p, at: Date.now() }));
   else sessionStorage.removeItem(PENDING_KEY);
+  if (typeof document !== 'undefined') document.dispatchEvent(new Event('pending-ai'));
 }
 export function pendingAi() {
   try {

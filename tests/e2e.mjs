@@ -1,4 +1,5 @@
-// Teste de ponta a ponta num iPhone simulado (Playwright + Chromium), abrindo o index.html direto.
+// Teste de ponta a ponta da plataforma (Playwright + Chromium), abrindo o index.html direto.
+// Computador (fluxo completo), um sábado simulado (plano automático e Estúdio) e celular.
 // Uso: npm run test:e2e
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -18,8 +19,9 @@ const shots = process.env.SHOTS_DIR;
 if (shots) mkdirSync(shots, { recursive: true });
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const base = pathToFileURL(path.join(root, 'index.html')).href;
+const ROUTES = ['visao-geral', 'conteudo/planejamento', 'conteudo/lista', 'conteudo/estudio', 'conteudo/formatos', 'conteudo/referencias', 'marcas/campanhas', 'marcas/financeiro', 'marcas/contatos', 'analise/desempenho', 'configuracoes'];
 
-// Instagram simulado
+// Instagram simulado (nenhuma chamada real sai do teste)
 let igOk = true;
 async function mockInstagram(route) {
   const url = new URL(route.request().url());
@@ -37,351 +39,353 @@ async function mockInstagram(route) {
 }
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-const context = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true, locale: 'pt-BR' });
-await context.route('https://graph.instagram.com/**', mockInstagram);
-await context.route('https://claude.ai/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>Claude (simulado)</p>' }));
-const page = await context.newPage();
 const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
-page.on('console', (m) => m.type() === 'error' && !String(m.location()?.url).includes('graph.instagram.com') && errors.push(m.text()));
-
 let step = 0;
 const ok = (msg) => console.log(`  ✓ ${++step}. ${msg}`);
-const snap = async (name) => shots && page.screenshot({ path: path.join(shots, `${name}.png`), fullPage: true });
-const sheet = () => page.locator('dialog.sheet[open]').last();
-const saveSheet = async () => {
-  await sheet().locator('[data-id="sheet-save"]').click();
-  await page.waitForSelector('dialog.sheet[open]', { state: 'detached' });
+
+async function newPage(opts, clock) {
+  const context = await browser.newContext({ acceptDownloads: true, locale: 'pt-BR', ...opts });
+  await context.route('https://graph.instagram.com/**', mockInstagram);
+  await context.route('https://claude.ai/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>Claude (simulado)</p>' }));
+  await context.route('https://fonts.googleapis.com/**', (r) => r.abort());
+  await context.route('https://fonts.gstatic.com/**', (r) => r.abort());
+  const page = await context.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && !String(m.location()?.url).includes('graph.instagram.com') && !/fonts\.g|ERR_FAILED|net::/.test(m.text()) && errors.push(m.text()));
+  if (clock) await page.clock.setFixedTime(new Date(clock));
+  return { context, page };
+}
+
+const { context, page } = await newPage({ viewport: { width: 1440, height: 900 } }, '2026-10-21T10:00:00');
+let current = page;
+const snap = async (name, p = current) => shots && p.screenshot({ path: path.join(shots, `${name}.png`), fullPage: true });
+const drawer = (p = current) => p.locator('dialog.sheet[open]').last();
+const save = async (p = current) => {
+  await drawer(p).locator('[data-id="sheet-save"]').click();
+  await p.waitForSelector('dialog.sheet[open]', { state: 'detached' });
 };
-const tab = async (name) => {
-  if (name === 'perfil') {
-    await page.click('[data-tab="hoje"]');
-    await page.click('[data-id="open-profile"]');
-  } else await page.click(`[data-tab="${name}"]`);
-  await page.waitForTimeout(80);
+const nav = async (route, p = current) => {
+  const link = p.locator(`.sidebar [data-nav="${route}"]`);
+  if (await link.isVisible()) await link.click();
+  else await p.goto(`${base}#/${route}`);
+  await p.waitForSelector(`.sidebar .nav-link.on[data-nav="${route}"]`, { state: 'attached' });
+  await p.waitForSelector('.page-title');
 };
-const noJunk = async (where) => {
-  const bad = await page.evaluate(() => (document.body.innerText.match(/(^|\s)(null|undefined|false|NaN)(\s|$)/) || [])[0]);
+const noJunk = async (where, p = current) => {
+  const bad = await p.evaluate(() => (document.body.innerText.match(/(^|\s)(null|undefined|false|NaN)(\s|$)/) || [])[0]);
   if (bad) throw new Error(`Texto indevido "${bad.trim()}" em ${where}`);
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  const overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   if (overflow > 1) throw new Error(`Rolagem horizontal em ${where} (${overflow}px)`);
 };
-// Simula: abrir o Claude, copiar a resposta e voltar ao site.
-const answerClaude = async (trigger, answer) => {
-  const [popup] = await Promise.all([context.waitForEvent('page'), trigger()]);
+// Simula: abrir o Claude, copiar a resposta e voltar à plataforma.
+const answerClaude = async (trigger, answer, p = current, ctx = context) => {
+  const [popup] = await Promise.all([ctx.waitForEvent('page'), trigger()]);
   const q = new URL(popup.url()).searchParams.get('q') || '';
   await popup.close();
-  await page.goto(`${base}#/`);
-  await page.waitForTimeout(600);
-  // Ao voltar, a folha de colar abre sozinha; se não abrir, usa o aviso no topo do Hoje.
-  if (!(await page.locator('dialog.sheet[open] h2:has-text("Resposta do Claude")').count())) await page.click('[data-id="pending-banner"]');
-  await page.waitForSelector('dialog.sheet[open] h2:has-text("Resposta do Claude")');
-  await sheet().locator('textarea').fill(answer);
-  await sheet().locator('[data-id="use-text"]').click();
+  await p.waitForTimeout(500);
+  if (!(await p.locator('dialog.sheet[open] h2:has-text("Resposta do Claude")').count())) await p.click('[data-id="pending-banner"]');
+  await p.waitForSelector('dialog.sheet[open] h2:has-text("Resposta do Claude")');
+  await drawer(p).locator('textarea').fill(answer);
+  await drawer(p).locator('[data-id="use-text"]').click();
   return q;
 };
 
 try {
+  // ================= Computador =================
   await page.goto(base);
-  await page.waitForSelector('h1:has-text("Hoje")');
-  await page.waitForSelector('[data-id^="sugg-"]');
-  if ((await page.locator('[data-id^="sugg-"]').count()) !== 3) throw new Error('Esperava 3 sugestões');
-  for (const t of ['semana', 'marcas', 'formatos', 'resultados', 'perfil', 'hoje']) {
-    await tab(t);
-    await page.waitForSelector('.large-title h1');
-    await noJunk(`aba ${t}`);
+  await page.waitForSelector('.page-title:has-text("Visão geral")');
+  if (!(await page.locator('.sidebar .nav-link.on[data-nav="visao-geral"]').count())) throw new Error('Menu lateral sem item ativo');
+  for (const r of ROUTES) {
+    await nav(r);
+    if (!(await page.locator(`.sidebar .nav-link.on[data-nav="${r}"]`).count())) throw new Error(`Menu não marcou ${r}`);
+    await noJunk(r);
   }
-  ok('Abre direto do arquivo; 5 abas + Perfil sem erros, sem textos soltos e sem rolagem lateral; 3 sugestões no Hoje');
+  ok(`Abre direto do arquivo; menu lateral leva às ${ROUTES.length} páginas sem erros, textos soltos ou rolagem lateral`);
 
-  // ---- Fazer uma sugestão ----
-  const firstFormat = await page.locator('[data-id^="sugg-"] .cell-title').first().innerText();
+  await page.goto(`${base}#/semana`);
+  await page.waitForSelector('.page-title:has-text("Planejamento")');
+  if (!page.url().endsWith('#/conteudo/planejamento')) throw new Error(`Redirecionamento falhou: ${page.url()}`);
+  ok('Endereços antigos (#/semana) redirecionam para as páginas novas');
+
+  // ---- Visão geral: sugestão → conteúdo ----
+  await nav('visao-geral');
+  if ((await page.locator('[data-id^="sugg-"]').count()) !== 3) throw new Error('Esperava 3 sugestões');
   await page.locator('[data-id="do-this"]').first().click();
   await page.waitForSelector('dialog.sheet[open] h2:has-text("Novo conteúdo")');
-  await sheet().locator('input[name="title"]').fill('Testei o sérum da minha irmã');
-  await sheet().locator('textarea[name="hook"]').fill('Oi gente, vocês sabiam disso?');
-  await sheet().locator('.warn-list li').first().waitFor();
-  await sheet().locator('.format-help summary').click();
-  await sheet().locator('.hook-pill').first().click();
-  await sheet().locator('textarea[name="steps"]').fill('Mostro o pote\nPasso no rosto\nVeredito');
-  await saveSheet();
-  await page.waitForSelector('.content-row:has-text("Testei o sérum")');
-  ok(`Sugestão "${firstFormat}" virou conteúdo de hoje (com revisor de gancho e ganchos-modelo do formato)`);
+  await drawer().locator('input[name="title"]').fill('Testei o sérum da minha irmã');
+  await drawer().locator('textarea[name="hook"]').fill('Oi gente, vocês sabiam disso?');
+  await drawer().locator('.warn-list li').first().waitFor();
+  await drawer().locator('.format-help summary').click();
+  await drawer().locator('.hook-pill').first().click();
+  await drawer().locator('textarea[name="steps"]').fill('Mostro o pote\nPasso no rosto\nVeredito');
+  await save();
+  await page.waitForSelector('[data-id="today-card"] .content-row:has-text("Testei o sérum")');
+  ok('Sugestão do dia vira conteúdo pelo painel lateral (revisor de gancho e ganchos-modelo)');
 
-  // ---- Avançar etapas até postar ----
   for (let i = 0; i < 4; i++) await page.locator('.content-row:has-text("Testei o sérum") [data-id="advance"]').click();
   await page.waitForSelector('.content-row:has-text("Testei o sérum") .done-mark');
-  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/5")');
-  ok('Etapas avançam com um toque (roteiro → gravado → editado → postado) e o anel da semana atualiza');
-
+  await page.waitForSelector('[data-id="week-widget"] .kpi-value:text("1/5")');
   await page.reload();
   await page.waitForSelector('.content-row:has-text("Testei o sérum") .done-mark');
-  ok('Continua lá depois de recarregar a página');
-  await snap('01-hoje');
+  ok('Etapas avançam com um clique, indicador da semana atualiza e tudo continua após recarregar');
+  await snap('01-visao-geral');
 
-  // ---- Resultados ----
+  // ---- Resultados do post → Desempenho ----
   await page.locator('.content-row:has-text("Testei o sérum") .content-main').click();
-  await sheet().locator('input[name="views"]').fill('3000');
-  await sheet().locator('input[name="follows"]').fill('12');
-  await sheet().locator('input[name="saves"]').fill('40');
-  await sheet().locator('input[name="brandContacts"]').fill('1');
-  await saveSheet();
-  await tab('resultados');
-  await page.waitForSelector('.widget.stat:has-text("Posts no mês") .w-value:text("1")');
-  await page.waitForSelector('.cell:has-text("Destaques"), .group-header:has-text("Destaques")');
-  await page.click('.segmented button:has-text("Por formato")');
-  await page.waitForSelector('.fmt-row .tag:has-text("Poucos dados")');
-  await noJunk('resultados/formatos');
-  ok('Resultados registrados; resumo, destaque por contato de marca e aviso de poucos dados');
+  await drawer().locator('input[name="views"]').fill('3000');
+  await drawer().locator('input[name="follows"]').fill('12');
+  await drawer().locator('input[name="saves"]').fill('40');
+  await drawer().locator('input[name="brandContacts"]').fill('1');
+  await save();
+  await nav('analise/desempenho');
+  await page.waitForSelector('.kpi:has-text("Posts publicados") .kpi-value:text("1")');
+  await page.waitForSelector('[data-id^="post-"]:has-text("Testei o sérum")');
+  await page.waitForSelector('.tag:has-text("Poucos dados")');
+  await page.waitForSelector('.chart svg');
+  await noJunk('desempenho');
+  await snap('02-desempenho');
+  ok('Desempenho: indicadores, gráficos, tabela por formato (com aviso de poucos dados) e tabela de posts');
 
   // ---- Formatos + Claude ----
-  await tab('formatos');
+  await nav('conteudo/formatos');
   await page.click('[data-id="format-testei-7-dias"]');
-  await sheet().locator('input[aria-label="Tema"]').fill('protetor solar');
+  await drawer().locator('input[aria-label="Tema"]').fill('protetor solar');
   const answer = 'Aqui está:\n```json\n{"title":"7 dias de protetor","hook":"Usei o protetor da minha mãe por 7 dias","hooks":["a","b"],"steps":["Dia 1: abro","Dia 4: irritou","Veredito"],"caption":"legenda","cta":"me conta","check":["confirmar FPS no rótulo"],"critique":"o tema é comum, destaque sua pele oleosa"}\n```';
-  const q = await answerClaude(() => sheet().locator('[data-id="format-claude"]').click(), answer);
+  const q = await answerClaude(() => drawer().locator('[data-id="format-claude"]').click(), answer);
   if (!q.includes('protetor solar') || !q.includes('Testei por 7 dias')) throw new Error('Prompt não foi para o Claude pela URL');
   await page.waitForSelector('dialog.sheet[open] .cell:has-text("confirmar FPS")');
   await page.waitForSelector('dialog.sheet[open] .cell:has-text("pele oleosa")');
-  if ((await sheet().locator('textarea[name="steps"]').inputValue()).split('\n').length !== 3) throw new Error('Roteiro não preenchido');
-  await sheet().locator('[data-id="sheet-cancel"]').click();
-  ok('✨ Claude: abre com o prompt pronto (formato + tema + perfil); ao voltar, colar preenche o roteiro, o ponto fraco e o que confirmar');
+  if ((await drawer().locator('textarea[name="steps"]').inputValue()).split('\n').length !== 3) throw new Error('Roteiro não preenchido');
+  await drawer().locator('[data-id="sheet-cancel"]').click();
+  ok('Claude: abre com o prompt pronto; ao voltar, colar a resposta preenche roteiro, ponto fraco e o que confirmar');
 
-  await answerClaude(async () => { await tab('semana'); await page.click('[data-id="claude-ideas"]'); },
+  await answerClaude(async () => { await nav('conteudo/planejamento'); await page.click('[data-id="claude-ideas"]'); },
     '{"ideas":[{"title":"Rotina de domingo","formatId":"organiza-comigo","hook":"h","why":"w"},{"title":"Opinião sobre skincare caro","formatId":"opiniao-impopular","hook":"h2","why":"w2"}]}');
   await page.waitForSelector('[data-id^="idea-"]:has-text("Rotina de domingo")');
-  ok('Ideias do Claude entram nas ideias guardadas');
-
-  // ---- Agendar ideia ----
-  await tab('semana');
   await page.locator('[data-id^="idea-"]:has-text("Rotina de domingo") [data-id="schedule"]').click();
   await page.locator('dialog.action-sheet .as-btn').first().click();
-  await page.waitForSelector('.plan-card:has-text("Rotina de domingo"), .toast:has-text("Agendado")');
-  await noJunk('semana');
-  ok('Ideia agendada num dia da semana');
+  await page.waitForSelector('.board .plan-card:has-text("Rotina de domingo")');
+  await noJunk('planejamento');
+  ok('Ideias do Claude entram nas ideias guardadas e são agendadas no quadro da semana');
+
+  // ---- Conteúdos: tabela, busca, etapa, quadro ----
+  await nav('conteudo/lista');
+  await page.waitForSelector('tbody tr[data-id^="row-"]');
+  const total = await page.locator('tbody tr').count();
+  await page.locator('.search').fill('domingo');
+  await page.waitForFunction(() => document.querySelectorAll('tbody tr').length === 1);
+  await page.locator('tbody tr [data-id="status-select"]').selectOption('gravado');
+  await page.waitForSelector('.toast:has-text("Etapa atualizada")');
+  await page.locator('.search').fill('');
+  await page.waitForFunction((n) => document.querySelectorAll('tbody tr').length === n, total);
+  await page.click('.segmented button:has-text("Quadro por etapa")');
+  await page.waitForSelector('.kanban-col[data-status="gravado"] .kanban-card:has-text("Rotina de domingo")');
+  await snap('03-conteudos-quadro');
+  ok(`Conteúdos: tabela (${total}), busca, troca de etapa na linha e quadro por etapa`);
+  await page.click('.segmented button:has-text("Tabela")');
 
   // ---- Referências ----
-  await tab('formatos');
-  await page.click('.segmented button:has-text("Referências")');
+  await nav('conteudo/referencias');
   await page.click('[data-id="new-reference"]');
-  await sheet().locator('input[name="title"]').fill('Review com plot twist');
-  await sheet().locator('textarea[name="worked"]').fill('Gancho com o veredito');
-  await saveSheet();
-  await page.waitForSelector('.cell:has-text("Review com plot twist")');
-  ok('Referência salva');
+  await drawer().locator('input[name="title"]').fill('Review com plot twist');
+  await drawer().locator('textarea[name="worked"]').fill('Gancho com o veredito');
+  await save();
+  await page.waitForSelector('tbody tr[data-id^="ref-"]:has-text("Review com plot twist")');
+  ok('Referência salva e listada em tabela');
 
-  // ---- Marcas: UGC atrasado ----
-  await tab('marcas');
+  // ---- Campanhas ----
+  await nav('marcas/campanhas');
   await page.click('[data-id="new-deal"]');
   await page.click('[data-id="new-ugc"]');
-  await sheet().locator('input[name="brandName"]').fill('Glow Skin');
-  await sheet().locator('[data-stage="gravacao"]').click();
-  await sheet().locator('input[data-deliv="0"]').fill('2 vídeos de 30s');
-  await sheet().locator('.deliv-row input[type="date"]').first().fill('2026-10-01');
-  await sheet().locator('input[name="value"]').fill('800');
-  await sheet().locator('input[name="paymentDue"]').fill('2026-11-10');
-  await saveSheet();
-  await page.waitForSelector('.group:has(.group-header:has-text("Atrasados")) [data-id^="deal-"]:has-text("Glow Skin")');
-  await tab('hoje');
-  await page.waitForSelector('.late-row:has-text("Glow Skin")');
-  ok('Campanha UGC com entregável atrasado aparece em Marcas e no Hoje');
+  await drawer().locator('input[name="brandName"]').fill('Glow Skin');
+  await drawer().locator('[data-stage="gravacao"]').click();
+  await drawer().locator('input[data-deliv="0"]').fill('2 vídeos de 30s');
+  await drawer().locator('.deliv-row input[type="date"]').first().fill('2026-10-01');
+  await drawer().locator('input[name="value"]').fill('800');
+  await drawer().locator('input[name="paymentDue"]').fill('2026-11-10');
+  await save();
+  await page.waitForSelector('tbody tr.is-late[data-id^="deal-"]:has-text("Glow Skin")');
+  await page.waitForSelector('.sidebar [data-nav="marcas/campanhas"] .nav-count:text("1")');
+  await nav('visao-geral');
+  await page.waitForSelector('[data-id="brand-deadlines"] .late-row:has-text("Glow Skin")');
+  await page.waitForSelector('[data-id="late-kpi"] .kpi-value:text("1")');
+  ok('Campanha UGC atrasada: linha destacada, contador no menu e alerta na Visão geral');
 
-  // ---- Marcas: publi paga + financeiro ----
-  await tab('marcas');
+  await nav('marcas/campanhas');
   await page.click('[data-id="new-deal"]');
   await page.click('[data-id="new-publi"]');
-  await sheet().locator('input[name="brandName"]').fill('Fit Co');
-  await sheet().locator('input[name="value"]').fill('1500');
-  await sheet().locator('select[name="paymentStatus"]').selectOption('pago');
-  await saveSheet();
-  await page.click('.segmented button:has-text("Financeiro")');
-  await page.waitForSelector('.widget.stat:has-text("Recebido no mês") .w-value:has-text("1.500,00")');
-  await page.waitForSelector('.widget.stat:has-text("A receber") .w-value:has-text("800,00")');
-  await page.waitForSelector('.data-note:has-text("sem nota fiscal")');
+  await drawer().locator('input[name="brandName"]').fill('Fit Co');
+  await drawer().locator('input[name="value"]').fill('1500');
+  await drawer().locator('select[name="paymentStatus"]').selectOption('pago');
+  await save();
+  await nav('marcas/financeiro');
+  await page.waitForSelector('[data-id="kpi-received"] .kpi-value:has-text("1.500,00")');
+  await page.waitForSelector('[data-id="kpi-to-receive"] .kpi-value:has-text("800,00")');
+  await page.waitForSelector('.warn-note:has-text("sem nota fiscal")');
+  await page.waitForSelector('.chart svg');
   await noJunk('financeiro');
-  await snap('05-financeiro');
-  ok('Financeiro: recebido, a receber e aviso de nota fiscal');
+  await snap('04-financeiro');
+  ok('Financeiro: recebido, a receber, gráfico mensal e aviso de nota fiscal');
 
-  await page.click('.segmented button:has-text("Entregas")');
-  await page.locator('[data-id^="deal-"]:has-text("Glow Skin")').click();
-  const [ics] = await Promise.all([page.waitForEvent('download'), sheet().locator('[data-id="deal-ics"]').click()]);
+  await nav('marcas/campanhas');
+  await page.locator('tbody tr[data-id^="deal-"]:has-text("Glow Skin")').click();
+  const [ics] = await Promise.all([page.waitForEvent('download'), drawer().locator('[data-id="deal-ics"]').click()]);
   const icsText = readFileSync(await ics.path(), 'utf8');
   if (!icsText.includes('BEGIN:VEVENT') || !icsText.includes('Glow Skin')) throw new Error('ICS inválido');
-  await sheet().locator('[data-id="sheet-cancel"]').click();
+  await drawer().locator('[data-id="sheet-cancel"]').click();
   ok('Prazos da campanha exportados para o Calendário (.ics)');
 
-  await page.click('.segmented button:has-text("Contatos")');
+  await nav('marcas/contatos');
   await page.click('[data-id="new-brand"]');
-  await sheet().locator('input[name="name"]').fill('Marca Teste');
-  await sheet().locator('select[name="status"]').selectOption('contatei');
-  await saveSheet();
-  await page.waitForSelector('.group:has(.group-header:has-text("Contatei")) .cell:has-text("Marca Teste")');
-  ok('Marca acompanhada nos contatos');
+  await drawer().locator('input[name="name"]').fill('Marca Teste');
+  await drawer().locator('select[name="status"]').selectOption('contatei');
+  await save();
+  await page.waitForSelector('tbody tr[data-id^="brand-"]:has-text("Marca Teste")');
+  ok('Contatos de marcas em tabela');
 
-  // ---- Perfil, meta, backup ----
-  await tab('perfil');
-  await page.click('[data-id="edit-profile"]');
-  await sheet().locator('input[name="name"]').fill('Duda Gomes');
-  await saveSheet();
-  await page.click('.stepper button[aria-label="Aumentar"]');
-  await tab('hoje');
-  await page.waitForSelector('text=oi, Duda');
-  await page.waitForSelector('[data-id="week-widget"] .w-value:text("1/6")');
-  ok('Perfil e meta semanal (5 → 6) refletem no Hoje');
+  // ---- Configurações ----
+  await nav('configuracoes');
+  await page.locator('[data-id="profile-card"] input[name="name"]').fill('Duda Gomes');
+  await page.click('[data-id="save-profile"]');
+  await page.locator('.stepper button[aria-label="Aumentar"]').first().click();
+  await nav('visao-geral');
+  await page.waitForSelector('.page-title:has-text("Olá, Duda")');
+  await page.waitForSelector('[data-id="week-widget"] .kpi-value:text("1/6")');
+  ok('Perfil e meta semanal (5 → 6) refletem na Visão geral');
 
-  // ---- Instagram ----
-  await tab('perfil');
+  await nav('configuracoes');
   await page.click('[data-id="instagram-cell"]');
-  await sheet().locator('input[type="password"]').fill('IGQ-token-teste');
-  await sheet().locator('[data-id="sheet-save"]').click();
+  await drawer().locator('input[type="password"]').fill('IGQ-token-teste');
+  await drawer().locator('[data-id="sheet-save"]').click();
   await page.waitForSelector('.toast:has-text("@duda.ugc")');
-  await page.waitForFunction(() => document.querySelector('[data-id="instagram-cell"]')?.innerText.includes('@duda.ugc'));
-  await page.waitForTimeout(400);
-  await tab('resultados');
-  await page.click('.segmented button:has-text("Resumo")');
-  await page.waitForSelector('.cell:has-text("Minha mesa de trabalho")');
-  ok('Instagram conectado: post importado com números');
+  await page.waitForTimeout(500);
+  await nav('analise/desempenho');
+  await page.selectOption('select[aria-label="Período"]', 'all');
+  await page.waitForSelector('[data-id^="post-"]:has-text("Minha mesa de trabalho") .tag:has-text("Instagram")');
+  ok('Instagram conectado: post importado com números e origem marcada');
 
-  await tab('perfil');
+  await nav('configuracoes');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-id="backup"]')]);
   const backup = readFileSync(await dl.path(), 'utf8');
   if (backup.includes('IGQ-token-teste')) throw new Error('Token vazou no backup');
-  if (!backup.includes('Testei o sérum') || !backup.includes('Marca Teste')) throw new Error('Backup incompleto');
+  if (!backup.includes('Testei o sérum') || !backup.includes('Glow Skin')) throw new Error('Backup incompleto');
   ok('Backup baixado com tudo e sem o token');
 
   igOk = false;
   await page.click('[data-id="instagram-cell"]');
-  await sheet().locator('[data-id="ig-sync"]').click();
+  await drawer().locator('[data-id="ig-sync"]').click();
   await page.waitForSelector('.toast.error:has-text("token")');
   igOk = true;
   await page.keyboard.press('Escape');
   ok('Token recusado mostra aviso claro');
 
-  // ---- Apagar ----
-  await tab('hoje');
-  await page.locator('.content-row:has-text("Testei o sérum") .content-main').click();
-  await sheet().locator('[data-id="delete-content"]').click();
+  await nav('conteudo/lista');
+  await page.locator('tbody tr:has-text("Testei o sérum")').click();
+  await drawer().locator('[data-id="delete-content"]').click();
   await page.click('[data-id="confirm-delete"]');
-  await page.waitForSelector('.content-row:has-text("Testei o sérum")', { state: 'detached' });
+  await page.waitForSelector('tbody tr:has-text("Testei o sérum")', { state: 'detached' });
   await page.reload();
-  await page.waitForSelector('h1:has-text("Hoje")');
-  if (await page.locator('.content-row:has-text("Testei o sérum")').count()) throw new Error('Conteúdo apagado voltou');
-  ok('Apagar com confirmação (folha de ações) e continua apagado após recarregar');
+  await page.waitForSelector('.page-title:has-text("Conteúdos")');
+  if (await page.locator('tbody tr:has-text("Testei o sérum")').count()) throw new Error('Conteúdo apagado voltou');
+  ok('Apagar com confirmação e continua apagado após recarregar');
+  await context.close();
 
-
-  // ================= Sábado: plano automático, design e Claude =================
-  const sat = await browser.newContext({ ...devices['iPhone 13'], acceptDownloads: true, locale: 'pt-BR' });
-  await sat.route('https://claude.ai/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>Claude</p>' }));
-  const sp = await sat.newPage();
-  sp.on('pageerror', (e) => errors.push(`[sábado] ${e.message}`));
-  await sp.clock.setFixedTime(new Date('2026-10-24T10:00:00'));
+  // ================= Sábado: plano automático, Estúdio e Claude =================
+  const sat = await newPage({ viewport: { width: 1440, height: 900 } }, '2026-10-24T10:00:00');
+  const sp = sat.page;
+  current = sp;
   await sp.goto(base);
   await sp.waitForSelector('.toast:has-text("Plano da próxima semana pronto")');
   await sp.waitForSelector('[data-id="plan-banner"]');
-  await sp.click('[data-tab="semana"]');
-  await sp.waitForSelector('.plan-card');
-  const cards = await sp.locator('.plan-card').count();
-  if (cards !== 5) throw new Error(`Esperava 5 conteúdos no plano, achei ${cards}`);
-  const days = await sp.locator('.plan-card').evaluateAll((els) => els.map((e) => e.dataset.id));
+  await nav('conteudo/planejamento');
+  const days = await sp.locator('.board .plan-card').evaluateAll((els) => els.map((e) => e.dataset.id));
   if (days.join() !== 'plan-2026-10-26,plan-2026-10-27,plan-2026-10-28,plan-2026-10-29,plan-2026-10-30') throw new Error(`Dias errados: ${days}`);
-  const tags = await sp.locator('.plan-card .plan-tags').allInnerTexts();
-  if (!tags.some((t) => t.includes('Carrossel')) || !tags.some((t) => t.includes('Estático'))) throw new Error('Plano sem carrossel/estático');
-  ok('Sábado: plano de seg a sex gerado sozinho, com vídeo, carrossel e estático, foco e formatos variados');
-  await sp.screenshot({ path: shots ? path.join(shots, '06-semana-plano.png') : '/dev/null', fullPage: true }).catch(() => {});
+  const tagsText = (await sp.locator('.board .plan-tags').allInnerTexts()).join(' ');
+  if (!tagsText.includes('Carrossel') || !tagsText.includes('Estático')) throw new Error('Plano sem carrossel/estático');
+  await snap('05-planejamento', sp);
+  ok('Sábado: plano de segunda a sexta gerado sozinho no quadro, com vídeo, carrossel e estático');
 
-  // Trocar um dia
-  const before = await sp.locator('.plan-card .plan-title').nth(1).innerText();
-  await sp.locator('.plan-card').nth(1).locator('[data-id="reroll"]').click();
-  await sp.waitForFunction((b) => document.querySelectorAll('.plan-card .plan-title')[1]?.innerText !== b, before);
+  const before = await sp.locator('.board .plan-title').nth(1).innerText();
+  await sp.locator('.board .plan-card').nth(1).locator('[data-id="reroll"]').click();
+  await sp.waitForFunction((b) => document.querySelectorAll('.board .plan-title')[1]?.innerText !== b, before);
   ok('↻ troca a sugestão de um dia');
 
-  // Design do estático: escrever texto e exportar
-  const estatico = sp.locator('.plan-card:has(.tag:has-text("Estático"))');
-  await estatico.locator('[data-id="open-design"]').click();
-  await sp.waitForSelector('dialog.sheet[open] .slide-canvas');
-  const body = sp.locator('dialog.sheet[open] textarea[name="slide-body"], dialog.sheet[open] textarea[name="slide-items"]').first();
+  await sp.locator('.board .plan-card:has(.tag:has-text("Estático")) [data-id="open-design"]').click();
+  await sp.waitForSelector('.big-canvas');
+  const body = sp.locator('textarea[name="slide-body"], textarea[name="slide-items"]').first();
   await body.fill('Quando eu comecei, aceitei valores que não pagavam a luz.\nE você?');
+  if ((await sp.evaluate(() => document.activeElement?.name)) !== (await body.getAttribute('name'))) throw new Error('Perdeu o foco ao digitar no Estúdio');
   const [dl1] = await Promise.all([sp.waitForEvent('download'), sp.click('[data-id="export-design"]')]);
-  // (Aberto como arquivo local o navegador ignora o nome; no GitHub Pages o nome .jpg é mantido.)
   const jpg = readFileSync(await dl1.path());
-  if (jpg[0] !== 0xff || jpg[1] !== 0xd8 || jpg.length < 20000) throw new Error('Exportação não gerou uma imagem JPG');
-  await sp.locator('dialog.sheet[open] [data-id="sheet-done"]').click();
-  ok('Design do estático: texto editado e imagem 1080×1350 exportada');
+  if (jpg[0] !== 0xff || jpg[1] !== 0xd8 || jpg.length < 20000) throw new Error('Exportação não gerou JPG');
+  await snap('06-estudio', sp);
+  ok('Estúdio em página inteira: texto editado ao vivo (sem perder o foco) e imagem 1080×1350 exportada');
 
-  // Carrossel de review: pede foto sua e recebe a foto
-  await sp.click('[data-id="new-content-week"]');
-  await sp.locator('dialog.sheet[open] input[name="title"]').fill('Minha opinião sincera sobre o protetor da minha mãe');
-  await sp.locator('dialog.sheet[open] select[name="formatId"]').selectOption('review-honesto');
-  await sp.locator('dialog.sheet[open] select[name="type"]').selectOption('carrossel');
-  await sp.locator('dialog.sheet[open] [data-id="content-design"]').click();
-  await sp.waitForSelector('dialog.sheet[open] .slide-canvas');
-  const need = await sp.locator('dialog.sheet[open] .need-photo').count();
+  await sp.click('[data-id="new-content"]');
+  await drawer(sp).locator('input[name="title"]').fill('Minha opinião sincera sobre o protetor da minha mãe');
+  await drawer(sp).locator('select[name="formatId"]').selectOption('review-honesto');
+  await drawer(sp).locator('select[name="type"]').selectOption('carrossel');
+  const prevUrl = sp.url();
+  await drawer(sp).locator('[data-id="content-design"]').click();
+  await sp.waitForFunction((u) => location.href !== u, prevUrl);
+  await sp.waitForSelector('.slide-thumb .need-photo');
+  const need = await sp.locator('.need-photo').count();
   if (need < 1) throw new Error('Carrossel de review deveria pedir foto');
-  await sp.locator('dialog.sheet[open] .slide-thumb:has(.need-photo)').first().click();
-  const hintText = await sp.locator('dialog.sheet[open] .group-footer:has-text("Pedido:")').innerText();
+  await sp.locator('.slide-thumb:has(.need-photo)').first().click();
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP4z8Dwn4Hh////DAwMDAAm4gP9Vh1o8wAAAABJRU5ErkJggg==', 'base64');
-  await sp.locator('dialog.sheet[open] [data-id="photo-input"]').setInputFiles({ name: 'eu.png', mimeType: 'image/png', buffer: png });
+  await sp.locator('[data-id="photo-input"]').setInputFiles({ name: 'eu.png', mimeType: 'image/png', buffer: png });
   await sp.waitForSelector('.toast:has-text("Foto adicionada")');
-  await sp.waitForFunction((k) => document.querySelectorAll('dialog.sheet[open] .need-photo').length === k - 1, need);
-  await sp.locator('dialog.sheet[open] [data-id="sheet-done"]').click();
-  await sp.waitForSelector('dialog.sheet[open]', { state: 'detached' });
-  await sp.reload();
-  await sp.click('[data-tab="hoje"]');
-  ok(`Carrossel pede foto sua ("${hintText.replace('Pedido: ', '')}") e guarda a foto enviada`);
+  await sp.waitForFunction((k) => document.querySelectorAll('.need-photo').length === k - 1, need);
+  ok('Carrossel pede foto sua e guarda a foto enviada');
 
-  // Publi com data na semana entra no plano ao refazer
-  await sp.click('[data-tab="marcas"]');
+  await nav('marcas/campanhas');
   await sp.click('[data-id="new-deal"]');
   await sp.click('[data-id="new-publi"]');
-  await sp.locator('dialog.sheet[open] input[name="brandName"]').fill('Marca Publi');
-  await sp.locator('dialog.sheet[open] input[name="postDate"]').fill('2026-10-29');
-  await sp.locator('dialog.sheet[open] [data-id="sheet-save"]').click();
-  await sp.waitForSelector('dialog.sheet[open]', { state: 'detached' });
-  await sp.click('[data-tab="semana"]');
+  await drawer(sp).locator('input[name="brandName"]').fill('Marca Publi');
+  await drawer(sp).locator('input[name="postDate"]').fill('2026-10-29');
+  await save(sp);
+  await nav('conteudo/planejamento');
   await sp.click('[data-id="regenerate"]');
   await sp.click('[data-id="confirm-regenerate"]');
   await sp.waitForSelector('[data-id="plan-2026-10-29"]:has-text("Publi: Marca Publi")');
   ok('Publi com data entra no plano da semana');
 
-  // Claude escreve a semana inteira
-  const [pop] = await Promise.all([sat.waitForEvent('page'), sp.click('[data-id="claude-week"]')]);
-  await pop.close();
-  await sp.waitForTimeout(600);
-  if (!(await sp.locator('dialog.sheet[open] h2:has-text("Resposta do Claude")').count())) await sp.click('[data-id="pending-banner"]').catch(async () => { await sp.click('[data-tab="hoje"]'); await sp.click('[data-id="pending-banner"]'); });
-  await sp.locator('dialog.sheet[open] textarea').fill('{"days":[{"n":1,"title":"Título escrito pelo Claude","hook":"Gancho do Claude","steps":["a","b"],"caption":"legenda"}]}');
-  await sp.locator('dialog.sheet[open] [data-id="use-text"]').click();
+  await answerClaude(() => sp.click('[data-id="claude-week"]'), '{"days":[{"n":1,"title":"Título escrito pelo Claude","hook":"Gancho do Claude","steps":["a","b"],"caption":"legenda"}]}', sp, sat.context);
   await sp.waitForSelector('.toast:has-text("preenchidos pelo Claude")');
-  await sp.click('[data-tab="semana"]');
-  await sp.waitForSelector('.plan-card .plan-title:has-text("Título escrito pelo Claude")');
-  ok('✨ Claude escreve a semana: resposta colada preenche os conteúdos');
-
-  // Persistência e .ics da semana
+  await nav('conteudo/planejamento');
+  await sp.waitForSelector('.board .plan-title:has-text("Título escrito pelo Claude")');
   await sp.reload();
-  await sp.click('[data-tab="semana"]');
-  await sp.waitForSelector('.plan-card .plan-title:has-text("Título escrito pelo Claude")');
+  await sp.waitForSelector('.board .plan-title:has-text("Título escrito pelo Claude")');
   const [wics] = await Promise.all([sp.waitForEvent('download'), sp.click('[data-id="week-ics"]')]);
   if (!readFileSync(await wics.path(), 'utf8').includes('VEVENT')) throw new Error('ICS da semana vazio');
   if ((await sp.locator('.toast:has-text("Plano da próxima semana pronto")').count()) > 0) throw new Error('Gerou o plano de novo ao recarregar');
-  ok('Plano continua após recarregar, não é gerado duas vezes, e vai para o Calendário');
-  await sat.close();
+  ok('Claude escreve a semana; plano continua após recarregar, não é gerado duas vezes e vai para o Calendário');
 
-  // ---- Modo escuro e computador ----
-  await page.emulateMedia({ colorScheme: 'dark' });
-  for (const t of ['hoje', 'semana', 'marcas', 'formatos', 'resultados', 'perfil']) {
-    await tab(t);
-    await noJunk(`escuro ${t}`);
-    await snap(`03-escuro-${t}`);
+  // ================= Celular =================
+  const mob = await newPage({ ...devices['iPhone 13'] }, '2026-10-24T10:00:00');
+  current = mob.page;
+  const mp = mob.page;
+  await mp.goto(base);
+  await mp.waitForSelector('.page-title');
+  if (await mp.locator('.sidebar').isVisible().then(async (v) => v && (await mp.evaluate(() => document.querySelector('.sidebar').getBoundingClientRect().right > 0)))) throw new Error('Menu lateral deveria ficar fechado no celular');
+  await mp.click('.menu-btn');
+  await mp.click('.sidebar [data-nav="marcas/financeiro"]');
+  await mp.waitForSelector('.page-title:has-text("Financeiro")');
+  for (const r of ROUTES) {
+    await mp.goto(`${base}#/${r}`);
+    await mp.waitForSelector('.page-title');
+    await noJunk(`celular ${r}`, mp);
   }
-  await page.setViewportSize({ width: 1280, height: 860 });
-  await tab('hoje');
-  await noJunk('computador');
-  await snap('04-computador');
-  ok('Modo escuro e tela de computador sem problemas');
+  await snap('07-celular', mp);
+  ok('Celular: menu abre pelo botão, todas as páginas sem rolagem lateral');
+  await sat.context.close();
+  await mob.context.close();
 
   if (errors.length) throw new Error(`Erros no console:\n${errors.join('\n')}`);
   ok('Nenhum erro de JavaScript');
   console.log(`\nTudo certo: ${step} verificações.`);
 } catch (err) {
-  await snap('falha');
+  await snap('falha').catch(() => {});
   console.error(`\n✗ Falhou depois da etapa ${step}: ${err.message.split('\n').slice(0, 6).join('\n')}`);
   if (errors.length) console.error(errors.join('\n'));
   process.exitCode = 1;

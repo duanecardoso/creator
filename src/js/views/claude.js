@@ -59,7 +59,7 @@ export function pasteSheet(pending = data.pendingAi()) {
         ta.value = text;
         use(text, closeRef);
       } catch {
-        err.textContent = 'Não consegui ler a área de transferência. Toque e segure no campo abaixo e escolha "Colar".';
+        err.textContent = 'Não consegui ler a área de transferência. Cole no campo abaixo (Ctrl+V / Cmd+V, ou toque e segure no celular).';
         ta.focus();
       }
     },
@@ -67,7 +67,7 @@ export function pasteSheet(pending = data.pendingAi()) {
   closeRef = sheet({
     title: 'Resposta do Claude',
     body: h('div', { class: 'pad stack' },
-      h('p', { class: 'muted' }, 'No Claude, toque em copiar na resposta e volte aqui.'),
+      h('p', { class: 'muted' }, 'No Claude, copie a resposta inteira e volte aqui.'),
       pasteBtn,
       ta,
       err,
@@ -89,11 +89,5 @@ export function watchReturn() {
   });
 }
 
-export const pendingBanner = () => {
-  const p = data.pendingAi();
-  if (!p) return null;
-  return h('button', { type: 'button', class: 'pending-banner', 'data-id': 'pending-banner', onclick: () => pasteSheet(p) },
-    h('span', {}, '✨ Esperando a resposta do Claude'), h('strong', {}, 'Colar'));
-};
 
 export { attempt };

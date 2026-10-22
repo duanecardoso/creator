@@ -416,11 +416,6 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
 .btn-claude { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 42px; margin: 4px 0 16px; border: 1px solid #edcfd8; border-radius: var(--r-sm); background: var(--pink-soft); color: var(--pink-deep); font-weight: 600; }
 .btn-claude:hover { background: #f9dfe6; }
 .pending-banner { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; padding: 10px 14px; border: 1px solid #ecd685; border-radius: var(--r); background: var(--butter-soft); }
-.next-btn { flex-shrink: 0; min-height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 500; }
-.next-btn:hover { background: var(--surface-2); }
-.next-btn.ghost { border-color: transparent; color: var(--ink-3); font-size: 16px; }
-.nav-btn { border: 0; background: none; color: var(--pink-deep); font-weight: 500; padding: 6px 8px; border-radius: var(--r-sm); }
-.nav-btn:hover { background: var(--line-2); }
 .data-note { font-size: 13px; color: var(--ink-3); margin: 8px 2px 16px; }
 .tip { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
 
@@ -467,22 +462,12 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
 .metrics-line { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-3); margin-top: 4px; }
 .metrics-line b { color: var(--ink); }
 
-/* Widgets antigos (estatísticas) */
-.widgets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-.widgets.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.widgets.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.widget { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); min-width: 0; }
-.w-label { font-size: 13px; color: var(--ink-2); font-weight: 500; }
-.w-value { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.widget.tone-red .w-value { color: var(--danger); }
 
 /* Semana */
-.week-switch { display: flex; justify-content: space-between; align-items: center; margin: 0 0 14px; gap: 8px; }
 .month-label { font-weight: 600; }
 .plan-hero { display: grid; gap: 10px; justify-items: start; padding: 22px; margin-bottom: 20px; border: 1px solid #ecd685; border-radius: var(--r-lg); background: linear-gradient(135deg, var(--butter-soft), var(--surface)); }
 .plan-hero .btn-filled { width: auto; }
 .plan-hero-title { font: 600 20px var(--display); }
-.plan-summary { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0 2px 14px; font-size: 13px; color: var(--ink-3); }
 .plan-card { display: flex; align-items: flex-start; gap: 8px; padding-right: 12px; background: var(--surface); }
 .plan-main { flex: 1; min-width: 0; display: grid; gap: 5px; padding: 12px 6px 12px 16px; border: 0; background: none; text-align: left; color: var(--ink); }
 .plan-tags { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -528,8 +513,6 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
 .swatch { width: 44px !important; height: 30px !important; min-height: 0 !important; padding: 2px !important; cursor: pointer; }
 .static { position: static; }
 @media (max-width: 760px) {
-  .widgets, .widgets.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .widgets.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .deliv-fields { grid-template-columns: minmax(0, 1fr); }
   .slide-thumb { width: 62vw; }
 }
@@ -2102,6 +2085,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
   function setPendingAi(p) {
     if (p) sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ...p, at: Date.now() }));
     else sessionStorage.removeItem(PENDING_KEY);
+    if (typeof document !== "undefined") document.dispatchEvent(new Event("pending-ai"));
   }
   function pendingAi() {
     try {
@@ -2642,7 +2626,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
           ta.value = text2;
           use(text2, closeRef);
         } catch {
-          err.textContent = 'N\xE3o consegui ler a \xE1rea de transfer\xEAncia. Toque e segure no campo abaixo e escolha "Colar".';
+          err.textContent = "N\xE3o consegui ler a \xE1rea de transfer\xEAncia. Cole no campo abaixo (Ctrl+V / Cmd+V, ou toque e segure no celular).";
           ta.focus();
         }
       }
@@ -2652,7 +2636,7 @@ input::placeholder, textarea::placeholder { color: #bcae9f; }
       body: h(
         "div",
         { class: "pad stack" },
-        h("p", { class: "muted" }, "No Claude, toque em copiar na resposta e volte aqui."),
+        h("p", { class: "muted" }, "No Claude, copie a resposta inteira e volte aqui."),
         pasteBtn,
         ta,
         err,
@@ -3551,7 +3535,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
     }, label)));
     const drawDeliverables = () => delivBox.replaceChildren(group({
       header: "Entreg\xE1veis",
-      footer: "Cada item com prazo aparece no Hoje e na Semana.",
+      footer: "Cada item com prazo aparece na Vis\xE3o geral e no Planejamento.",
       children: [
         ...deliverables.map((it, i) => {
           const cb = h("input", { type: "checkbox", class: "round-check", checked: Boolean(it.done), "aria-label": "Feito" });
@@ -4077,7 +4061,7 @@ Ganchos-modelo: ${f.hooks.join(" | ")}`;
       { class: "format-help" },
       h("summary", {}, badge(format.emoji, format.color), h("span", {}, `Como fazer: ${format.name}`)),
       h("ol", {}, format.structure.map((s) => h("li", {}, s))),
-      h("p", { class: "muted small" }, "Toque num gancho para usar:"),
+      h("p", { class: "muted small" }, "Clique num gancho para usar:"),
       h("div", { class: "hook-pills" }, [...c.altHooks || [], ...format.hooks].map((t) => h("button", { type: "button", class: "hook-pill", onclick: () => {
         hookInput.value = t;
         updateWarn();
@@ -5699,6 +5683,7 @@ Meu jeito: ${r.adapt || ""}` }), 250);
     }
     onChange(draw);
     document.addEventListener("rerender", draw);
+    document.addEventListener("pending-ai", () => current && drawTopbar());
     window.addEventListener("hashchange", route);
     route();
     watchReturn();
