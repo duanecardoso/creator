@@ -43,9 +43,11 @@ export function openGcSheet() {
     title: 'Portfólio (GoatCounter)',
     body: h('div', { class: 'sheet-stack' },
       h('ol', { class: 'plain-list steps-list' },
-        h('li', {}, 'Abra ', h('a', { href: apiKeyUrl(cfg), target: '_blank', rel: 'noopener noreferrer' }, 'a página de API do seu GoatCounter'), ' (entre com sua conta).'),
-        h('li', {}, 'Crie uma chave nova e marque só "Read statistics".'),
-        h('li', {}, 'Copie a chave e cole aqui embaixo.')),
+        h('li', {}, 'Entre na sua conta e abra ', h('a', { href: apiKeyUrl(cfg), target: '_blank', rel: 'noopener noreferrer' }, 'a página de API do GoatCounter'), '. No site deles ela fica no menu do seu e-mail (canto de cima) → aba "API".'),
+        h('li', {}, 'Se aparecer "You need to verify your email", abra o e-mail que o GoatCounter mandou e clique no link de confirmação (ou em "Resend email").'),
+        h('li', {}, 'Em "Add new API Token": Name "Creator", marque "Read statistics", deixe "All sites" e clique em "Add new".'),
+        h('li', {}, 'Na lista de tokens, clique em "show" e copie o código comprido que aparece. Ele é a chave (não é a sua senha nem o código do site).'),
+        h('li', {}, 'Cole aqui embaixo e salve.')),
       f.el,
       cfg.token && h('button', { type: 'button', class: 'btn btn-ghost btn-danger btn-sm', 'data-id': 'gc-disconnect', onclick: async () => {
         if (await confirmDelete('a chave do GoatCounter deste aparelho (os números continuam no GoatCounter)')) {

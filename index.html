@@ -1441,7 +1441,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     } catch (e) {
       throw new GcError("Sem conex\xE3o com o GoatCounter. Confira a internet e o c\xF3digo do site.", "network");
     }
-    if (res.status === 401 || res.status === 403) throw new GcError('O GoatCounter recusou a chave. Crie uma nova com a permiss\xE3o "Read statistics".', "auth");
+    if (res.status === 401 || res.status === 403) throw new GcError('O GoatCounter recusou a chave. Confira se o e-mail da conta foi confirmado e se voc\xEA copiou o token (o c\xF3digo comprido em "show"), com a permiss\xE3o "Read statistics".', "auth");
     if (res.status === 429) throw new GcError("Muitas consultas seguidas. Espere um minuto e atualize.", "rate");
     if (!res.ok) throw new GcError("O GoatCounter respondeu com erro (".concat(res.status, ")."), "other");
     return res.json();
@@ -5550,9 +5550,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         h(
           "ol",
           { class: "plain-list steps-list" },
-          h("li", {}, "Abra ", h("a", { href: apiKeyUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "a p\xE1gina de API do seu GoatCounter"), " (entre com sua conta)."),
-          h("li", {}, 'Crie uma chave nova e marque s\xF3 "Read statistics".'),
-          h("li", {}, "Copie a chave e cole aqui embaixo.")
+          h("li", {}, "Entre na sua conta e abra ", h("a", { href: apiKeyUrl(cfg), target: "_blank", rel: "noopener noreferrer" }, "a p\xE1gina de API do GoatCounter"), '. No site deles ela fica no menu do seu e-mail (canto de cima) \u2192 aba "API".'),
+          h("li", {}, 'Se aparecer "You need to verify your email", abra o e-mail que o GoatCounter mandou e clique no link de confirma\xE7\xE3o (ou em "Resend email").'),
+          h("li", {}, 'Em "Add new API Token": Name "Creator", marque "Read statistics", deixe "All sites" e clique em "Add new".'),
+          h("li", {}, 'Na lista de tokens, clique em "show" e copie o c\xF3digo comprido que aparece. Ele \xE9 a chave (n\xE3o \xE9 a sua senha nem o c\xF3digo do site).'),
+          h("li", {}, "Cole aqui embaixo e salve.")
         ),
         f.el,
         cfg.token && h("button", { type: "button", class: "btn btn-ghost btn-danger btn-sm", "data-id": "gc-disconnect", onclick: async () => {

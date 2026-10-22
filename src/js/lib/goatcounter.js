@@ -45,7 +45,7 @@ async function get(cfg, path, params, fetchImpl) {
   } catch {
     throw new GcError('Sem conexão com o GoatCounter. Confira a internet e o código do site.', 'network');
   }
-  if (res.status === 401 || res.status === 403) throw new GcError('O GoatCounter recusou a chave. Crie uma nova com a permissão "Read statistics".', 'auth');
+  if (res.status === 401 || res.status === 403) throw new GcError('O GoatCounter recusou a chave. Confira se o e-mail da conta foi confirmado e se você copiou o token (o código comprido em "show"), com a permissão "Read statistics".', 'auth');
   if (res.status === 429) throw new GcError('Muitas consultas seguidas. Espere um minuto e atualize.', 'rate');
   if (!res.ok) throw new GcError(`O GoatCounter respondeu com erro (${res.status}).`, 'other');
   return res.json();
