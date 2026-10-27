@@ -151,7 +151,7 @@ export function openDeal(d) {
           data.update('deals', d.id, v);
           const exists = data.all('contents').find((c) => c.dealId === d.id);
           if (exists) return openContent(exists);
-          const c = data.create('contents', { title: `${type === 'tts' ? 'TikTok Shop' : 'Publi'}: ${v.brandName}`, date: v.postDate, type: 'video', goal: 'marcas', dealId: d.id, status: 'roteiro', theme: v.product || '', platforms: type === 'tts' ? ['tiktok'] : ['instagram'], steps: ['Conferir briefing e pontos obrigatórios', 'Gravar seguindo o roteiro aprovado', 'Postar com a marcação/link combinados'] });
+          const c = data.create('contents', { title: `${type === 'tts' ? 'TikTok Shop' : 'Publi'}: ${v.brandName}`, date: v.postDate, type: 'video', goal: 'marcas', dealId: d.id, status: 'roteiro', theme: v.product || '', platforms: type === 'tts' ? ['tiktok'] : ['instagram'], steps: ['Conferir briefing e pontos obrigatórios', 'Falar só do que sentiu usando; produto recebido não é "comprei"', 'Gravar seguindo o roteiro aprovado', 'Postar com a legenda do briefing e a marcação/link combinados'] });
           close();
           setTimeout(() => openContent(c), 260);
         } }, '🗓️ Colocar o post na agenda'),

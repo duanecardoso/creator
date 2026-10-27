@@ -98,11 +98,25 @@ export function generateWeek({ monday, contents = [], deals = [], profile = {}, 
   const dealDay = (day) => deals.some((d) => d.postDate === day && ['publi', 'tts', 'treino'].includes(d.type) && d.status !== 'cancelado');
   const picks = [];
   const takenBank = new Set();
+  // Com linhas definidas no perfil, tema de linha sem peso (ou peso 0) fica fora do plano.
+  const weightOf = (b) => (!lineWeight.size || !b.line ? 1 : lineWeight.get(b.line) || 0);
+  const free = (b) => b && b.title && !takenBank.has(b.id) && !recentTitles.has(b.title) && weightOf(b) > 0;
   days.forEach((day, i) => {
     if (dealDay(day)) return;
-    const opts = bank.filter((b) => b && b.title && (b.goal || 'seguidores') === focus[i] && !takenBank.has(b.id) && !recentTitles.has(b.title));
+    const opts = bank.filter((b) => free(b) && (b.goal || 'seguidores') === focus[i]);
+    const fit = opts.filter((b) => !b.type || b.type === types[i]);
+    if (!fit.length) return;
+    const pick = weightedPick(shuffle(fit, r), weightOf, r);
+    takenBank.add(pick.id);
+    picks[i] = pick;
+  });
+  // Faltou tema daquela etapa? Usa outro tema seu antes de cair num modelo genérico.
+  days.forEach((day, i) => {
+    if (picks[i] || dealDay(day)) return;
+    const opts = bank.filter(free);
     if (!opts.length) return;
-    const pick = weightedPick(shuffle(opts, r), (b) => (lineWeight.size ? lineWeight.get(b.line) ?? 1 : 1) || 0.0001, r);
+    const fit = opts.filter((b) => !b.type || b.type === types[i]);
+    const pick = weightedPick(shuffle(fit.length ? fit : opts, r), weightOf, r);
     takenBank.add(pick.id);
     picks[i] = pick;
   });
@@ -137,16 +151,16 @@ export function generateWeek({ monday, contents = [], deals = [], profile = {}, 
       items.push({
         date: day, title: `${deal.type === 'tts' ? 'TikTok Shop' : 'Publi'}: ${deal.brandName || deal.title || 'marca'}`,
         type: 'video', goal: 'marcas', formatId: '', theme: deal.product || '', dealId: deal.id, status: 'roteiro',
-        steps: ['Conferir briefing e pontos obrigatórios', 'Gravar seguindo o roteiro aprovado', 'Postar com a marcação/link combinados'],
+        steps: ['Conferir briefing e pontos obrigatórios', 'Falar só do que sentiu usando; produto recebido não é "comprei"', 'Gravar seguindo o roteiro aprovado', 'Postar com a legenda do briefing e a marcação/link combinados'],
         platforms: deal.type === 'tts' ? ['tiktok'] : ['instagram'],
       });
       return;
     }
-    const goal = focus[i];
+    const pick = picks[i];
+    const goal = pick?.goal || focus[i];
     let type = types[i];
 
-    // 1) Seu banco de temas, na etapa certa do funil.
-    const pick = picks[i];
+    // 1) Seu banco de temas (de preferência na etapa certa do funil).
     if (pick) {
       const fitsT = (f) => (f.custom ? !f.types?.length || f.types.includes(type) : metaOf(f.id).types.includes(type));
       let format = pool.find((f) => f.id === pick.formatId && fitsT(f));

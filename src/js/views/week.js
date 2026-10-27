@@ -34,6 +34,7 @@ onClaudeResult('week', (text, ctx) => {
       ...(d.hook ? { hook: d.hook } : {}),
       ...(d.steps.length ? { steps: d.steps } : {}),
       ...(d.caption ? { caption: d.caption } : {}),
+      ...(d.cover ? { cover: d.cover } : {}),
       ...(d.cta ? { cta: d.cta } : {}),
       critique: d.critique,
       check: d.check,

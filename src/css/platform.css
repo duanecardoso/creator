@@ -887,3 +887,5 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 @media (max-width: 640px) {
   [data-id="brief-generator"] .filter-select { flex: 1 1 100%; width: 100%; }
 }
+.before-post ul { margin: 4px 0 8px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
+.before-post-sub { margin: 10px 0 0; font-weight: 700; font-size: 13px; color: var(--brown); }

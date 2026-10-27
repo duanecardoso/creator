@@ -903,6 +903,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 @media (max-width: 640px) {
   [data-id="brief-generator"] .filter-select { flex: 1 1 100%; width: 100%; }
 }
+.before-post ul { margin: 4px 0 8px; padding-left: 20px; line-height: 1.6; color: var(--ink-2); }
+.before-post-sub { margin: 10px 0 0; font-weight: 700; font-size: 13px; color: var(--brown); }
 
 </style>
 </head>
@@ -2176,6 +2178,30 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       return ((_a = b.follows) != null ? _a : -1) - ((_b = a.follows) != null ? _b : -1);
     });
   }
+  function byLine(contents, bank = []) {
+    const lineOf = new Map(bank.map((b) => [b.id, b.line]));
+    const groups = /* @__PURE__ */ new Map();
+    for (const c of contents.filter((x) => isPosted(x) && hasResults(x))) {
+      const k = c.line || lineOf.get(c.bankId) || "";
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(c);
+    }
+    return [...groups.entries()].map(([line, list]) => ({
+      line,
+      count: list.length,
+      views: median(list.map((c) => scores(c).views)),
+      follows: median(list.map((c) => scores(c).follows)),
+      value: median(list.map((c) => scores(c).value)),
+      brand: list.reduce((a, c) => {
+        var _a;
+        return a + ((_a = scores(c).brand) != null ? _a : 0);
+      }, 0),
+      confidence: confidence(list.length)
+    })).sort((a, b) => {
+      var _a, _b;
+      return ((_a = b.follows) != null ? _a : -1) - ((_b = a.follows) != null ? _b : -1);
+    });
+  }
   function seeded(seed) {
     let h2 = 2166136261;
     for (const ch of seed) h2 = Math.imul(h2 ^ ch.charCodeAt(0), 16777619);
@@ -2291,14 +2317,23 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const dealDay = (day) => deals.some((d) => d.postDate === day && ["publi", "tts", "treino"].includes(d.type) && d.status !== "cancelado");
     const picks = [];
     const takenBank = /* @__PURE__ */ new Set();
+    const weightOf = (b) => !lineWeight.size || !b.line ? 1 : lineWeight.get(b.line) || 0;
+    const free = (b) => b && b.title && !takenBank.has(b.id) && !recentTitles.has(b.title) && weightOf(b) > 0;
     days.forEach((day, i) => {
       if (dealDay(day)) return;
-      const opts2 = bank.filter((b) => b && b.title && (b.goal || "seguidores") === focus[i] && !takenBank.has(b.id) && !recentTitles.has(b.title));
+      const opts2 = bank.filter((b) => free(b) && (b.goal || "seguidores") === focus[i]);
+      const fit = opts2.filter((b) => !b.type || b.type === types[i]);
+      if (!fit.length) return;
+      const pick2 = weightedPick(shuffle(fit, r), weightOf, r);
+      takenBank.add(pick2.id);
+      picks[i] = pick2;
+    });
+    days.forEach((day, i) => {
+      if (picks[i] || dealDay(day)) return;
+      const opts2 = bank.filter(free);
       if (!opts2.length) return;
-      const pick2 = weightedPick(shuffle(opts2, r), (b) => {
-        var _a;
-        return (lineWeight.size ? (_a = lineWeight.get(b.line)) != null ? _a : 1 : 1) || 1e-4;
-      }, r);
+      const fit = opts2.filter((b) => !b.type || b.type === types[i]);
+      const pick2 = weightedPick(shuffle(fit.length ? fit : opts2, r), weightOf, r);
       takenBank.add(pick2.id);
       picks[i] = pick2;
     });
@@ -2349,14 +2384,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           theme: deal.product || "",
           dealId: deal.id,
           status: "roteiro",
-          steps: ["Conferir briefing e pontos obrigat\xF3rios", "Gravar seguindo o roteiro aprovado", "Postar com a marca\xE7\xE3o/link combinados"],
+          steps: ["Conferir briefing e pontos obrigat\xF3rios", 'Falar s\xF3 do que sentiu usando; produto recebido n\xE3o \xE9 "comprei"', "Gravar seguindo o roteiro aprovado", "Postar com a legenda do briefing e a marca\xE7\xE3o/link combinados"],
           platforms: deal.type === "tts" ? ["tiktok"] : ["instagram"]
         });
         return;
       }
-      const goal = focus[i];
-      let type = types[i];
       const pick2 = picks[i];
+      const goal = (pick2 == null ? void 0 : pick2.goal) || focus[i];
+      let type = types[i];
       if (pick2) {
         const fitsT = (f) => {
           var _a2;
@@ -4915,11 +4950,11 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
 
   // src/js/lib/prompts.js
   function profileBlock(p) {
-    var _a;
-    return "Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).\nSobre mim: ".concat(p.about || "\u2014", "\nNichos: ").concat(p.niches || "\u2014", "\nMeu jeito: ").concat(p.style || "\u2014", "\nEvitar: ").concat(p.avoid || "\u2014").concat(p.strategy ? "\nMinha estrat\xE9gia de conte\xFAdo (siga): ".concat(p.strategy) : "").concat(((_a = p.lines) == null ? void 0 : _a.length) ? "\nLinhas editoriais e peso: ".concat(p.lines.map((l) => "".concat(l.name, " ").concat(l.weight, "%")).join(", ")) : "", "\nFunil: topo = fazer gente nova me descobrir; meio = fazer quem chegou querer ficar (hist\xF3ria, personalidade, bastidor real); fundo = mostrar meu trabalho de UGC, publi e TikTok Shop para marcas, sem virar an\xFAncio.\n\nRegras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.");
+    var _a, _b;
+    return "Sou criadora de conte\xFAdo brasileira (Instagram e TikTok).\nSobre mim: ".concat(p.about || "\u2014", "\nNichos: ").concat(p.niches || "\u2014", "\nMeu jeito: ").concat(p.style || "\u2014", "\nEvitar: ").concat(p.avoid || "\u2014").concat(p.strategy ? "\nMinha estrat\xE9gia de conte\xFAdo (siga): ".concat(p.strategy) : "").concat(((_a = p.lines) == null ? void 0 : _a.length) ? "\nLinhas editoriais e peso: ".concat(p.lines.map((l) => "".concat(l.name, " ").concat(l.weight, "%")).join(", ")) : "", "\nFunil: topo = fazer gente nova me descobrir; meio = fazer quem chegou querer ficar (hist\xF3ria, personalidade, bastidor real); fundo = mostrar meu trabalho de UGC, publi e TikTok Shop para marcas, sem virar an\xFAncio.\n\n").concat(((_b = p.lines) == null ? void 0 : _b.length) ? "Todo tema precisa caber em um desses pilares, ser espec\xEDfico (s\xF3 faria sentido vindo de mim) e dar para gravar hoje. Nada de meme gen\xE9rico, frase motivacional ou aula para outras criadoras.\n" : "", "Regras: escreva em portugu\xEAs do Brasil, como eu falaria. N\xE3o invente n\xFAmeros, tend\xEAncias, pre\xE7os ou benef\xEDcios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por qu\xEA e sugira algo melhor.");
   }
   function contentPrompt({ profile: profile2, format, topic, platform, hits: hits2 = [] }) {
-    return "".concat(profileBlock(profile2), "\n\nQuero um conte\xFAdo pronto para gravar hoje.\n").concat(format ? formatBlock(format) : "", "\nTema: ").concat(topic || "(sugira um tema do meu nicho que combine com o formato)", "\nPlataforma: ").concat(platform || "Instagram e TikTok", "\n").concat(hits2.length ? "Conte\xFAdos meus que funcionaram (use como refer\xEAncia de tom): ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"title": "t\xEDtulo curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "caption": "legenda curta", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}');
+    return "".concat(profileBlock(profile2), "\n\nQuero um conte\xFAdo pronto para gravar hoje.\n").concat(format ? formatBlock(format) : "", "\nTema: ").concat(topic || "(sugira um tema do meu nicho que combine com o formato)", "\nPlataforma: ").concat(platform || "Instagram e TikTok", "\n").concat(hits2.length ? "Conte\xFAdos meus que funcionaram (use como refer\xEAncia de tom): ".concat(hits2.slice(0, 5).join("; ")) : "", '\n\nResponda SOMENTE com este JSON:\n{"title": "t\xEDtulo curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "cover": "texto da capa, 2 a 4 palavras de promessa", "caption": "legenda: 1\xAA linha com a palavra-chave do tema, depois 1 ou 2 frases e 3 a 5 hashtags de nicho no fim", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}');
   }
   function ideasPrompt({ profile: profile2, topic, goal, count = 5, hits: hits2 = [] }) {
     const list = FORMATS.map((f) => "".concat(f.id, ": ").concat(f.name)).join("\n");
@@ -4943,7 +4978,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     if (!raw) throw new Error("Nada para colar. Copie a resposta do Claude primeiro.");
     const d = extractJson(raw);
     if (!d) {
-      return { title: "", hook: "", hooks: [], steps: raw.split("\n").map((l) => l.trim()).filter(Boolean), caption: "", cta: "", check: [], critique: "", loose: true };
+      return { title: "", hook: "", hooks: [], steps: raw.split("\n").map((l) => l.trim()).filter(Boolean), caption: "", cta: "", cover: "", check: [], critique: "", loose: true };
     }
     return {
       title: str(d.title),
@@ -4952,6 +4987,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       steps: arr(d.steps),
       caption: str(d.caption),
       cta: str(d.cta),
+      cover: str(d.cover),
       check: arr(d.check),
       critique: str(d.critique),
       loose: false
@@ -4972,9 +5008,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         var _a;
         return "   tela ".concat(k + 1, " (").concat(SLIDE_HINT[s.layout] || s.layout).concat(s.photo ? ", tem foto minha" : "", ")").concat(s.cells ? ": widgets ".concat(s.cells.map((x) => x.label).join(" / ")) : "").concat(((_a = s.items) == null ? void 0 : _a.length) ? ": ".concat(s.items.length, " item(ns)") : "");
       }).join("\n");
-      return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 funil ").concat(FUNNEL_LABEL[c.goal] || "\u2014", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
+      return "".concat(i + 1, ". ").concat(c.date, " \xB7 ").concat(TYPE_LABEL[c.type] || c.type, " \xB7 funil ").concat(FUNNEL_LABEL[c.goal] || "\u2014").concat(c.line ? " \xB7 pilar ".concat(c.line) : "", " \xB7 formato ").concat((f == null ? void 0 : f.name) || "livre", "\n   Tema: ").concat(c.theme || c.title, "\n   Estrutura do formato: ").concat(((f == null ? void 0 : f.structure) || c.steps || []).join(" \u2192 ")).concat(slides ? "\n".concat(slides) : "");
     }).join("\n");
-    return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, legenda e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para bal\xF5es e listas; "messages" para conversas com me=true quando sou eu). Textos curtos, do meu jeito. No t\xEDtulo, *palavra* entre asteriscos sai em destaque. Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
+    return "".concat(profileBlock(profile2), '\n\nEste \xE9 o meu plano de conte\xFAdo da semana. Para cada item, escreva o conte\xFAdo pronto. Pode melhorar o t\xEDtulo, mas mantenha o formato e o tipo. Se um tema for fraco para o foco do dia, diga em "critique" e proponha um melhor no t\xEDtulo.\n\n').concat(list, '\n\nPara v\xEDdeos: gancho, roteiro em passos com as falas, texto da capa (2 a 4 palavras), legenda (1\xAA linha com a palavra-chave do tema, 3 a 5 hashtags de nicho) e CTA.\nPara carrossel/est\xE1tico: os textos de cada tela na mesma ordem (title e body; "items" para bal\xF5es e listas; "messages" para conversas com me=true quando sou eu). Textos curtos, do meu jeito. No t\xEDtulo, *palavra* entre asteriscos sai em destaque. Telas de foto: s\xF3 um t\xEDtulo curto ou vazio.\n\nResponda SOMENTE com este JSON:\n{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "cover": "", "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}');
   }
   function parseWeek(text) {
     const raw = String(text || "").trim();
@@ -4986,6 +5022,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       title: str(x.title),
       hook: str(x.hook),
       steps: arr(x.steps),
+      cover: str(x.cover),
       caption: str(x.caption),
       cta: str(x.cta),
       critique: str(x.critique),
@@ -5102,12 +5139,25 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const t = String(text || "").trim();
     if (!t) return [];
     const issues = RULES.filter((r) => r.re.test(t)).map((r) => r.msg);
-    const words = t.split(/\s+/).length;
-    if (words > 22) issues.push("Gancho com ".concat(words, " palavras. Para a abertura falada, costuma caber em uma frase curta."));
+    const words2 = t.split(/\s+/).length;
+    if (words2 > 22) issues.push("Gancho com ".concat(words2, " palavras. Para a abertura falada, costuma caber em uma frase curta."));
     if (/[!]{2,}|[?]{2,}/.test(t)) issues.push("Pontua\xE7\xE3o exagerada (!!, ??).");
     return issues;
   }
-  var RULES;
+  function checkCaption({ caption = "", theme = "", title = "" } = {}) {
+    const t = String(caption || "").trim();
+    if (!t || /#publi(cidade)?\b/i.test(t)) return [];
+    const issues = [];
+    const tags = t.match(/#[\p{L}\d_]+/gu) || [];
+    const generic = tags.filter((x) => GENERIC_TAGS.test(x));
+    if (generic.length) issues.push("".concat(generic.join(" "), " n\xE3o diz ao Instagram do que \xE9 o v\xEDdeo. Troque por hashtags do tema (ex.: #cabeloloiro #treinofeminino)."));
+    if (tags.length > 5) issues.push("".concat(tags.length, " hashtags. Use de 3 a 5, de nicho."));
+    const topic = new Set([...words(theme), ...words(title)].filter((w) => !STOP.has(w)));
+    const first = t.split("\n")[0];
+    if (topic.size && !words(first).some((w) => topic.has(w))) issues.push("A 1\xAA linha n\xE3o fala do tema. Comece pela palavra-chave para ser achada na busca.");
+    return issues;
+  }
+  var RULES, GENERIC_TAGS, STOP, words;
   var init_hookcheck = __esm({
     "src/js/lib/hookcheck.js"() {
       RULES = [
@@ -5121,10 +5171,13 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         { re: /(assist[ae]|fica|fique) at[eé] o final/i, msg: '"Assista at\xE9 o final" pede aten\xE7\xE3o sem dar motivo.' },
         { re: /\bse voc[eê] (quer|n[aã]o|tamb[eé]m)\b/i, msg: '"Se voc\xEA..." \xE9 uma abertura muito comum. Tente come\xE7ar pela situa\xE7\xE3o.' },
         { re: /acredit[ea] em voc[eê]|voc[eê] [eé] capaz|nunca desista|gratid[aã]o|foco no|seja a sua melhor vers[aã]o/i, msg: "Frase motivacional gen\xE9rica." },
-        { re: /\b(aprenda|vou te ensinar|guia definitivo|passo a passo|tutorial)\b/i, msg: "Tom de aula. Voc\xEA prefere mostrar o que est\xE1 testando/descobrindo." },
+        { re: /\b(aprenda|vou te ensinar|guia definitivo)\b/i, msg: 'Tom de aula. Funciona melhor mostrando o que voc\xEA faz ("a rotina que segurou meu loiro").' },
         { re: /\b(dicas? para criadores|como crescer no|algoritmo)\b/i, msg: "Conte\xFAdo para criadores. Verifique se \xE9 mesmo o p\xFAblico desejado." },
         { re: /\b(incr[ií]vel|revolucion[aá]ri[oa]|perfeit[oa]|melhor do mundo)\b/i, msg: "Adjetivo vago. Mostre o detalhe concreto que justifica a opini\xE3o." }
       ];
+      GENERIC_TAGS = /^#(viral|fy|fyp|foryou|foryoupage|explore|explorepage|explorar|meme|memes|reels|reelsinstagram|instagood|trend|trending|tbt|love|insta)$/i;
+      STOP = /* @__PURE__ */ new Set(["para", "como", "que", "com", "sem", "uma", "meu", "minha", "isso", "essa", "esse", "voc\xEA", "depois", "antes", "mais", "muito", "quando", "porque", "eu", "n\xE3o"]);
+      words = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z]{4,}/g) || [];
     }
   });
 
@@ -5658,7 +5711,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
             update("deals", d.id, v);
             const exists = all("contents").find((c2) => c2.dealId === d.id);
             if (exists) return openContent(exists);
-            const c = create("contents", { title: "".concat(type === "tts" ? "TikTok Shop" : "Publi", ": ").concat(v.brandName), date: v.postDate, type: "video", goal: "marcas", dealId: d.id, status: "roteiro", theme: v.product || "", platforms: type === "tts" ? ["tiktok"] : ["instagram"], steps: ["Conferir briefing e pontos obrigat\xF3rios", "Gravar seguindo o roteiro aprovado", "Postar com a marca\xE7\xE3o/link combinados"] });
+            const c = create("contents", { title: "".concat(type === "tts" ? "TikTok Shop" : "Publi", ": ").concat(v.brandName), date: v.postDate, type: "video", goal: "marcas", dealId: d.id, status: "roteiro", theme: v.product || "", platforms: type === "tts" ? ["tiktok"] : ["instagram"], steps: ["Conferir briefing e pontos obrigat\xF3rios", 'Falar s\xF3 do que sentiu usando; produto recebido n\xE3o \xE9 "comprei"', "Gravar seguindo o roteiro aprovado", "Postar com a legenda do briefing e a marca\xE7\xE3o/link combinados"] });
             close();
             setTimeout(() => openContent(c), 260);
           } }, "\u{1F5D3}\uFE0F Colocar o post na agenda"),
@@ -6051,7 +6104,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         { name: "type", label: "Tipo", type: "select", options: Object.entries(TYPES).map(([value, t]) => ({ value, label: "".concat(t.emoji, " ").concat(t.label) })), placeholder: false },
         { name: "goal", label: "Foco", type: "select", options: Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), placeholder: "Livre" },
         { name: "date", label: "Data", type: "date" },
-        { name: "theme", label: "Tema", placeholder: "Sobre o qu\xEA" }
+        { name: "theme", label: "Tema", placeholder: "Sobre o qu\xEA" },
+        { name: "line", label: "Pilar", type: "select", options: lineOptions, placeholder: "Sem pilar" }
       ] }
     ], { type: "video", ...c });
     const typeSel = main2.el.querySelector('select[name="type"]');
@@ -6059,7 +6113,8 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const script = formGroups([
       { header: "Gancho", fields: [{ name: "hook", label: "Gancho", type: "textarea", rows: 2, placeholder: "A frase dos primeiros 2 segundos", showLabel: false }] },
       { header: "Roteiro", footer: "Um passo por linha.", fields: [{ name: "steps", label: "Roteiro", type: "list", rows: 5, placeholder: "Cena 1: \u2026\nCena 2: \u2026", showLabel: false }] },
-      { header: "Legenda e CTA", fields: [
+      { header: "Capa", footer: "2 a 4 palavras de promessa, sempre no mesmo lugar (ex.: LOIRO SEM QUEBRAR).", fields: [{ name: "cover", label: "Texto da capa", placeholder: "Texto da capa", showLabel: false }] },
+      { header: "Legenda e CTA", footer: "1\xAA linha com a palavra-chave do tema. 3 a 5 hashtags de nicho.", fields: [
         { name: "caption", label: "Legenda", type: "textarea", rows: 3, showLabel: false, placeholder: "Legenda" },
         { name: "cta", label: "CTA", placeholder: "Chamada final" }
       ] }
@@ -6069,6 +6124,14 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     hookInput.addEventListener("input", updateWarn);
     updateWarn();
     hookInput.closest(".group").append(hookWarn);
+    const capWarn = h("ul", { class: "warn-list", "data-id": "caption-warn" });
+    const capInput = script.el.querySelector('textarea[name="caption"]');
+    const themeInput = main2.el.querySelector('input[name="theme"]');
+    const titleInput = main2.el.querySelector('input[name="title"]');
+    const updateCap = () => capWarn.replaceChildren(...checkCaption({ caption: capInput.value, theme: themeInput == null ? void 0 : themeInput.value, title: titleInput == null ? void 0 : titleInput.value }).map((w) => h("li", {}, w)));
+    capInput.addEventListener("input", updateCap);
+    updateCap();
+    capInput.closest(".group").append(capWarn);
     const brandOpts = () => all("brands").map((b) => ({ value: b.id, label: b.name }));
     const extra = formGroups([
       { header: "Marcas", fields: [
@@ -6176,7 +6239,16 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
             h("li", {}, "Isso revela alguma coisa sobre mim (opini\xE3o, hist\xF3ria, jeito)?"),
             h("li", {}, "Se outra pessoa postasse, eu pararia para assistir?")
           ),
-          h("p", { class: "muted small" }, 'Tr\xEAs "sim": posta. Se a ideia \xE9 estrat\xE9gica mas parece sem alma, troque.')
+          h("p", { class: "muted small" }, 'Tr\xEAs "sim": posta. Se a ideia \xE9 estrat\xE9gica mas parece sem alma, troque.'),
+          h("p", { class: "before-post-sub" }, "Empacotamento"),
+          h(
+            "ul",
+            {},
+            h("li", {}, "Capa com 2 a 4 palavras de promessa, no padr\xE3o das outras."),
+            h("li", {}, "Palavra-chave do tema falada no v\xEDdeo, no texto da tela e na 1\xAA linha da legenda."),
+            h("li", {}, "3 a 5 hashtags de nicho (nada de #viral, #fy, #explorepage)."),
+            h("li", {}, "Cabe em um dos seus pilares? Meme ou trend s\xF3 se for do seu nicho.")
+          )
         ),
         h("button", {
           type: "button",
@@ -6211,7 +6283,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       )
     });
   }
-  var formatOptions, today;
+  var lineOptions, formatOptions, today;
   var init_content_sheet = __esm({
     "src/js/views/content-sheet.js"() {
       init_data();
@@ -6223,6 +6295,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
       init_prompts();
       init_claude();
       init_hookcheck();
+      lineOptions = () => [...new Set([...(profile().lines || []).map((l) => l.name), ...all("bank").map((b) => b.line)].filter(Boolean))].map((n2) => ({ value: n2, label: n2 }));
       formatOptions = () => [...FORMATS, ...all("formats")].map((f) => ({ value: f.id, label: "".concat(f.emoji || "\u2022", " ").concat(f.name) }));
       today = () => iso(/* @__PURE__ */ new Date());
       onClaudeResult("content", (text, ctx) => {
@@ -6234,6 +6307,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
           steps: r.steps,
           ...r.caption ? { caption: r.caption } : {},
           ...r.cta ? { cta: r.cta } : {},
+          ...r.cover ? { cover: r.cover } : {},
           check: r.check,
           critique: r.critique
         };
@@ -6389,7 +6463,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const count = (n2) => all("bank").filter((b) => b.line === n2).length;
     return card({
       title: "Linhas editoriais",
-      subtitle: "O peso decide quanto cada linha aparece no plano da semana",
+      subtitle: "O peso decide quanto cada linha aparece no plano. Linha sem peso fica fora do plano (os temas continuam guardados).",
       flush: true,
       children: names.length ? group({ children: names.map((n2) => cell({
         title: n2 || "Sem linha",
@@ -6899,6 +6973,7 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
         ...d.hook ? { hook: d.hook } : {},
         ...d.steps.length ? { steps: d.steps } : {},
         ...d.caption ? { caption: d.caption } : {},
+        ...d.cover ? { cover: d.cover } : {},
         ...d.cta ? { cta: d.cta } : {},
         critique: d.critique,
         check: d.check,
@@ -7509,8 +7584,9 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
     const measured = posted.filter(hasResults).sort((a, b) => (a.postedAt || a.date).localeCompare(b.postedAt || b.date));
     const conf = confidence(measured.length);
     const formats = byFormat(measured, all("formats"));
-    const maxFollows = Math.max(0, ...formats.map((r) => r.follows || 0));
-    const maxValue = Math.max(0, ...formats.map((r) => r.value || 0));
+    const lines = byLine(measured, all("bank"));
+    const maxFollows = Math.max(0, ...formats.map((r) => r.follows || 0), ...lines.map((r) => r.follows || 0));
+    const maxValue = Math.max(0, ...formats.map((r) => r.value || 0), ...lines.map((r) => r.value || 0));
     const last = measured.slice(-12);
     const viewsChart = last.length ? barChart({
       label: "Visualiza\xE7\xF5es por post",
@@ -7569,6 +7645,25 @@ dialog.action-sheet.no-modal { inset: auto; top: 50%; left: 50%; transform: tran
                   var _a2, _b2, _c;
                   return h("div", { class: "td-flex" }, badge(((_a2 = r.format) == null ? void 0 : _a2.emoji) || "\u2022", ((_b2 = r.format) == null ? void 0 : _b2.color) || "gray"), h("span", { class: "td-title" }, ((_c = r.format) == null ? void 0 : _c.name) || (r.formatId === "sem-formato" ? "Sem formato" : r.formatId)));
                 } },
+                { label: "Posts", cls: "right", render: (r) => h("span", { class: "num" }, String(r.count)) },
+                { label: "Seguidores / mil", render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
+                { label: "Salv. + compart. / mil", render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },
+                { label: "Marcas", cls: "right", render: (r) => h("span", { class: "num" }, String(r.brand)) },
+                { label: "Confian\xE7a", render: (r) => tag(r.confidence.label, "conf-".concat(r.confidence.level)) }
+              ]
+            })
+          }),
+          card({
+            title: "Por pilar",
+            subtitle: "Qual pilar traz mais seguidor e salvamento. Depois de 30 dias, d\xEA mais peso ao que funciona (Formatos \u2192 Banco de temas).",
+            flush: true,
+            id: "by-line",
+            children: table({
+              caption: "Desempenho por pilar",
+              rows: lines,
+              empty: "Escolha o pilar dos conte\xFAdos (ou use temas do banco) e anote os resultados.",
+              columns: [
+                { label: "Pilar", main: true, render: (r) => h("span", { class: "td-title" }, r.line || "Sem pilar") },
                 { label: "Posts", cls: "right", render: (r) => h("span", { class: "num" }, String(r.count)) },
                 { label: "Seguidores / mil", render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
                 { label: "Salv. + compart. / mil", render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },

@@ -31,13 +31,16 @@ O visual segue a mesma identidade do portfólio: fonte Montserrat, fundo claro p
   - **Meio · conectar:** quem chegou quer ficar.
   - **Fundo · marcas:** seu trabalho de UGC, publi e TikTok Shop por dentro, sem virar anúncio.
 - **A semana segue o funil:** seg e ter topo, qua e qui meio, sex e sáb fundo, dom topo. Com 5 dias: topo, topo, meio, meio, fundo. Escolha 5 ou 7 dias em Configurações → Plano semanal.
-- **Banco de temas** (Formatos → Banco de temas): seus temas prontos, por linha editorial e etapa do funil.
-  - O plano usa estes temas antes dos modelos genéricos, respeitando o peso de cada linha, e não repete tema usado nos últimos 60 dias.
+- **Banco de temas** (Formatos → Banco de temas): seus temas prontos, por pilar (linha editorial) e etapa do funil.
+  - O plano usa estes temas antes dos modelos genéricos, respeitando o peso de cada pilar, e não repete tema usado nos últimos 60 dias.
+  - Pilar sem peso (ou com peso 0) fica fora do plano. Os temas continuam guardados.
+  - Se faltar tema de uma etapa do funil, o plano usa outro tema seu antes de cair num modelo genérico.
   - Dá para colar uma lista inteira de temas de uma vez.
 - **Estratégia de conteúdo** (Configurações → Perfil): o eixo, o funil e as suas regras. Vai em todos os pedidos para o Claude.
 - **Carrossel com história:** formato de 8 telas (gancho, contexto, conflito, situação, virada, mudança, reflexão, frase final com pergunta).
-- **Antes de postar:** as 3 perguntas aparecem dentro de cada conteúdo.
-- **Desempenho:** mostra seguidores ganhos a cada mil visualizações.
+- **Antes de postar:** as 3 perguntas e o empacotamento (capa com 2 a 4 palavras, palavra-chave na 1ª linha da legenda, 3 a 5 hashtags de nicho) aparecem dentro de cada conteúdo.
+- **Capa e legenda:** cada conteúdo tem o texto da capa e o pilar. A legenda avisa sobre hashtag genérica (#viral, #fy…), excesso de hashtags e 1ª linha que não fala do tema. Legenda de publi (#publi) não é revisada, porque vem do briefing.
+- **Desempenho:** mostra seguidores ganhos a cada mil visualizações, por formato e por pilar.
 
 ## Briefings de treino (Campanhas → Briefings de treino)
 
@@ -129,7 +132,7 @@ O `index.html` é gerado a partir de `src/` (CSS e JS embutidos num arquivo só)
 ```bash
 npm install
 npm run build      # gera index.html
-npm test           # 62 testes de lógica
+npm test           # 67 testes de lógica
 npm run test:e2e   # 30 verificações no computador, num sábado simulado e num iPhone simulado (precisa do Playwright)
 ```
 

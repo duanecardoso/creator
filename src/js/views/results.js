@@ -1,7 +1,7 @@
 // Desempenho: o que traz seguidores, salvamentos e marcas (não só views), por post e por formato.
 import * as data from '../data.js';
 import { h, page, card, kpi, table, filterSelect, badge, tag, tabs, postThumb, fmtNum, fmtDec, fmtDay, emptyNote, barChart, hbar, go } from '../ui.js';
-import { byFormat, hasResults, scores, median, confidence, weekStart, addDays } from '../lib/insights.js';
+import { byFormat, byLine, hasResults, scores, median, confidence, weekStart, addDays } from '../lib/insights.js';
 import { GOALS, TYPES, formatById } from '../lib/formats.js';
 import { openContent, today } from './content-sheet.js';
 import { hitsList } from './formats.js';
@@ -76,8 +76,9 @@ export function render(root, params = {}) {
   const measured = posted.filter(hasResults).sort((a, b) => (a.postedAt || a.date).localeCompare(b.postedAt || b.date));
   const conf = confidence(measured.length);
   const formats = byFormat(measured, data.all('formats'));
-  const maxFollows = Math.max(0, ...formats.map((r) => r.follows || 0));
-  const maxValue = Math.max(0, ...formats.map((r) => r.value || 0));
+  const lines = byLine(measured, data.all('bank'));
+  const maxFollows = Math.max(0, ...formats.map((r) => r.follows || 0), ...lines.map((r) => r.follows || 0));
+  const maxValue = Math.max(0, ...formats.map((r) => r.value || 0), ...lines.map((r) => r.value || 0));
 
   // Gráfico 1: visualizações dos últimos 12 posts medidos
   const last = measured.slice(-12);
@@ -126,6 +127,20 @@ export function render(root, params = {}) {
             caption: 'Desempenho por formato', rows: formats, empty: 'Escolha o formato dos conteúdos e anote os resultados para comparar.',
             columns: [
               { label: 'Formato', main: true, render: (r) => h('div', { class: 'td-flex' }, badge(r.format?.emoji || '•', r.format?.color || 'gray'), h('span', { class: 'td-title' }, r.format?.name || (r.formatId === 'sem-formato' ? 'Sem formato' : r.formatId))) },
+              { label: 'Posts', cls: 'right', render: (r) => h('span', { class: 'num' }, String(r.count)) },
+              { label: 'Seguidores / mil', render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
+              { label: 'Salv. + compart. / mil', render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },
+              { label: 'Marcas', cls: 'right', render: (r) => h('span', { class: 'num' }, String(r.brand)) },
+              { label: 'Confiança', render: (r) => tag(r.confidence.label, `conf-${r.confidence.level}`) },
+            ],
+          }),
+        }),
+        card({
+          title: 'Por pilar', subtitle: 'Qual pilar traz mais seguidor e salvamento. Depois de 30 dias, dê mais peso ao que funciona (Formatos → Banco de temas).', flush: true, id: 'by-line',
+          children: table({
+            caption: 'Desempenho por pilar', rows: lines, empty: 'Escolha o pilar dos conteúdos (ou use temas do banco) e anote os resultados.',
+            columns: [
+              { label: 'Pilar', main: true, render: (r) => h('span', { class: 'td-title' }, r.line || 'Sem pilar') },
               { label: 'Posts', cls: 'right', render: (r) => h('span', { class: 'num' }, String(r.count)) },
               { label: 'Seguidores / mil', render: (r) => hbar(r.follows, maxFollows, fmtDec(r.follows)) },
               { label: 'Salv. + compart. / mil', render: (r) => hbar(r.value, maxValue, fmtDec(r.value)) },

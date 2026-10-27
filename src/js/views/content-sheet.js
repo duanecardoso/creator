@@ -7,8 +7,10 @@ import { DEAL_TYPES, stageLabel } from '../lib/deals.js';
 import { STATUSES, iso } from '../lib/insights.js';
 import { contentPrompt, parseContent } from '../lib/prompts.js';
 import { askClaude, onClaudeResult } from './claude.js';
-import { checkHook } from '../lib/hookcheck.js';
+import { checkHook, checkCaption } from '../lib/hookcheck.js';
 
+// Pilares (linhas editoriais) do perfil e do banco de temas.
+export const lineOptions = () => [...new Set([...(data.profile().lines || []).map((l) => l.name), ...data.all('bank').map((b) => b.line)].filter(Boolean))].map((n) => ({ value: n, label: n }));
 export const formatOptions = () => [...FORMATS, ...data.all('formats')].map((f) => ({ value: f.id, label: `${f.emoji || '•'} ${f.name}` }));
 export const today = () => iso(new Date());
 
@@ -22,6 +24,7 @@ onClaudeResult('content', (text, ctx) => {
     steps: r.steps,
     ...(r.caption ? { caption: r.caption } : {}),
     ...(r.cta ? { cta: r.cta } : {}),
+    ...(r.cover ? { cover: r.cover } : {}),
     check: r.check,
     critique: r.critique,
   };
@@ -82,6 +85,7 @@ export function openContent(c) {
       { name: 'goal', label: 'Foco', type: 'select', options: Object.entries(GOALS).map(([value, g]) => ({ value, label: g.label })), placeholder: 'Livre' },
       { name: 'date', label: 'Data', type: 'date' },
       { name: 'theme', label: 'Tema', placeholder: 'Sobre o quê' },
+      { name: 'line', label: 'Pilar', type: 'select', options: lineOptions, placeholder: 'Sem pilar' },
     ] },
   ], { type: 'video', ...c });
   const typeSel = main.el.querySelector('select[name="type"]');
@@ -90,7 +94,8 @@ export function openContent(c) {
   const script = formGroups([
     { header: 'Gancho', fields: [{ name: 'hook', label: 'Gancho', type: 'textarea', rows: 2, placeholder: 'A frase dos primeiros 2 segundos', showLabel: false }] },
     { header: 'Roteiro', footer: 'Um passo por linha.', fields: [{ name: 'steps', label: 'Roteiro', type: 'list', rows: 5, placeholder: 'Cena 1: …\nCena 2: …', showLabel: false }] },
-    { header: 'Legenda e CTA', fields: [
+    { header: 'Capa', footer: '2 a 4 palavras de promessa, sempre no mesmo lugar (ex.: LOIRO SEM QUEBRAR).', fields: [{ name: 'cover', label: 'Texto da capa', placeholder: 'Texto da capa', showLabel: false }] },
+    { header: 'Legenda e CTA', footer: '1ª linha com a palavra-chave do tema. 3 a 5 hashtags de nicho.', fields: [
       { name: 'caption', label: 'Legenda', type: 'textarea', rows: 3, showLabel: false, placeholder: 'Legenda' },
       { name: 'cta', label: 'CTA', placeholder: 'Chamada final' },
     ] },
@@ -100,6 +105,14 @@ export function openContent(c) {
   hookInput.addEventListener('input', updateWarn);
   updateWarn();
   hookInput.closest('.group').append(hookWarn);
+  const capWarn = h('ul', { class: 'warn-list', 'data-id': 'caption-warn' });
+  const capInput = script.el.querySelector('textarea[name="caption"]');
+  const themeInput = main.el.querySelector('input[name="theme"]');
+  const titleInput = main.el.querySelector('input[name="title"]');
+  const updateCap = () => capWarn.replaceChildren(...checkCaption({ caption: capInput.value, theme: themeInput?.value, title: titleInput?.value }).map((w) => h('li', {}, w)));
+  capInput.addEventListener('input', updateCap);
+  updateCap();
+  capInput.closest('.group').append(capWarn);
 
   const brandOpts = () => data.all('brands').map((b) => ({ value: b.id, label: b.name }));
   const extra = formGroups([
@@ -199,7 +212,13 @@ export function openContent(c) {
           h('li', {}, 'Eu teria vontade de falar disso com uma amiga?'),
           h('li', {}, 'Isso revela alguma coisa sobre mim (opinião, história, jeito)?'),
           h('li', {}, 'Se outra pessoa postasse, eu pararia para assistir?')),
-        h('p', { class: 'muted small' }, 'Três "sim": posta. Se a ideia é estratégica mas parece sem alma, troque.')),
+        h('p', { class: 'muted small' }, 'Três "sim": posta. Se a ideia é estratégica mas parece sem alma, troque.'),
+        h('p', { class: 'before-post-sub' }, 'Empacotamento'),
+        h('ul', {},
+          h('li', {}, 'Capa com 2 a 4 palavras de promessa, no padrão das outras.'),
+          h('li', {}, 'Palavra-chave do tema falada no vídeo, no texto da tela e na 1ª linha da legenda.'),
+          h('li', {}, '3 a 5 hashtags de nicho (nada de #viral, #fy, #explorepage).'),
+          h('li', {}, 'Cabe em um dos seus pilares? Meme ou trend só se for do seu nicho.'))),
       h('button', {
         type: 'button', class: 'btn-claude', 'data-id': 'content-claude',
         onclick: () => {

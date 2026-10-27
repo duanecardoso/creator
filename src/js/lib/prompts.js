@@ -9,7 +9,7 @@ Meu jeito: ${p.style || '—'}
 Evitar: ${p.avoid || '—'}${p.strategy ? `\nMinha estratégia de conteúdo (siga): ${p.strategy}` : ''}${p.lines?.length ? `\nLinhas editoriais e peso: ${p.lines.map((l) => `${l.name} ${l.weight}%`).join(', ')}` : ''}
 Funil: topo = fazer gente nova me descobrir; meio = fazer quem chegou querer ficar (história, personalidade, bastidor real); fundo = mostrar meu trabalho de UGC, publi e TikTok Shop para marcas, sem virar anúncio.
 
-Regras: escreva em português do Brasil, como eu falaria. Não invente números, tendências, preços ou benefícios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por quê e sugira algo melhor.`;
+${p.lines?.length ? 'Todo tema precisa caber em um desses pilares, ser específico (só faria sentido vindo de mim) e dar para gravar hoje. Nada de meme genérico, frase motivacional ou aula para outras criadoras.\n' : ''}Regras: escreva em português do Brasil, como eu falaria. Não invente números, tendências, preços ou benefícios de produto; se algo precisar ser confirmado, diga. Se minha ideia for fraca, diga por quê e sugira algo melhor.`;
 }
 
 const formatBlock = (f) => `Formato: ${f.name}
@@ -28,7 +28,7 @@ Plataforma: ${platform || 'Instagram e TikTok'}
 ${hits.length ? `Conteúdos meus que funcionaram (use como referência de tom): ${hits.slice(0, 5).join('; ')}` : ''}
 
 Responda SOMENTE com este JSON:
-{"title": "título curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "caption": "legenda curta", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}`;
+{"title": "título curto", "hook": "a frase dos primeiros 2 segundos", "hooks": ["2 ganchos alternativos"], "steps": ["cena/passo 1 com a fala", "passo 2", "..."], "cover": "texto da capa, 2 a 4 palavras de promessa", "caption": "legenda: 1ª linha com a palavra-chave do tema, depois 1 ou 2 frases e 3 a 5 hashtags de nicho no fim", "cta": "chamada final", "check": ["o que eu preciso confirmar antes de postar, se houver"], "critique": "1 frase honesta sobre o ponto fraco da ideia, se houver"}`;
 }
 
 // Várias ideias variando formatos.
@@ -70,7 +70,7 @@ export function parseContent(text) {
   const d = extractJson(raw);
   if (!d) {
     // Sem JSON: guarda o texto como roteiro, para não perder nada.
-    return { title: '', hook: '', hooks: [], steps: raw.split('\n').map((l) => l.trim()).filter(Boolean), caption: '', cta: '', check: [], critique: '', loose: true };
+    return { title: '', hook: '', hooks: [], steps: raw.split('\n').map((l) => l.trim()).filter(Boolean), caption: '', cta: '', cover: '', check: [], critique: '', loose: true };
   }
   return {
     title: str(d.title),
@@ -79,6 +79,7 @@ export function parseContent(text) {
     steps: arr(d.steps),
     caption: str(d.caption),
     cta: str(d.cta),
+    cover: str(d.cover),
     check: arr(d.check),
     critique: str(d.critique),
     loose: false,
@@ -105,7 +106,7 @@ export function weekPrompt({ profile, items, formats }) {
   const list = items.map((c, i) => {
     const f = formats.find((x) => x.id === c.formatId);
     const slides = (c.slides || []).map((s, k) => `   tela ${k + 1} (${SLIDE_HINT[s.layout] || s.layout}${s.photo ? ', tem foto minha' : ''})${s.cells ? `: widgets ${s.cells.map((x) => x.label).join(' / ')}` : ''}${s.items?.length ? `: ${s.items.length} item(ns)` : ''}`).join('\n');
-    return `${i + 1}. ${c.date} · ${TYPE_LABEL[c.type] || c.type} · funil ${FUNNEL_LABEL[c.goal] || '—'} · formato ${f?.name || 'livre'}
+    return `${i + 1}. ${c.date} · ${TYPE_LABEL[c.type] || c.type} · funil ${FUNNEL_LABEL[c.goal] || '—'}${c.line ? ` · pilar ${c.line}` : ''} · formato ${f?.name || 'livre'}
    Tema: ${c.theme || c.title}
    Estrutura do formato: ${(f?.structure || c.steps || []).join(' → ')}${slides ? `\n${slides}` : ''}`;
   }).join('\n');
@@ -115,11 +116,11 @@ Este é o meu plano de conteúdo da semana. Para cada item, escreva o conteúdo 
 
 ${list}
 
-Para vídeos: gancho, roteiro em passos com as falas, legenda e CTA.
+Para vídeos: gancho, roteiro em passos com as falas, texto da capa (2 a 4 palavras), legenda (1ª linha com a palavra-chave do tema, 3 a 5 hashtags de nicho) e CTA.
 Para carrossel/estático: os textos de cada tela na mesma ordem (title e body; "items" para balões e listas; "messages" para conversas com me=true quando sou eu). Textos curtos, do meu jeito. No título, *palavra* entre asteriscos sai em destaque. Telas de foto: só um título curto ou vazio.
 
 Responda SOMENTE com este JSON:
-{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}`;
+{"days": [{"n": 1, "title": "", "hook": "", "steps": [""], "cover": "", "caption": "", "cta": "", "critique": "", "check": [""], "slides": [{"title": "", "body": "", "items": [""], "cells": [{"label": "", "value": ""}], "messages": [{"me": true, "text": ""}]}]}]}`;
 }
 
 export function parseWeek(text) {
@@ -132,6 +133,7 @@ export function parseWeek(text) {
     title: str(x.title),
     hook: str(x.hook),
     steps: arr(x.steps),
+    cover: str(x.cover),
     caption: str(x.caption),
     cta: str(x.cta),
     critique: str(x.critique),

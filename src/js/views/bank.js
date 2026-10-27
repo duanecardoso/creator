@@ -94,7 +94,7 @@ function linesCard(names) {
   const count = (n) => data.all('bank').filter((b) => b.line === n).length;
   return card({
     title: 'Linhas editoriais',
-    subtitle: 'O peso decide quanto cada linha aparece no plano da semana',
+    subtitle: 'O peso decide quanto cada linha aparece no plano. Linha sem peso fica fora do plano (os temas continuam guardados).',
     flush: true,
     children: names.length
       ? group({ children: names.map((n) => cell({

@@ -12,7 +12,7 @@ const RULES = [
   { re: /(assist[ae]|fica|fique) at[eé] o final/i, msg: '"Assista até o final" pede atenção sem dar motivo.' },
   { re: /\bse voc[eê] (quer|n[aã]o|tamb[eé]m)\b/i, msg: '"Se você..." é uma abertura muito comum. Tente começar pela situação.' },
   { re: /acredit[ea] em voc[eê]|voc[eê] [eé] capaz|nunca desista|gratid[aã]o|foco no|seja a sua melhor vers[aã]o/i, msg: 'Frase motivacional genérica.' },
-  { re: /\b(aprenda|vou te ensinar|guia definitivo|passo a passo|tutorial)\b/i, msg: 'Tom de aula. Você prefere mostrar o que está testando/descobrindo.' },
+  { re: /\b(aprenda|vou te ensinar|guia definitivo)\b/i, msg: 'Tom de aula. Funciona melhor mostrando o que você faz ("a rotina que segurou meu loiro").' },
   { re: /\b(dicas? para criadores|como crescer no|algoritmo)\b/i, msg: 'Conteúdo para criadores. Verifique se é mesmo o público desejado.' },
   { re: /\b(incr[ií]vel|revolucion[aá]ri[oa]|perfeit[oa]|melhor do mundo)\b/i, msg: 'Adjetivo vago. Mostre o detalhe concreto que justifica a opinião.' },
 ];
@@ -24,5 +24,24 @@ export function checkHook(text) {
   const words = t.split(/\s+/).length;
   if (words > 22) issues.push(`Gancho com ${words} palavras. Para a abertura falada, costuma caber em uma frase curta.`);
   if (/[!]{2,}|[?]{2,}/.test(t)) issues.push('Pontuação exagerada (!!, ??).');
+  return issues;
+}
+
+// Empacotamento da legenda: 1ª linha com o tema (busca do Instagram) e 3 a 5 hashtags de nicho.
+const GENERIC_TAGS = /^#(viral|fy|fyp|foryou|foryoupage|explore|explorepage|explorar|meme|memes|reels|reelsinstagram|instagood|trend|trending|tbt|love|insta)$/i;
+const STOP = new Set(['para', 'como', 'que', 'com', 'sem', 'uma', 'meu', 'minha', 'isso', 'essa', 'esse', 'você', 'depois', 'antes', 'mais', 'muito', 'quando', 'porque', 'eu', 'não']);
+const words = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').match(/[a-z]{4,}/g) || [];
+
+export function checkCaption({ caption = '', theme = '', title = '' } = {}) {
+  const t = String(caption || '').trim();
+  if (!t || /#publi(cidade)?\b/i.test(t)) return []; // publi: a legenda vem do briefing
+  const issues = [];
+  const tags = t.match(/#[\p{L}\d_]+/gu) || [];
+  const generic = tags.filter((x) => GENERIC_TAGS.test(x));
+  if (generic.length) issues.push(`${generic.join(' ')} não diz ao Instagram do que é o vídeo. Troque por hashtags do tema (ex.: #cabeloloiro #treinofeminino).`);
+  if (tags.length > 5) issues.push(`${tags.length} hashtags. Use de 3 a 5, de nicho.`);
+  const topic = new Set([...words(theme), ...words(title)].filter((w) => !STOP.has(w)));
+  const first = t.split('\n')[0];
+  if (topic.size && !words(first).some((w) => topic.has(w))) issues.push('A 1ª linha não fala do tema. Comece pela palavra-chave para ser achada na busca.');
   return issues;
 }

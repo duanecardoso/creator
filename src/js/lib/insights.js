@@ -135,6 +135,28 @@ export function byFormat(contents, customFormats = []) {
     .sort((a, b) => (b.follows ?? -1) - (a.follows ?? -1));
 }
 
+// Desempenho por pilar (linha editorial). O pilar vem do conteúdo ou do tema do banco que o originou.
+export function byLine(contents, bank = []) {
+  const lineOf = new Map(bank.map((b) => [b.id, b.line]));
+  const groups = new Map();
+  for (const c of contents.filter((x) => isPosted(x) && hasResults(x))) {
+    const k = c.line || lineOf.get(c.bankId) || '';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(c);
+  }
+  return [...groups.entries()]
+    .map(([line, list]) => ({
+      line,
+      count: list.length,
+      views: median(list.map((c) => scores(c).views)),
+      follows: median(list.map((c) => scores(c).follows)),
+      value: median(list.map((c) => scores(c).value)),
+      brand: list.reduce((a, c) => a + (scores(c).brand ?? 0), 0),
+      confidence: confidence(list.length),
+    }))
+    .sort((a, b) => (b.follows ?? -1) - (a.follows ?? -1));
+}
+
 // Conteúdos postados há 1+ dia ainda sem resultados.
 export const needsResults = (contents, today) =>
   contents.filter((c) => isPosted(c) && !hasResults(c) && postedDate(c) && postedDate(c) < today);
